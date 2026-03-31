@@ -20,9 +20,10 @@ export function Header() {
                             <th>
                                 <div className="menu-links">
                                     <Link to="/"> Home</Link>
-                                    <Link to="/link1"> Link 1</Link>
-                                    <Link to="/link2"> Link 2</Link>
-                                    <Link to="/link3"> Link 3</Link>
+                                    <Link to="/link1"> Manage Content</Link>
+                                    <Link to="/link2"> Manage Employees</Link>
+                                    <Link to="/link3"> Business Analyst</Link>
+                                    <Link to="/link3"> Core Commercial Underwriter</Link>
                                 </div>
                             </th>
                         </tr>
