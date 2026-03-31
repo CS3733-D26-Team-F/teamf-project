@@ -1,16 +1,44 @@
 /*Menu Formatting*/
-.menu{
-  background-color: gray;
-  text-align: right;
+body{
+    background-color: white;
+    width: 100%;
+    justify-content: center;
+    font-family: "Californian FB"
 }
-.menu a{
-  text-align: center;
-  padding: 10px;
-  color: white;
-  font-size: 20px;
+
+div .menu{
+    background-color: #00355F;
+    padding: 3px;
 }
-.menu a:hover{
-  background-color: black;
+
+div .menu-links{
+    display: flex;
+    padding: 10px 10px;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+img .hanover-logo-menu{
+    align-self: center;
+}
+
+a{
+    text-decoration: none;
+    color: white;
+}
+
+
+div .menu-links a:hover{
+    background-color: #005580;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    color:white;
+}
+
+#menu-spacer{
+    width: 30%;
 }
 
 
