@@ -1,18 +1,54 @@
 /*Menu Formatting*/
-.menu{
-  background-color: gray;
-  text-align: right;
-}
-.menu a{
-  text-align: center;
-  padding: 10px;
-  color: white;
-  font-size: 20px;
-}
-.menu a:hover{
-  background-color: black;
+body{
+    background-color: white;
+    width: 100%;
+    justify-content: center;
+    font-family: "Californian FB"
 }
 
+div .menu{
+    background-color: #00355F;
+    padding: 3px;
+}
+
+div .menu-links{
+    display: flex;
+    padding: 10px 10px;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+img .hanover-logo-menu{
+    align-self: center;
+}
+
+a{
+    text-decoration: none;
+    color: white;
+}
+
+
+div .menu-links a:hover{
+    background-color: #005580;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    color:white;
+}
+
+#menu-spacer{
+    width: 30%;
+}
+
+/*Hero formatting*/
+
+#hero-image{
+    width: 100%;
+    height: auto;
+    margin-top: 20px;
+    background-image: linear-gradient(to bottom, #005580,white);
+}
 
 
 .counter {
