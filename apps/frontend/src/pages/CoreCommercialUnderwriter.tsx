@@ -1,12 +1,13 @@
+import { Header } from "../components/Header"
 import {
     TitleDemo
 } from "./c
 
-export default function CoreCommercialUnderwriter() {
+export function CoreCommercialUnderwriter() {
     return (
-        // I would like for the menu to go here
-        <div>
-            <TitleDemo />
-        </div>
-    )
+        <>
+            <Header />
+            <h1>Hi! This is the page for Core Commercial Underwriter's.</h1>
+        </>
+    );
 }
