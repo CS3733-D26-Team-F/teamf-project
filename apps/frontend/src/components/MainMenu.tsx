@@ -1,3 +1,5 @@
+import hanoverLogo from '../assets/hanoverlogo.png';
+
 export function MainMenu() {
     return (
         <>
@@ -7,7 +9,7 @@ export function MainMenu() {
                 <thead>
                     <tr>
                         <th>
-                            <a href="/home"><img src="/src/assets/hanoverlogo.png" id="hanover-logo-menu"
+                            <a href="/home"><img src={hanoverLogo} id="hanover-logo-menu"
                                     alt="Hanover Insurance Logo"
                                     style={{width: '90px'}}/></a></th>
 
