@@ -43,11 +43,41 @@ div .menu-links a:hover{
 
 /*Hero formatting*/
 
-#hero-image{
-    width: 100%;
-    height: auto;
-    margin-top: 20px;
-    background-image: linear-gradient(to bottom, #005580,white);
+.hero-overlay {
+  position: relative;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hero-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #00355f 0%, #005580 45%, #ffffff 100%);
+  z-index: 0;
+}
+
+.hero-text {
+  position: relative;
+  z-index: 1;
+  color: white;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  max-width: 800px;
+  line-height: 1;
+}
+
+.hero-text h1,
+.hero-text p {
+  margin: 0.5;
+}
+
+.hero-text p {
+  margin-top: 0.75 rem;
+  
 }
 
 
