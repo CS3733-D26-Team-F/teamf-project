@@ -11,18 +11,18 @@ export function Header() {
                     <thead>
                         <tr>
                             <th>
-                                <a href="/home"><img src={hanoverLogo} id="hanover-logo-menu"
+                                <Link to="/"><img src={hanoverLogo} id="hanover-logo-menu"
                                         alt="Hanover Insurance Logo"
-                                        style={{width: '90px'}}/></a></th>
+                                        style={{width: '90px'}}/></Link></th>
 
                             <th>The Hanover Insurance Group</th>
                             <th id="menu-spacer"> </th>
                             <th>
                                 <div className="menu-links">
-                                    <a href="/home"> Home</a>
-                                    <a href="/link1"> Link 1</a>
-                                    <a href="/link2"> Link 2</a>
-                                    <a href="/link3"> Link 3</a>
+                                    <Link to="/"> Home</Link>
+                                    <Link to="/link1"> Link 1</Link>
+                                    <Link to="/link2"> Link 2</Link>
+                                    <Link to="/link3"> Link 3</Link>
                                 </div>
                             </th>
                         </tr>
