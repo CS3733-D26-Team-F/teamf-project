@@ -1,3 +1,20 @@
+/*Menu Formatting*/
+.menu{
+  background-color: gray;
+  text-align: right;
+}
+.menu a{
+  text-align: center;
+  padding: 10px;
+  color: white;
+  font-size: 20px;
+}
+.menu a:hover{
+  background-color: black;
+}
+
+
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
