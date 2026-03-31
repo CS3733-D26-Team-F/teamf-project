@@ -9,8 +9,9 @@ export default function App() {
         // Each Route should be a page from src/pages
         <BrowserRouter>
             <MainMenu />
+            <Hero />
             <Routes>
-                <Route path="/" element={<Hero />}/>
+                <Route path="/" element={<MainMenu />}/>
                 <Route path="/template" element={<TemplatePage />}/>
             </Routes>
         </BrowserRouter>
