@@ -41,6 +41,14 @@ div .menu-links a:hover{
     width: 30%;
 }
 
+/*Hero formatting*/
+
+#hero-image{
+    width: 100%;
+    height: auto;
+    margin-top: 20px;
+    background-image: linear-gradient(to bottom, #005580,white);
+}
 
 
 .counter {
