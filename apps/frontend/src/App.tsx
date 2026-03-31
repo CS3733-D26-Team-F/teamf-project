@@ -8,8 +8,7 @@ export default function App() {
     return (
         // Each Route should be a page from src/pages
         <BrowserRouter>
-            <Header />
-            <Hero />
+
             <Routes>
                 <Route path="/" element={<Header />}/>
                 <Route path="/template" element={<TemplatePage />}/>
