@@ -4,6 +4,7 @@ export function ManageContentForm() {
     return (
         <>
             <Header />
+            <h1>Hi! This is the Form for Managing Content.</h1>
             <form>
                 <label htmlFor="docName"> Name of Hyperlink or Document:</label>
                 <input type="text" id="docName"/>
@@ -11,11 +12,15 @@ export function ManageContentForm() {
                 <label htmlFor="url">URL Link:</label>
                 <input type="text" id="url"/>
                 <br/><br/>
-                <label htmlFor="contentOwner">Content Owner:</label>
+                <label htmlFor="contentOwner">Name of Content Owner:</label>
                 <input type="text" id="contentOwner"/>
                 <br/><br/>
-                <label htmlFor="persona">Job Position:</label>
-                <input type="text" id="persona"/>
+                <label htmlFor="persona">Job Position: </label>
+                <select name="Job Position" id="persona">
+                    <option value="" disabled selected hidden>Select</option>
+                    <option value="Underwriter">Underwriter</option>
+                    <option value="Business Analyst">Business Analyst</option>
+                </select>
                 <br/><br/>
                 <label htmlFor="lastModifiedDate">Last Modified Date:</label>
                 <input type="date" id="lastModifiedDate" name="lastModifiedDate"/>
@@ -32,7 +37,21 @@ export function ManageContentForm() {
                 <br/><br/>
                 Document Status:
                 <br/><br/>
+                <label htmlFor="docStatus">Document Status: </label>
+                <select name="Document Status" id="docStatus">
+                    <option value="" disabled selected hidden>Select</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Internal Review">Internal Review</option>
+                    <option value="Client Review">Client Review</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Archived">Archived</option>
+                </select>
+                <br/><br/>
+
                 <input type="submit" value="Submit Form"/>
+                <br/>
+                <input type="reset" value="Reset"/>
             </form>
         </>
     );
