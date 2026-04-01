@@ -5,6 +5,10 @@ Setting up:
 - Set environment variables (e.g., `DIRECT_URL`, `DATABASE_URL`)
   (these can be found pinned in a discord database channel)
 
+Commands for seeding:
+- in the Supabase, go to SQL Editor and type in SQL commands
+- after  querying, run `pnpm prisma db pull` to pull from database
+- run `pnpm prisma generate` to fully sync the changes
 
 Commands for data base:
 - run `pnpm prisma push` to force push the schema to the database
