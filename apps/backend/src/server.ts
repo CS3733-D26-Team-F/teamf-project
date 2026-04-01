@@ -1,5 +1,4 @@
 import 'dotenv/config';
-console.log("DB URL:", process.env.DIRECT_URL);
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from 'db';
 
@@ -14,7 +13,7 @@ async function main() {
     console.log("--- Employee Data ---");
     console.dir(employees, { depth: null });
 
-    const contentItems = await prisma.content.findMany();
+    const contentItems = await prisma.contentForm.findMany();
     console.log("\n--- Content Data ---");
     console.dir(contentItems, { depth: null });
 }

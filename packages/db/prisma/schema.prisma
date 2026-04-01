@@ -1,17 +1,47 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model User {
-  email String  @unique // `email` can not be optional because it's the only unique field on the model
-  name  String?
+model Employee {
+  id         Int     @id @default(autoincrement())
+  first_name String
+  last_name  String
+  persona    Persona
+  email      String  @unique
+  salary     Int
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ContentForm {
+  id              Int         @id @default(autoincrement())
+  name            String
+  url             String
+  owner           String
+  persona         Persona
+  date_modified   DateTime
+  expiration_date DateTime
+  content_type    ContentType
+  status          Status
+}
+
+enum ContentType {
+  Reference
+  Workflow
+}
+
+enum Persona {
+  Underwriter
+  Business_Analyst @map("Business Analyst")
+}
+
+enum Status {
+  Draft
+  In_Progress @map("In Progress")
+  Approved
+  Expired
 }
