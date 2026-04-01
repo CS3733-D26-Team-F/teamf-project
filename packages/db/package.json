@@ -1,6 +1,9 @@
 {
   "name": "db",
   "private": true,
+  "exports": {
+    ".": "./src/generated/prisma/client.ts"
+  },
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
