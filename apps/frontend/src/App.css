@@ -1,9 +1,9 @@
 /*Menu Formatting*/
 body{
-    background-color: white;
+    background-color: #00355F;
     width: 100%;
     justify-content: center;
-    font-family: "Californian FB"
+    font-family: "Californian FB", cursive;
 }
 
 div .menu{
@@ -79,4 +79,74 @@ div .menu-links a:hover{
   margin-top: 0.75rem;
   
 }
+
+form h1{
+    font-family: Roboto, sans-serif;
+}
+
+form h2{
+    font-family: Roboto, sans-serif;
+    font-size: 2rem;
+    outline: 5px solid white;
+}
+
+form body{
+    font-family: Roboto, sans-serif;
+    color: white;
+    justify-content: left;
+}
+
+form input, textarea{
+    font-family: Roboto, sans-serif;
+    padding: 10px;
+    font-size: 1rem;
+}
+
+form button {
+    font-family: Roboto, sans-serif;
+    padding: 12px;
+    width: 15%;
+    border-radius: 30px;
+    font-size: 1rem;
+    margin-inline: 10rem;
+    margin-top: 3rem;
+    margin-bottom: 5rem;
+}
+
+form button[type="submit"] {
+    background-color: seagreen;
+}
+
+form button[type="submit"]:hover {
+    background-color: darkgreen;
+}
+
+form button[type="reset"] {
+    background-color: cornflowerblue;
+}
+
+form button[type="reset"]:hover {
+    background-color: royalblue;
+}
+
+form label, h3, label[htmlFor="employeeSelect"]{
+    color: white;
+    font-size: 1.5rem;
+    text-align: left;
+    margin: 0.75rem;
+}
+
+form select{
+    color: white;
+    font-size: 1rem;
+    text-align: left;
+    margin: 0.75rem;
+}
+
+form input[type=radio] {
+    text-align: left;
+    transform: scale(2);
+    margin: 1rem;
+}
+
 
