@@ -1,13 +1,17 @@
 import { Header } from "../components/Header"
 import {
     TitleDemo
-} from "./c
+} from "../components/underwriter/title"
+import {
+    LinksDemo
+} from "../components/underwriter/links.tsx";
 
 export function CoreCommercialUnderwriter() {
     return (
         <>
             <Header />
-            <h1>Hi! This is the page for Core Commercial Underwriter's.</h1>
+            <TitleDemo />
+            <LinksDemo />
         </>
     );
 }
