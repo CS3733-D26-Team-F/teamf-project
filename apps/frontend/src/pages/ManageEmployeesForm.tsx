@@ -4,11 +4,14 @@ export function ManageEmployeesForm() {
     return (
         <>
             <Header />
-            <h1>Hi! This is the Form for Managing Employees.</h1>
+            <h1>Employee Management Form</h1>
+            <br/><br/>
 
+            <form>
+                <hr />
             <label htmlFor="fullname">Your Full Name:</label>
             <input type="text" id="fullname" name="fullname"/>
-            <br/><br/>
+            <br/><br/><br/><br/>
 
             <h2>Permissions Section</h2>
 
@@ -32,7 +35,7 @@ export function ManageEmployeesForm() {
 
             {/* Question 3 */}
             <label htmlFor="employeeSelect">What Employee are you Updating Status for?</label>
-            <select name="favCollection" id="favCollection">
+            <select name="employeeSelect" id="employeeSelect">
                 <optgroup label="Default">
                     <option value="">Select...</option>
                 </optgroup>
@@ -86,7 +89,8 @@ export function ManageEmployeesForm() {
             <textarea id="comments"></textarea>
             <br/>
 
-            <button type="submit">Submit</button>
+            <button type="reset">Reset</button><button type="submit">Submit</button>
+            </form>
         </>
     );
 }
