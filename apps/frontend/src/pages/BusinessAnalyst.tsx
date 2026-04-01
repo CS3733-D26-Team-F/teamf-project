@@ -1,10 +1,13 @@
 import { Header } from "../components/Header"
+import { TitleDemo } from "../components/businessanalyst/title"
+import { LinksDemo} from "../components/businessanalyst/links.tsx";
 
 export function BusinessAnalyst() {
     return (
         <>
             <Header />
-            <h1>Hi! This is the page for Business Analysis's.</h1>
+            <TitleDemo />
+            <LinksDemo />
         </>
     );
 }

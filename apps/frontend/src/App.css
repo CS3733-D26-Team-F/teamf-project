@@ -1,4 +1,6 @@
-/*Menu Formatting*/
+@import "tailwindcss";
+
+Menu Formatting
 body{
     background-color: #00355F;
     width: 100%;
@@ -77,7 +79,7 @@ div .menu-links a:hover{
 
 .hero-text p {
   margin-top: 0.75rem;
-  
+
 }
 
 form h1{
