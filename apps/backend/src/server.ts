@@ -13,7 +13,7 @@ async function main() {
     console.log("--- Employee Data ---");
     console.dir(employees, { depth: null });
 
-    const contentItems = await prisma.contentForm.findMany();
+    const contentItems = await prisma.contentform.findMany();
     console.log("\n--- Content Data ---");
     console.dir(contentItems, { depth: null });
 }
