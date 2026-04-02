@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme {
+    --color-frozen-water: #BEE9E8;
+    --color-pacific-blue: #62B6CB;
+    --color-yale-blue: #1B4965;
+    --color-pale-sky: #CAE9FF;
+    --color-fresh-sky: #5FA8D3;
+}
+
 /*Menu Formatting*/
 body{
     background-color: #F3f4f6;

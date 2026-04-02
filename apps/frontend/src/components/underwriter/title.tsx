@@ -2,7 +2,7 @@ import type {ReactNode} from 'react'
 
 export function TitleComponent(): ReactNode {
     return (
-        <div className="text-[#1B4965]">
+        <div className="text-yale-blue">
             <h1>Core Commercial Underwriter Resources</h1>
         </div>
     )
