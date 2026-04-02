@@ -25,3 +25,15 @@ Running server.js:
 - pnpm --filter db exec prisma generate
 - npx tsc
 - node dist/server.js
+
+Fix morgan:
+- npm install
+- npm install dotenv
+- cd db
+- npm install
+- npx prisma db pull
+- npx prisma generate
+- cd backend
+- npm install @types/morgan
+- npx tsc
+- node dist/server.js
