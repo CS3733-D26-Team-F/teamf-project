@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
-Menu Formatting
+/*Menu Formatting*/
 body{
-    background-color: #00355F;
+    background-color: #F3f4f6;
     width: 100%;
     justify-content: center;
-    font-family: "Californian FB", cursive;
+    font-family: Roboto, sans-serif;
 }
 
 div .menu{
@@ -137,12 +137,12 @@ form button[type="reset"]:hover {
     background-color: royalblue;
 }
 
-/*form label, h3, label[htmlFor="employeeSelect"]{*/
-/*    color: white;*/
-/*    font-size: 1.5rem;*/
-/*    text-align: left;*/
-/*    margin: 0.75rem;*/
-/*}*/
+form label label[htmlFor="employeeSelect"]{
+    color: white;
+    font-size: 1.5rem;
+    text-align: left;
+    margin: 0.75rem;
+}
 
 form label, label[htmlFor="employeeSelect"]{
     color: white;
@@ -173,6 +173,11 @@ input[type="text"] {
     background-color: #f0f8ff; /* Light blue background */
     color: #333;               /* Dark grey text */
     border: 2px solid #007bff; /* Blue border */
+}
+
+h1 {
+    font-family: Roboto, sans-serif;
+    color: #1B4965
 }
 
 

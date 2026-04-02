@@ -13,9 +13,7 @@ export function Header() {
                             <th>
                                 <Link to="/"><img src={hanoverLogo} id="hanover-logo-menu"
                                         alt="Hanover Insurance Logo"
-                                        style={{width: '90px'}}/></Link></th>
-
-                            <th>The Hanover Insurance Group</th>
+                                        style={{width: '100px'}}/></Link></th>
                             <th id="menu-spacer"> </th>
                             <th>
                                 <div className="menu-links">
