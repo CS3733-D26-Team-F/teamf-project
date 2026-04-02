@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model contentform {
+  id              Int       @id @default(autoincrement())
+  name            String?   @db.VarChar(100)
+  url             String?   @db.VarChar(2083)
+  owner           String?   @db.VarChar(50)
+  persona         String?   @db.VarChar(50)
+  date_modified   DateTime? @db.Date
+  expiration_date DateTime? @db.Date
+  content_type    String?   @db.VarChar(50)
+  status          String?   @db.VarChar(50)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model employee {
+  eid        Int      @id @default(autoincrement())
+  first_name String?  @db.VarChar(50)
+  last_name  String?  @db.VarChar(50)
+  persona    String?  @db.VarChar(50)
+  email      String?  @unique @db.VarChar(50)
+  salary     Decimal? @db.Decimal(10, 2)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model employee_manage {
+  emid         Int     @id @default(autoincrement())
+  full_name    String? @db.VarChar(100)
+  edits        String? @db.VarChar(50)
+  personstatus String? @db.VarChar(50)
+  priority     String? @db.VarChar(50)
+  email        String? @db.VarChar(50)
+  comments     String? @db.VarChar(1000)
+}
