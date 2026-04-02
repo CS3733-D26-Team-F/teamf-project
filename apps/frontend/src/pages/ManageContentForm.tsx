@@ -4,11 +4,12 @@ export function ManageContentForm() {
     return (
         <div className="bg-gray-100">
             <Header />
-            <h1>Manage Content Form</h1>
-            <br/>
 
             <form>
+                <h1>Manage Content Form</h1>
+                <br/>
                 <hr />
+                <br />
                 <label htmlFor="docName"> Name of Hyperlink or Document:</label>
                 <input type="text" id="docName"/>
                 <br/><br/>
