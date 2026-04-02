@@ -131,7 +131,14 @@ form button[type="reset"]:hover {
     background-color: royalblue;
 }
 
-form label, h3, label[htmlFor="employeeSelect"]{
+/*form label, h3, label[htmlFor="employeeSelect"]{*/
+/*    color: white;*/
+/*    font-size: 1.5rem;*/
+/*    text-align: left;*/
+/*    margin: 0.75rem;*/
+/*}*/
+
+form label, label[htmlFor="employeeSelect"]{
     color: white;
     font-size: 1.5rem;
     text-align: left;

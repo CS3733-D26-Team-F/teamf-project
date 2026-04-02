@@ -1,64 +1,40 @@
-import type {ReactNode} from 'react'
+import {Speed, Computer, House, Work, CalendarMonth, Public} from "@mui/icons-material";
 
-export function LinksComponent(): ReactNode {
+export function LinksComponent() {
+
+    const items = [
+        { icon: <Speed fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }}  />, label: "RiskMeter Online" },
+        { icon: <Computer fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Desktop Management Tool" },
+        { icon: <House fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Property View" },
+        { icon: <Work fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Underwriting Workstation" },
+        { icon: <CalendarMonth fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Experience & Schedule Rating Plans" },
+        { icon: <Public fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Coastal Guidelines" },
+    ];
+
     return (
-        <div>
-            <table className="underwriter_links">
-                <tbody>
-                <tr>
-                    <td>
-                        <div id="Meter">
-                            <img src="../public/underwriter_icons/Meter.webp" width="300" alt="Meter" />
+        <div className="w-full flex justify-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
+                {items.map((item, i) => (
+                    <div
+                        key={i}
+                        className="
+                            flex flex-col items-center justify-center
+                            bg-[#CAE9FF] rounded-xl p-6 shadow
+                            hover:bg-gray-300 hover:shadow-lg
+                            transition-all duration-200 cursor-pointer
+                            h-48 sm:h-56 lg:h-64
+                        "
+                    >
+                        <div className="h-20 flex items-center justify-center">
+                            {item.icon}
                         </div>
-                        <div>
-                            <h3>RiskMeter Online</h3>
-                        </div>
-                    </td>
-                    <td>
-                        <div id="Computer">
-                            <img src="../public/underwriter_icons/computer.png" width="300" alt="Computer" />
-                        </div>
-                        <div>
-                            <h3>Desktop Management Tool</h3>
-                        </div>
-                    </td>
-                    <td>
-                        <div id="House">
-                            <img src="../public/underwriter_icons/house.webp" width="300" alt="House" />
-                        </div>
-                        <div>
-                            <h3>Property View</h3>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div id="Work">
-                            <img src="../public/underwriter_icons/work.webp" width="300" alt="Work" />
-                        </div>
-                        <div>
-                            <h3>Underwriting Workstation</h3>
-                        </div>
-                    </td>
-                    <td>
-                        <div id="Schedule">
-                            <img src="../public/underwriter_icons/schedule.webp" width="300" alt="Schedule" />
-                        </div>
-                        <div>
-                            <h3>Experience & Schedule Rating Plans</h3>
-                        </div>
-                    </td>
-                    <td>
-                        <div id="Coast">
-                            <img src="../public/underwriter_icons/coast.jpg" width="300" alt="Coast" />
-                        </div>
-                        <div>
-                            <h3>Coastal Guidelines</h3>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+                        <br />
+                        <h3 className="text-center font-semibold text-[#1B4965]">
+                            {item.label}
+                        </h3>
+                    </div>
+                ))}
+            </div>
         </div>
     )
 }
