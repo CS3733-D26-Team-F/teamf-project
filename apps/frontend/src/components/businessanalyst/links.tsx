@@ -3,12 +3,12 @@ import { ErrorOutline, AttachMoney, Loop, Work, CalendarMonth, Image } from '@mu
 export function LinksComponent() {
 
     const items = [
-        { icon: <ErrorOutline fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }}  />, label: "Error Lookup Tool" },
-        { icon: <AttachMoney fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Kentucky Tax and Tax Exemption Job Aid" },
-        { icon: <Loop fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Workaround Tool" },
-        { icon: <Work fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Underwriting Workstation" },
-        { icon: <CalendarMonth fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "Experience & Schedule Rating Plans" },
-        { icon: <Image fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 80 }} />, label: "IPS (Image & Processing System)" },
+        { icon: <ErrorOutline fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 100 }}  />, label: "Error Lookup Tool" },
+        { icon: <AttachMoney fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 100 }} />, label: "Kentucky Tax and Tax Exemption Job Aid" },
+        { icon: <Loop fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 100 }} />, label: "Workaround Tool" },
+        { icon: <Work fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 100 }} />, label: "Underwriting Workstation" },
+        { icon: <CalendarMonth fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 100 }} />, label: "Experience & Schedule Rating Plans" },
+        { icon: <Image fontSize="large" style={{ color: "#1B4965" }} sx={{ fontSize: 100 }} />, label: "IPS (Image & Processing System)" },
     ];
 
     return (
@@ -19,7 +19,7 @@ export function LinksComponent() {
                         key={i}
                         className="
                             flex flex-col items-center justify-center
-                            bg-[#CAE9FF] rounded-xl p-6 shadow
+                            bg-[#CAE9FF] rounded-xl p-6 px-6 shadow
                             hover:bg-gray-300 hover:shadow-lg
                             transition-all duration-200 cursor-pointer
                             h-48 sm:h-56 lg:h-64
