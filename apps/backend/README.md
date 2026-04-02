@@ -19,10 +19,10 @@ Common problems:
 
 Running server.js:
 
-have .env files in apps\backend and packages\db
-pnpm install
-pnpm --filter db exec prisma db pull
-pnpm --filter db exec prisma generate
-cd apps\backend
-npx tsc
-node dist/server.js
+- have .env files in apps\backend and packages\db
+- cd apps/backend
+- pnpm install
+- pnpm --filter db exec prisma db pull
+- pnpm --filter db exec prisma generate
+- npx tsc
+- node dist/server.js
