@@ -5,7 +5,7 @@ export function ManageEmployeesForm() {
         <>
             <Header />
             <h1>Employee Management Form</h1>
-            <br/><br/>
+            <br/>
 
             <form>
                 <hr />

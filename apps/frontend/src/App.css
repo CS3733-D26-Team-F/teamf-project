@@ -82,6 +82,12 @@ div .menu-links a:hover{
 
 }
 
+form {
+    display: block;
+    text-align: left;
+    margin-left: 2rem;
+}
+
 form h1{
     font-family: Roboto, sans-serif;
 }
@@ -156,6 +162,17 @@ form input[type=radio] {
     text-align: left;
     transform: scale(2);
     margin: 1rem;
+}
+
+textarea {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333333;            /* Dark gray text */
+}
+
+input[type="text"] {
+    background-color: #f0f8ff; /* Light blue background */
+    color: #333;               /* Dark grey text */
+    border: 2px solid #007bff; /* Blue border */
 }
 
 
