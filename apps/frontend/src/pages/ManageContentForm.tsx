@@ -4,8 +4,11 @@ export function ManageContentForm() {
     return (
         <>
             <Header />
-            <h1>Hi! This is the Form for Managing Content.</h1>
+            <h1>Manage Content Form</h1>
+            <br/><br/>
+
             <form>
+                <hr />
                 <label htmlFor="docName"> Name of Hyperlink or Document:</label>
                 <input type="text" id="docName"/>
                 <br/><br/>
@@ -28,16 +31,13 @@ export function ManageContentForm() {
                 <label htmlFor="expirationDate">Expiration Date:</label>
                 <input type="date" id="expirationDate" name="expirationDate"/>
                 <br/><br/>
-                Content Type:
-                <br/>
+                <h3>Content Type:</h3>
                 <label htmlFor="referenceContent"> Reference Content</label>
                 <input type="radio" id="referenceContent" name="contentType"/>
                 <label htmlFor="workflowContent"> Workflow Content</label>
                 <input type="radio" id="workflowContent" name="contentType"/>
                 <br/><br/>
-                Document Status:
-                <br/><br/>
-                <label htmlFor="docStatus">Document Status: </label>
+                <label htmlFor="docStatus">Document Status:</label>
                 <select name="Document Status" id="docStatus">
                     <option value="" disabled selected hidden>Select</option>
                     <option value="In Progress">In Progress</option>
@@ -49,9 +49,7 @@ export function ManageContentForm() {
                 </select>
                 <br/><br/>
 
-                <input type="submit" value="Submit Form"/>
-                <br/>
-                <input type="reset" value="Reset"/>
+                <button type="reset">Reset</button><button type="submit">Submit</button>
             </form>
         </>
     );

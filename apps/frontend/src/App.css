@@ -82,6 +82,12 @@ div .menu-links a:hover{
 
 }
 
+form {
+    display: block;
+    text-align: left;
+    margin-left: 2rem;
+}
+
 form h1{
     font-family: Roboto, sans-serif;
 }
