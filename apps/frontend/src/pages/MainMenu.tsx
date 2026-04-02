@@ -1,12 +1,13 @@
 import { Header } from "../components/Header";
-import { Hero } from "../components/Hero";
+import { Hero } from "../components/mainmenu/Hero.tsx";
+import { LinksDemo } from "../components/mainmenu/Links.tsx"
 
 export function MainMenu() {
     return (
         <>
             <Header />
             <Hero />
-            <h1>Hello World</h1>
+            <LinksDemo />
         </>
     )
 }
