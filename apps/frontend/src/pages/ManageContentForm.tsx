@@ -2,7 +2,7 @@ import { Header } from "../components/Header"
 
 export function ManageContentForm() {
     return (
-        <div className="bg-gray-100">
+        <>
             <Header />
             <h1>Manage Content Form</h1>
             <br/>
@@ -51,6 +51,6 @@ export function ManageContentForm() {
 
                 <button type="reset">Reset</button><button type="submit">Submit</button>
             </form>
-        </div>
+        </>
     );
 }

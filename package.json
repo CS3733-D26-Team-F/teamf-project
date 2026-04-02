@@ -1,6 +1,7 @@
 {
   "name": "teamf-project",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -15,17 +16,8 @@
   "private": true,
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
   "devDependencies": {
-    "turbo": "^2.9.1"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.9",
-    "@mui/material": "^7.3.9",
-    "@tailwindcss/vite": "^4.2.2",
-    "express": "^5.2.1",
-    "morgan": "^1.10.1",
-    "react-router-dom": "^7.13.2",
-    "tailwindcss": "^4.2.2"
+    "@types/dotenv": "^6.1.1",
+    "prisma": "^7.6.0",
+    "turbo": "^2.9.3"
   }
 }
