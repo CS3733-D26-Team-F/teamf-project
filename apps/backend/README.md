@@ -17,16 +17,8 @@ Commands for data base:
 Common problems: 
 - errors with prisma run `pnpm prisma generate`
 
-Running server.js:
-
-- have .env files in apps\backend and packages\db
-- cd apps/backend
-- pnpm --filter db exec prisma db pull
-- pnpm --filter db exec prisma generate
-- npx tsc
-- node dist/server.js
-
 Fix morgan:
+- two .env files in apps/backend and packages/db
 - npm install
 - npm install dotenv
 - cd db
