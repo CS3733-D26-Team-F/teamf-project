@@ -1,17 +1,32 @@
-.idea/
-
-#dont track dependencys
-**node_modules/
-
-#do not track files from prisma
-**/.env
-
-packages/db/generated/prisma/
-packages/db/src/generated
-
-apps/backend/dist/
-
 *node_modules/
 
 *.turbo/
 *.DS_Store
+*bun.lock
+
+# Keep environment variables out of version control
+*.env
+
+*/generated/prisma
+*/src/generated
+
+# Frontend
+*.log
+*npm-debug.log*
+*yarn-debug.log*
+*yarn-error.log*
+*pnpm-debug.log*
+*lerna-debug.log*
+
+*dist
+*dist-ssr
+*.local
+
+# Editor directories and files
+*.vscode/*
+*.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
