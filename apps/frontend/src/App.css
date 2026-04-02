@@ -157,4 +157,15 @@ form input[type=radio] {
     margin: 1rem;
 }
 
+textarea {
+    background-color: #f0f0f0; /* Light gray background */
+    color: #333333;            /* Dark gray text */
+}
+
+input[type="text"] {
+    background-color: #f0f8ff; /* Light blue background */
+    color: #333;               /* Dark grey text */
+    border: 2px solid #007bff; /* Blue border */
+}
+
 

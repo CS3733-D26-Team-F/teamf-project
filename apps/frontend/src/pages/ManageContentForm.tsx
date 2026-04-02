@@ -5,7 +5,7 @@ export function ManageContentForm() {
         <>
             <Header />
             <h1>Manage Content Form</h1>
-            <br/><br/>
+            <br/>
 
             <form>
                 <hr />
