@@ -17,7 +17,7 @@ div .menu-links{
     display: flex;
     padding: 10px 10px;
     gap: 15px;
-    align-items: center;
+    align-items: end;
     flex-wrap: nowrap;
 }
 
@@ -177,7 +177,15 @@ input[type="text"] {
 
 h1 {
     font-family: Roboto, sans-serif;
-    color: #1B4965
+    color: #1B4965;
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+    text-align: center;
+  @media (max-width: 1024px) {
+      font-size: 36px;
+      margin: 20px 0;
+  }
 }
 
 
