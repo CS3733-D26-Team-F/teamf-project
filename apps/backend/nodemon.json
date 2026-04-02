@@ -1,5 +1,9 @@
 {
-  "exec": "node --loader ts-node/esm ./src/app.ts",
-  "watch": ["src"],
-  "ext": "ts"
+  "watch": ["."],
+  "ext": "ts",
+  "ignore": ["dist", "node_modules"],
+  "exec": "node --loader ts-node/esm app.ts",
+  "env": {
+    "NODE_ENV": "development"
+  }
 }

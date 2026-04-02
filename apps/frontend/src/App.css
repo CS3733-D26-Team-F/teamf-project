@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
-/*Menu Formatting*/
+Menu Formatting
 body{
-    background-color: #F3f4f6;
+    background-color: #00355F;
     width: 100%;
     justify-content: center;
-    font-family: Roboto, sans-serif;
+    font-family: "Californian FB", cursive;
 }
 
 div .menu{
@@ -85,35 +85,22 @@ div .menu-links a:hover{
 form {
     display: block;
     text-align: left;
-    background-color: #CAE9FF;
-    color: #1B4965;
-    gap: 10rem;
-    border-radius: 2rem;
-    margin: 1rem;
-    padding: 1rem;
+    margin-left: 2rem;
 }
 
 form h1{
     font-family: Roboto, sans-serif;
-    text-align: center;
 }
 
 form h2{
     font-family: Roboto, sans-serif;
     font-size: 2rem;
-    outline: 3px solid #1B4965;
-    text-align: center;
-}
-
-form h3 {
-    font-family: Roboto, sans-serif;
-    font-size: 1.5rem;
-    text-align: left
+    outline: 5px solid white;
 }
 
 form body{
     font-family: Roboto, sans-serif;
-    color: #1B4965;
+    color: white;
     justify-content: left;
 }
 
@@ -121,7 +108,6 @@ form input, textarea{
     font-family: Roboto, sans-serif;
     padding: 10px;
     font-size: 1rem;
-    color: #1B4965;
 }
 
 form button {
@@ -136,32 +122,30 @@ form button {
 }
 
 form button[type="submit"] {
-    background-color: #1B4965;
-    color: white;
+    background-color: seagreen;
 }
 
 form button[type="submit"]:hover {
-    background-color: #5FA8D3;
+    background-color: darkgreen;
 }
 
 form button[type="reset"] {
-    background-color: #62B6CB;
-    color: white;
+    background-color: cornflowerblue;
 }
 
 form button[type="reset"]:hover {
-    background-color: #BEE9E8;
+    background-color: royalblue;
 }
 
-form label label[htmlFor="employeeSelect"]{
-    color: #1B4965;
-    font-size: 1.5rem;
-    text-align: left;
-    margin: 0.75rem;
-}
+/*form label, h3, label[htmlFor="employeeSelect"]{*/
+/*    color: white;*/
+/*    font-size: 1.5rem;*/
+/*    text-align: left;*/
+/*    margin: 0.75rem;*/
+/*}*/
 
 form label, label[htmlFor="employeeSelect"]{
-    color: #1B4965;
+    color: white;
     font-size: 1.5rem;
     text-align: left;
     margin: 0.75rem;
@@ -178,25 +162,17 @@ form input[type=radio] {
     text-align: left;
     transform: scale(2);
     margin: 1rem;
-    color: #62B6CB;
 }
 
 textarea {
     background-color: #f0f0f0; /* Light gray background */
     color: #333333;            /* Dark gray text */
-    width: 50%;
-    height: 50px;
 }
 
 input[type="text"] {
     background-color: #f0f8ff; /* Light blue background */
     color: #333;               /* Dark grey text */
     border: 2px solid #007bff; /* Blue border */
-}
-
-h1 {
-    font-family: Roboto, sans-serif;
-    color: #1B4965
 }
 
 
