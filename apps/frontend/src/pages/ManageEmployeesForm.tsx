@@ -4,38 +4,33 @@ export function ManageEmployeesForm() {
     return (
         <>
             <Header />
+            <h1>Employee Management Form</h1>
+            <br/>
 
             <form>
-                <h1>Employee Management Form</h1>
-                <br/>
                 <hr />
-                <br />
             <label htmlFor="fullname">Your Full Name:</label>
             <input type="text" id="fullname" name="fullname"/>
             <br/><br/><br/><br/>
 
             <h2>Permissions Section</h2>
-                <br />
 
             {/* Question 2 */}
             <h3> What employee edits are you trying to make? </h3>
             <br/>
-                <div>
+
             <input type="radio" id="updatePermissions" name="employeeEdits"/>
             <label htmlFor="updatePermissions">Update Employee Permissions. </label>
-                </div>
-            <div>
+
             <input type="radio" id="addEmployee" name="employeeEdits"/>
             <label htmlFor="addEmployee">Add a new Employee.</label>
-            </div>
-            <div>
+
             <input type="radio" id="removeEmployee" name="employeeEdits"/>
             <label htmlFor="removeEmployee">Remove an Employee.</label>
-            </div>
-            <div>
+
             <input type="radio" id="other" name="employeeEdits"/>
             <label htmlFor="other">Other</label>
-            </div>
+
             <br/><br/>
 
             {/* Question 3 */}

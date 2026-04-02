@@ -6,6 +6,7 @@ export function MainMenu() {
         <>
             <Header />
             <Hero />
+            <h1>Hello World</h1>
         </>
     )
 }
