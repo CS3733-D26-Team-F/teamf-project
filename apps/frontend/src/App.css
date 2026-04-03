@@ -225,6 +225,20 @@ form {
     }
 }
 
+div.text-yale-blue {
+    font-family: Roboto, sans-serif;
+    color: #1B4965;
+    font-size: 56px;
+    letter-spacing: -1.68px;
+    margin: 32px 0;
+    text-align: center;
+
+    @media (max-width: 1024px) {
+        font-size: 36px;
+        margin: 20px 0;
+    }
+}
+
 textarea {
     background-color: #f0f0f0; /* Light gray background */
     color: #333333;            /* Dark gray text */
