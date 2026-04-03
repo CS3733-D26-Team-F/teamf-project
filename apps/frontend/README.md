@@ -1,3 +1,14 @@
+# Front end README Docs
+
+To run:
+- cd into front end
+  - cd apps/frontend
+- In the terminal, run npm run dev
+
+
+
+
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
