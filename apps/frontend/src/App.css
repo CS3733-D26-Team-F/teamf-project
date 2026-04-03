@@ -219,6 +219,12 @@ textarea {
 }
 
 input[type="text"] {
+    background-color: #f0f8ff; /* Light blue background */
+    color: #333;               /* Dark grey text */
+    border: 2px solid #007bff; /* Blue border */
+}
+
+h1 {
     font-family: Roboto, sans-serif;
     color: #1B4965;
     font-size: 56px;
