@@ -13,7 +13,7 @@ body {
     background-color: white;
     width: 100%;
     justify-content: center;
-    font-family: "Californian FB", cursive;
+    font-family: Roboto, sans-serif;
 }
 
 a {
@@ -130,21 +130,29 @@ section.links {
 form {
     display: block;
     text-align: left;
-    margin-left: 2rem;
+    background-color: #CAE9FF;
+    color: #1B4965;
+    gap: 10rem;
+    border-radius: 2rem;
+    margin: 1rem;
+    padding: 1rem;
 
     h1 {
         font-family: Roboto, sans-serif;
+        text-align: center;
     }
 
     h2 {
         font-family: Roboto, sans-serif;
         font-size: 2rem;
         outline: 5px solid white;
+        outline: 3px solid #1B4965;
+        text-align: center;
     }
 
     body {
         font-family: Roboto, sans-serif;
-        color: white;
+        color: #1B4965;
         justify-content: left;
     }
 
@@ -152,6 +160,7 @@ form {
         font-family: Roboto, sans-serif;
         padding: 10px;
         font-size: 1rem;
+        color: #1B4965;
     }
 
     button {
@@ -167,35 +176,27 @@ form {
 
     button[type="submit"] {
         background-color: seagreen;
+        background-color: #1B4965;
+        color: white;
     }
 
-    button[type="submit"]:hover {
-        background-color: darkgreen;
-    }
+    button[type="submit"]:hover { background-color: #5FA8D3; }
 
     button[type="reset"] {
-        background-color: cornflowerblue;
+        background-color: #62B6CB;
+        color: white;
     }
 
-    button[type="reset"]:hover {
-        background-color: royalblue;
-    }
-
-    /*label, h3, label[htmlFor="employeeSelect"]{*/
-    /*    color: white;*/
-    /*    font-size: 1.5rem;*/
-    /*    text-align: left;*/
-    /*    margin: 0.75rem;*/
-    /*}*/
+    button[type="reset"]:hover { background-color: #BEE9E8; }
 
     label, label[htmlFor="employeeSelect"]{
-        color: white;
+        color: #1B4965;
         font-size: 1.5rem;
         text-align: left;
         margin: 0.75rem;
     }
 
-    select{
+    select {
         color: white;
         font-size: 1rem;
         text-align: left;
@@ -206,16 +207,27 @@ form {
         text-align: left;
         transform: scale(2);
         margin: 1rem;
+        color: #62B6CB;
     }
 }
 
 textarea {
     background-color: #f0f0f0; /* Light gray background */
     color: #333333;            /* Dark gray text */
+    width: 50%;
+    height: 50px;
 }
 
 input[type="text"] {
-    background-color: #f0f8ff; /* Light blue background */
-    color: #333;               /* Dark grey text */
-    border: 2px solid #007bff; /* Blue border */
+    font-family: Roboto, sans-serif;
+    color: #1B4965;
+    font-size: 56px;
+    letter-spacing: -1.68px;
+    margin: 32px 0;
+    text-align: center;
+
+    @media (max-width: 1024px) {
+        font-size: 36px;
+        margin: 20px 0;
+    }
 }
