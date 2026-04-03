@@ -10,6 +10,8 @@ const MainMenuLinks: MenuItem[] = [
 
 export function LinksDemo() {
     return (
-        <LinksWithProps items={MainMenuLinks} col_lg={2}/>
+        <section className="links">
+            <LinksWithProps items={MainMenuLinks} col_lg={2}/>
+        </section>
     );
 }

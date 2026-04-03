@@ -8,87 +8,124 @@
     --color-fresh-sky: #5FA8D3;
 }
 
-/*Menu Formatting*/
-body{
-    background-color: #F3f4f6;
+/* Menu Formatting */
+body {
+    background-color: white;
     width: 100%;
     justify-content: center;
     font-family: Roboto, sans-serif;
 }
 
-div .menu{
-    background-color: #00355F;
-    padding: 3px;
-}
-
-div .menu-links{
-    display: flex;
-    padding: 10px 10px;
-    gap: 15px;
-    align-items: center;
-    flex-wrap: nowrap;
-}
-
-img .hanover-logo-menu{
-    align-self: center;
-}
-
-a{
+a {
     text-decoration: none;
     color: white;
 }
 
+header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    background-color: #00355F;
+    padding: 1rem;
 
-div .menu-links a:hover{
-    background-color: #005580;
-    padding: 8px 12px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    color:white;
+    .logo {
+        display: flex;
+        flex-direction: row;
+
+        img {
+            width: 15rem;
+            height: auto;
+        }
+    }
+
+    nav {
+        display: flex;
+        gap: 1rem;
+        font-size: 1.1rem;
+        align-items: center;
+        flex-wrap: nowrap;
+        font-family: sans-serif;
+
+        a {
+            padding: 8px 12px;
+            &:hover{
+                background-color: #005580;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+                color:white;
+            }
+        }
+    }
 }
 
-#menu-spacer{
-    width: 30%;
+main {
+    position: relative;
+    min-height: 60vh;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+    color: white;
+    text-align: center;
+    font-family: sans-serif;
+
+    background: linear-gradient(135deg, #00355f 0%, #005580 45%, #ffffff 100%);
+
+    .image-stack {
+        position: absolute;
+        inset: 0;
+    }
+
+    .slide {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 1s ease-in-out;
+
+        &.active {
+            opacity: 1;
+        }
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+          background: linear-gradient(
+              #00355F80,
+              #00558090
+          );
+          pointer-events: none;
+    }
+
+    .content {
+        z-index: 1;
+
+        h1 {
+            font-size: 3.8rem;
+            font-weight: 900;
+            margin: 1rem;
+        }
+
+        p {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin: 0.75rem;
+        }
+    }
+
+}
+
+section.links {
+    padding: 8rem;
 }
 
 /*Hero formatting*/
-
-.hero-overlay {
-  position: relative;
-  min-height: 60vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.hero-overlay::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #00355f 0%, #005580 45%, #ffffff 100%);
-  z-index: 0;
-}
-
-.hero-text {
-  position: relative;
-  z-index: 1;
-  color: white;
-  text-align: center;
-  padding: 2rem 1.5rem;
-  max-width: 800px;
-  line-height: 1;
-}
-
-.hero-text h1,
-.hero-text p {
-  margin: 0.5rem;
-}
-
-.hero-text p {
-  margin-top: 0.75rem;
-
-}
 
 form {
     display: block;
@@ -99,89 +136,107 @@ form {
     border-radius: 2rem;
     margin: 1rem;
     padding: 1rem;
+
+    h1 {
+        font-family: Roboto, sans-serif;
+        text-align: center;
+    }
+
+    h2 {
+        font-family: Roboto, sans-serif;
+        font-size: 2rem;
+        outline: 5px solid white;
+        outline: 3px solid #1B4965;
+        text-align: center;
+    }
+
+    body {
+        font-family: Roboto, sans-serif;
+        color: #1B4965;
+        justify-content: left;
+    }
+
+    input, textarea {
+        font-family: Roboto, sans-serif;
+        padding: 10px;
+        font-size: 1rem;
+        color: #1B4965;
+    }
+
+    button {
+        font-family: Roboto, sans-serif;
+        padding: 12px;
+        width: 15%;
+        border-radius: 30px;
+        font-size: 1rem;
+        margin-inline: 10rem;
+        margin-top: 3rem;
+        margin-bottom: 5rem;
+    }
+
+    button[type="submit"] {
+        background-color: seagreen;
+        background-color: #1B4965;
+        color: white;
+    }
+
+    button[type="submit"]:hover { background-color: #5FA8D3; }
+
+    button[type="reset"] {
+        background-color: #62B6CB;
+        color: white;
+    }
+
+    button[type="reset"]:hover { background-color: #BEE9E8; }
+
+    label, label[htmlFor="employeeSelect"]{
+        color: #1B4965;
+        font-size: 1.5rem;
+        text-align: left;
+        margin: 0.75rem;
+    }
+
+    select {
+        color: white;
+        font-size: 1rem;
+        text-align: left;
+        margin: 0.75rem;
+    }
+
+    input[type=radio] {
+        text-align: left;
+        transform: scale(2);
+        margin: 1rem;
+        color: #62B6CB;
+    }
+
+    h1 {
+        font-family: Roboto, sans-serif;
+        color: #1B4965;
+        font-size: 56px;
+        letter-spacing: -1.68px;
+        margin: 32px 0;
+        text-align: center;
+
+        @media (max-width: 1024px) {
+            font-size: 36px;
+            margin: 20px 0;
+        }
+    }
 }
 
-form h1{
+div.text-yale-blue {
     font-family: Roboto, sans-serif;
+    color: #1B4965;
+    font-size: 56px;
+    letter-spacing: -1.68px;
+    margin: 32px 0;
     text-align: center;
-}
 
-form h2{
-    font-family: Roboto, sans-serif;
-    font-size: 2rem;
-    outline: 5px solid white;
-    outline: 3px solid #1B4965;
-    text-align: center;
-}
-
-form h3 {
-    font-family: Roboto, sans-serif;
-    font-size: 1.5rem;
-    text-align: left
-}
-
-form body{
-    font-family: Roboto, sans-serif;
-    color: #1B4965;
-    justify-content: left;
-}
-
-form input, textarea{
-    font-family: Roboto, sans-serif;
-    padding: 10px;
-    font-size: 1rem;
-    color: #1B4965;
-}
-
-form button {
-    font-family: Roboto, sans-serif;
-    padding: 12px;
-    width: 15%;
-    border-radius: 30px;
-    font-size: 1rem;
-    margin-inline: 10rem;
-    margin-top: 3rem;
-    margin-bottom: 5rem;
-}
-
-form button[type="submit"] {
-    background-color: seagreen;
-    background-color: #1B4965;
-    color: white;
-}
-
-form button[type="submit"]:hover {
-    background-color: #5FA8D3;
-}
-
-form button[type="reset"] {
-    background-color: #62B6CB;
-    color: white;
-}
-
-form button[type="reset"]:hover {
-    background-color: #BEE9E8;
-}
-
-form label, label[htmlFor="employeeSelect"]{
-    color: #1B4965;
-    font-size: 1.5rem;
-    text-align: left;
-    margin: 0.75rem;
-}
-
-form select{
-    color: white;
-    font-size: 1rem;
-    text-align: left;
-    margin: 0.75rem;
-}
-
-form input[type=radio] {
-    text-align: left;
-    transform: scale(2);
-    margin: 1rem;
-    color: #62B6CB;
+    @media (max-width: 1024px) {
+        font-size: 36px;
+        margin: 20px 0;
+    }
 }
 
 textarea {
@@ -196,18 +251,4 @@ input[type="text"] {
     color: #333;               /* Dark grey text */
     border: 2px solid #007bff; /* Blue border */
 }
-
-h1 {
-    font-family: Roboto, sans-serif;
-    color: #1B4965;
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-    text-align: center;
-  @media (max-width: 1024px) {
-      font-size: 36px;
-      margin: 20px 0;
-  }
-}
-
 
