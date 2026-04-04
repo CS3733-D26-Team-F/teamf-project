@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 const modules = import.meta.glob<{ default : string}>(
-    "../../assets/hero/*.png",
+    "../../../public/carousel/*.png",
     { eager: true }
 );
 const images = Object.values(modules).map((mod) => mod.default);

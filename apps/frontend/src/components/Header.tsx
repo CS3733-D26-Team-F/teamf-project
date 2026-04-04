@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import hanoverLogo from '../assets/hanoverlogo.png';
+import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import {useEffect, useState} from "react";
 
 export function Header() {
