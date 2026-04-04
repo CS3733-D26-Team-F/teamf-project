@@ -8,6 +8,8 @@
     --color-yale-blue: var(--yale-blue);
     --color-pale-sky: var(--pale-sky);
     --color-fresh-sky: var(--fresh-sky);
+
+    --color-custom-white: white
 }
 
 :root {
@@ -30,7 +32,7 @@
 
 /* Menu Formatting */
 body {
-    background-color: white;
+    background-color: var(--color-custom-white);
     width: 100%;
     justify-content: center;
     font-family: Roboto, sans-serif;
@@ -38,14 +40,14 @@ body {
 
 a {
     text-decoration: none;
-    color: white;
+    color: var(--color-custom-white);
 }
 
 header {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    background-color: #00355F;
+    background-color: var(--color-yale-blue);
     padding: 1rem;
 
     .logo {
@@ -69,10 +71,10 @@ header {
         a {
             padding: 8px 12px;
             &:hover{
-                background-color: #005580;
+                background-color: var(--color-yale-blue);
                 border-radius: 4px;
                 transition: all 0.2s ease;
-                color:white;
+            var(--color-custom-white);
             }
         }
     }
@@ -88,7 +90,7 @@ main {
     justify-content: center;
 
     overflow: hidden;
-    color: white;
+    color: var(--color-custom-white);
     text-align: center;
     font-family: sans-serif;
 
@@ -117,8 +119,8 @@ main {
         position: absolute;
         inset: 0;
           background: linear-gradient(
-              #00355F80,
-              #00558090
+                  #00355F80,
+                  #00558090
           );
           pointer-events: none;
     }
@@ -150,8 +152,8 @@ section.links {
 form {
     display: block;
     text-align: left;
-    background-color: #CAE9FF;
-    color: #1B4965;
+    background-color: var(--color-frozen-water);
+    color: var(--color-yale-blue);
     gap: 10rem;
     border-radius: 2rem;
     margin: 1rem;
@@ -164,15 +166,14 @@ form {
 
     h2 {
         font-family: Roboto, sans-serif;
-        font-size: 2rem;
-        outline: 5px solid white;
-        outline: 3px solid #1B4965;
+        font-size: 2rem;;
+        outline: 3px solid var(--color-yale-blue);
         text-align: center;
     }
 
     body {
         font-family: Roboto, sans-serif;
-        color: #1B4965;
+        color: var(--color-yale-blue);
         justify-content: left;
     }
 
@@ -180,7 +181,7 @@ form {
         font-family: Roboto, sans-serif;
         padding: 10px;
         font-size: 1rem;
-        color: #1B4965;
+        color: var(--color-yale-blue);
     }
 
     button {
@@ -195,29 +196,28 @@ form {
     }
 
     button[type="submit"] {
-        background-color: seagreen;
-        background-color: #1B4965;
-        color: white;
+        background-color: var(--color-yale-blue);
+        color: var(--color-custom-white);
     }
 
     button[type="submit"]:hover { background-color: #5FA8D3; }
 
     button[type="reset"] {
         background-color: #62B6CB;
-        color: white;
+        color: var(--color-custom-white);
     }
 
     button[type="reset"]:hover { background-color: #BEE9E8; }
 
     label, label[htmlFor="employeeSelect"]{
-        color: #1B4965;
+        color: var(--color-yale-blue);
         font-size: 1.5rem;
         text-align: left;
         margin: 0.75rem;
     }
 
     select {
-        color: white;
+        color: var(--color-yale-blue);
         font-size: 1rem;
         text-align: left;
         margin: 0.75rem;
@@ -227,12 +227,12 @@ form {
         text-align: left;
         transform: scale(2);
         margin: 1rem;
-        color: #62B6CB;
+        color: var(--color-pacific-blue);
     }
 
     h1 {
         font-family: Roboto, sans-serif;
-        color: #1B4965;
+        color: var(--color-yale-blue);
         font-size: 56px;
         letter-spacing: -1.68px;
         margin: 32px 0;
@@ -247,7 +247,7 @@ form {
 
 div.text-yale-blue {
     font-family: Roboto, sans-serif;
-    color: #1B4965;
+    color: var(--color-yale-blue);
     font-size: 56px;
     letter-spacing: -1.68px;
     margin: 32px 0;
