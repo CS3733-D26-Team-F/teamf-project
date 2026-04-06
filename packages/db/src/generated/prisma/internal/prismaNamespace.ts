@@ -386,7 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   contentform: 'contentform',
   employee: 'employee',
-  employee_manage: 'employee_manage'
+  employee_manage: 'employee_manage',
+  admin: 'admin'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "contentform" | "employee" | "employee_manage"
+    modelProps: "contentform" | "employee" | "employee_manage" | "admin"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -628,6 +629,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    admin: {
+      payload: Prisma.$adminPayload<ExtArgs>
+      fields: Prisma.adminFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.adminFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.adminFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>
+        }
+        findFirst: {
+          args: Prisma.adminFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.adminFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>
+        }
+        findMany: {
+          args: Prisma.adminFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>[]
+        }
+        create: {
+          args: Prisma.adminCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>
+        }
+        createMany: {
+          args: Prisma.adminCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.adminCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>[]
+        }
+        delete: {
+          args: Prisma.adminDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>
+        }
+        update: {
+          args: Prisma.adminUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>
+        }
+        deleteMany: {
+          args: Prisma.adminDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.adminUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.adminUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>[]
+        }
+        upsert: {
+          args: Prisma.adminUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$adminPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdmin>
+        }
+        groupBy: {
+          args: Prisma.adminGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.adminCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -683,12 +758,9 @@ export type ContentformScalarFieldEnum = (typeof ContentformScalarFieldEnum)[key
 
 
 export const EmployeeScalarFieldEnum = {
-  eid: 'eid',
-  first_name: 'first_name',
-  last_name: 'last_name',
-  persona: 'persona',
-  email: 'email',
-  salary: 'salary'
+  empid: 'empid',
+  username: 'username',
+  password: 'password'
 } as const
 
 export type EmployeeScalarFieldEnum = (typeof EmployeeScalarFieldEnum)[keyof typeof EmployeeScalarFieldEnum]
@@ -705,6 +777,13 @@ export const Employee_manageScalarFieldEnum = {
 } as const
 
 export type Employee_manageScalarFieldEnum = (typeof Employee_manageScalarFieldEnum)[keyof typeof Employee_manageScalarFieldEnum]
+
+
+export const AdminScalarFieldEnum = {
+  adid: 'adid'
+} as const
+
+export type AdminScalarFieldEnum = (typeof AdminScalarFieldEnum)[keyof typeof AdminScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -776,20 +855,6 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-/**
- * Reference to a field of type 'Decimal'
- */
-export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
-    
-
-
-/**
- * Reference to a field of type 'Decimal[]'
- */
-export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
     
 
 
@@ -904,6 +969,7 @@ export type GlobalOmitConfig = {
   contentform?: Prisma.contentformOmit
   employee?: Prisma.employeeOmit
   employee_manage?: Prisma.employee_manageOmit
+  admin?: Prisma.adminOmit
 }
 
 /* Types for Logging */

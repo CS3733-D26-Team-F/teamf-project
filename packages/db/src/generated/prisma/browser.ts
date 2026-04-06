@@ -35,3 +35,8 @@ export type employee = Prisma.employeeModel
  * This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
  */
 export type employee_manage = Prisma.employee_manageModel
+/**
+ * Model admin
+ * This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+ */
+export type admin = Prisma.adminModel

@@ -11,4 +11,5 @@
 export type * from './models/contentform.ts'
 export type * from './models/employee.ts'
 export type * from './models/employee_manage.ts'
+export type * from './models/admin.ts'
 export type * from './commonInputTypes.ts'

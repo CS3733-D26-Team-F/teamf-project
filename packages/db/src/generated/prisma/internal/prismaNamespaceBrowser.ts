@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   contentform: 'contentform',
   employee: 'employee',
-  employee_manage: 'employee_manage'
+  employee_manage: 'employee_manage',
+  admin: 'admin'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -88,12 +89,9 @@ export type ContentformScalarFieldEnum = (typeof ContentformScalarFieldEnum)[key
 
 
 export const EmployeeScalarFieldEnum = {
-  eid: 'eid',
-  first_name: 'first_name',
-  last_name: 'last_name',
-  persona: 'persona',
-  email: 'email',
-  salary: 'salary'
+  empid: 'empid',
+  username: 'username',
+  password: 'password'
 } as const
 
 export type EmployeeScalarFieldEnum = (typeof EmployeeScalarFieldEnum)[keyof typeof EmployeeScalarFieldEnum]
@@ -110,6 +108,13 @@ export const Employee_manageScalarFieldEnum = {
 } as const
 
 export type Employee_manageScalarFieldEnum = (typeof Employee_manageScalarFieldEnum)[keyof typeof Employee_manageScalarFieldEnum]
+
+
+export const AdminScalarFieldEnum = {
+  adid: 'adid'
+} as const
+
+export type AdminScalarFieldEnum = (typeof AdminScalarFieldEnum)[keyof typeof AdminScalarFieldEnum]
 
 
 export const SortOrder = {
