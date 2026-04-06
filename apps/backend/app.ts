@@ -16,6 +16,8 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(morgan('dev'));
+// Send HTTP 200 at root
+
 
 app.get('/', (req, res) => {
     res.sendStatus(200);
@@ -65,6 +67,55 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
+app.post('/addEmployee', async (req, res) => {
+    const {username, password} = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Missing field required');
+    }
+    try {
+        const newEmp = await prisma.employee.create({
+            data: {
+                username,
+                password
+            },
+        });
+        return res.status(200).json({
+            message: 'new employee added',
+            data: newEmp
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.delete('/deleteEmployee/:username', async (req, res) => {
+    try{
+        const { username } = req.params;
+
+        const user = await prisma.employee.findFirst({
+            where: { username }
+        });
+
+        if (!user) {
+            return res.status(404).send('Not Found');
+        }
+
+        const deletedEmp = await prisma.employee.delete({
+            where: { empid: user.empid }
+        });
+
+        return res.status(200).json({
+            message: 'Employee removed',
+            data: deletedEmp,
+        })
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
