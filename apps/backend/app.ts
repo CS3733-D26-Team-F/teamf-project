@@ -67,6 +67,31 @@ app.post('/login', async (req, res) => {
     }
 });
 
+app.post('/getEmployee', async (req, res) => {
+    const {username} = req.body;
+
+    if (!username) {
+        return res.status(400).send('Missing field required');
+    }
+
+    try {
+        const employee = await prisma.employee.findUniqueOrThrow({
+            where: {
+                username: username,
+            }
+        });
+        return res.status(200).json({
+            message: 'Employee found',
+            data: employee
+        });
+    } catch (error) {
+        res.status(404).json({ error: 'User not Found' });
+    }
+});
+
+app.post('/updateEmployee', async (req, res) => {
+    const {username, password, persona}
+})
 
 app.post('/addEmployee', async (req, res) => {
     const {username, password} = req.body;
