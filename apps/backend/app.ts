@@ -64,7 +64,7 @@ app.post('/addEmployee', async (req, res) => {
                 username,
                 password
             },
-        })
+        });
         return res.status(200).json({
             message: 'new employee added',
             data: newEmp
@@ -72,25 +72,32 @@ app.post('/addEmployee', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }
-})
+});
 
 app.delete('/deleteEmployee/:username', async (req, res) => {
-    const { username } = req.params;
+    try{
+        const { username } = req.params;
 
-    const user = await prisma.employee.findFirst({
-        where: { username }, // if multiple users share username, takes the first
-    });
+        const user = await prisma.employee.findFirst({
+            where: { username }
+        });
 
-    const deletedEmp = await prisma.employee.delete({
-        where: { empid: user.empid },
-    });
+        if (!user) {
+            return res.status(404).send('Not Found');
+        }
 
-    return res.status(200).json({
-        message: 'Employee removed',
-        data: deletedEmp,
-    });
+        const deletedEmp = await prisma.employee.delete({
+            where: { empid: user.empid }
+        });
 
-})
+        return res.status(200).json({
+            message: 'Employee removed',
+            data: deletedEmp,
+        })
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 // Start server
 app.listen(port, () => {
