@@ -25,7 +25,7 @@ model contentform {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee {
   empid    Int    @id @default(autoincrement())
-  username String @db.VarChar(50)
+  username String @unique(map: "unique_user") @db.VarChar(50)
   password String @db.VarChar(20)
   admin    admin?
 }

@@ -52,36 +52,42 @@ app.get('/employee_manage', async (req, res) => {
     }
 });
 
-app.post('/employee_manage/addEmployee', async (req, res) => {
-    const { username, password } = req.body;
+app.post('/addEmployee', async (req, res) => {
+    const {username, password} = req.body;
 
     if (!username || !password) {
         return res.status(400).send('Missing field required');
     }
-
-    const newEmp = await prisma.employee.create({
-        data: {
-            username,
-            password
-        },
-    })
-
-    return res.status(200).json({
-        message: 'new employee added',
-        data: newEmp
-    });
+    try {
+        const newEmp = await prisma.employee.create({
+            data: {
+                username,
+                password
+            },
+        })
+        return res.status(200).json({
+            message: 'new employee added',
+            data: newEmp
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
 })
 
-app.delete('/employee_manage/deleteEmployee/:username', async (req, res) => {
+app.delete('/deleteEmployee/:username', async (req, res) => {
     const { username } = req.params;
 
+    const user = await prisma.employee.findFirst({
+        where: { username }, // if multiple users share username, takes the first
+    });
+
     const deletedEmp = await prisma.employee.delete({
-        where: { username },
+        where: { empid: user.empid },
     });
 
     return res.status(200).json({
         message: 'Employee removed',
-        data: deletedEmployee,
+        data: deletedEmp,
     });
 
 })
