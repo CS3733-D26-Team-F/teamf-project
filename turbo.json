@@ -5,7 +5,6 @@
       "cache": true
     },
     "dev": {
-      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true
     },
