@@ -1,15 +1,11 @@
 @import "tailwindcss";
 
-
-
 @theme {
     --color-frozen-water: var(--frozen-water);
     --color-pacific-blue: var(--pacific-blue);
     --color-yale-blue: var(--yale-blue);
     --color-pale-sky: var(--pale-sky);
     --color-fresh-sky: var(--fresh-sky);
-
-    --color-custom-white: white
 }
 
 :root {
@@ -28,11 +24,9 @@
     --fresh-sky: #0066CC;
 }
 
-
-
 /* Menu Formatting */
 body {
-    background-color: var(--color-custom-white);
+    background-color: white;
     width: 100%;
     justify-content: center;
     font-family: Roboto, sans-serif;
@@ -40,7 +34,7 @@ body {
 
 a {
     text-decoration: none;
-    color: var(--color-custom-white);
+    color: white;
 }
 
 header {
@@ -74,7 +68,7 @@ header {
                 background-color: var(--color-yale-blue);
                 border-radius: 4px;
                 transition: all 0.2s ease;
-            var(--color-custom-white);
+            color:white;
             }
         }
     }
@@ -90,7 +84,7 @@ main {
     justify-content: center;
 
     overflow: hidden;
-    color: var(--color-custom-white);
+    color: white;
     text-align: center;
     font-family: sans-serif;
 
@@ -197,17 +191,17 @@ form {
 
     button[type="submit"] {
         background-color: var(--color-yale-blue);
-        color: var(--color-custom-white);
+        color: white;
     }
 
-    button[type="submit"]:hover { background-color: #5FA8D3; }
+    button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
 
     button[type="reset"] {
-        background-color: #62B6CB;
-        color: var(--color-custom-white);
+        background-color: var(--color-pacific-blue);
+        color: white;
     }
 
-    button[type="reset"]:hover { background-color: #BEE9E8; }
+    button[type="reset"]:hover { background-color: var(--color-frozen-water); }
 
     label, label[htmlFor="employeeSelect"]{
         color: var(--color-yale-blue);
@@ -267,8 +261,8 @@ textarea {
 }
 
 input[type="text"] {
-    background-color: #f0f8ff; /* Light blue background */
+    background-color: var(--color-pale-sky); /* Light blue background */
     color: #333;               /* Dark grey text */
-    border: 2px solid #007bff; /* Blue border */
+    border: 2px solid var(--color-pacific-blue); /* Blue border */
 }
 
