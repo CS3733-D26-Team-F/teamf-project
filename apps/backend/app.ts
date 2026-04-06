@@ -4,6 +4,8 @@ const app = express();
 import dotenv from 'dotenv';
 import {PrismaClient} from "@prisma/client";
 import {PrismaPg} from "@prisma/adapter-pg";
+import cors from 'cors';
+app.use(cors());
 
 dotenv.config();
 
@@ -47,6 +49,38 @@ app.get('/employee_manage', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send('Not Found');
+    }
+});
+app.post('/employees', async (req, res) => {
+    try {
+        const { first_name, last_name, email, persona, salary } = req.body;
+        const employee = await prisma.employee.create({
+            data: { first_name, last_name, email, persona, salary }
+        });
+        res.json(employee);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error creating employee');
+    }
+});
+app.post('/contentforms', async (req, res) => {
+    try {
+        const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const content = await prisma.contentform.create({
+            data: {
+                name,
+                url,
+                owner,
+                persona,
+                date_modified: new Date(date_modified),
+                expiration_date: new Date(expiration_date),
+                content_type,x
+                status }
+        });
+        res.json(content);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error creating content');
     }
 });
 // Start server
