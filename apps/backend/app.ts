@@ -69,22 +69,43 @@ app.post('/login', async (req, res) => {
 
 
 app.post('/addEmployee', async (req, res) => {
-    const {username, password} = req.body;
+    const {username, password, persona} = req.body;
 
     if (!username || !password) {
         return res.status(400).send('Missing field required');
     }
+
     try {
-        const newEmp = await prisma.employee.create({
-            data: {
-                username,
-                password
-            },
-        });
-        return res.status(200).json({
-            message: 'new employee added',
-            data: newEmp
-        });
+        if (persona.trim() == 'Admin'){
+            const newAdmin = await prisma.employee.create({
+                data: {
+                    username: username,
+                    password: password,
+                    persona: persona,
+                    admin: {
+                        create: {
+
+                        }
+                    }
+                },
+            })
+            return res.status(200).json({
+                message: 'new admin added',
+                data: newAdmin
+            });
+        } else {
+            const newEmp = await prisma.employee.create({
+                data: {
+                    username,
+                    password,
+                    persona
+                },
+            });
+            return res.status(200).json({
+                message: 'new employee added',
+                data: newEmp
+            });
+        }
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }
@@ -108,7 +129,7 @@ app.delete('/deleteEmployee/:username', async (req, res) => {
 
         return res.status(200).json({
             message: 'Employee removed',
-            data: deletedEmp,
+            data: deletedEmp
         })
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
