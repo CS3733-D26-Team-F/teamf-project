@@ -94,8 +94,8 @@ app.delete('/deleteEmployee/:username', async (req, res) => {
     try{
         const { username } = req.params;
 
-        const user = await prisma.employee.findFirst({
-            where: { username }
+        const user = await prisma.employee.findUnique({
+            where: { username: username }
         });
 
         if (!user) {
