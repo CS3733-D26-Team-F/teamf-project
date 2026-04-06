@@ -16,6 +16,8 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
+
+
 app.get('/', (req, res) => {
     res.sendStatus(200);
 });
@@ -49,6 +51,41 @@ app.get('/employee_manage', async (req, res) => {
         res.status(500).send('Not Found');
     }
 });
+
+app.post('/employee_manage/addEmployee', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Missing field required');
+    }
+
+    const newEmp = await prisma.employee.create({
+        data: {
+            username,
+            password
+        },
+    })
+
+    return res.status(200).json({
+        message: 'new employee added',
+        data: newEmp
+    });
+})
+
+app.delete('/employee_manage/deleteEmployee/:username', async (req, res) => {
+    const { username } = req.params;
+
+    const deletedEmp = await prisma.employee.delete({
+        where: { username },
+    });
+
+    return res.status(200).json({
+        message: 'Employee removed',
+        data: deletedEmployee,
+    });
+
+})
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

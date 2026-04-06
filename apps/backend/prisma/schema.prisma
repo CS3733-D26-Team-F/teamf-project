@@ -23,12 +23,9 @@ model contentform {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee {
-  eid        Int      @id @default(autoincrement())
-  first_name String?  @db.VarChar(50)
-  last_name  String?  @db.VarChar(50)
-  persona    String?  @db.VarChar(50)
-  email      String?  @unique @db.VarChar(50)
-  salary     Decimal? @db.Decimal(10, 2)
+  empid    Int    @id @default(autoincrement())
+  username String @db.VarChar(50)
+  password String @db.VarChar(20)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
