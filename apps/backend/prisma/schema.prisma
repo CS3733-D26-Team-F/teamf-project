@@ -26,6 +26,7 @@ model employee {
   empid    Int    @id @default(autoincrement())
   username String @db.VarChar(50)
   password String @db.VarChar(20)
+  admin    admin?
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -38,4 +39,10 @@ model employee_manage {
   priority     String? @db.VarChar(50)
   email        String? @db.VarChar(50)
   comments     String? @db.VarChar(1000)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model admin {
+  adid     Int      @id
+  employee employee @relation(fields: [adid], references: [empid], onDelete: NoAction, onUpdate: NoAction)
 }

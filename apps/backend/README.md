@@ -18,6 +18,22 @@ API endpoints:
 - http://localhost:3000/employee_manage
 - http://localhost:3000/contentforms
 
+Testing login function: 
+- make sure server is running ^
+- open up postman 
+- Set method from "GET" to "POST"
+- url is: http://localhost:3000/login
+- make sure under URL: 
+  - set to body,
+  - param is raw
+  - Text is JSON
+    - run command in space below: 
+      - {
+        "username": "testingtesting",
+        "password": "wpiiscool"
+        }
+- Test username or password for different error prints! 
+
 ## First-time setup only
 
 From repo root:
