@@ -62,13 +62,13 @@ header {
         flex-wrap: nowrap;
         font-family: sans-serif;
 
-        a {
+        a, button{
             padding: 8px 12px;
+            color:white;
             &:hover{
-                background-color: var(--color-yale-blue);
+                background-color: var(--color-fresh-sky);
                 border-radius: 4px;
                 transition: all 0.2s ease;
-            color:white;
             }
         }
     }
