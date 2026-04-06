@@ -2,7 +2,7 @@ import express from 'express';
 import morgan from 'morgan';
 const app = express();
 import dotenv from 'dotenv';
-import {PrismaClient} from "@prisma/client";
+import {PrismaClient} from '@prisma/client';
 import {PrismaPg} from "@prisma/adapter-pg";
 
 dotenv.config();
@@ -48,7 +48,7 @@ app.post('/login', async (req, res) => {
         return res.status(400).send('Please input username and password');
     }
 
-    const employee = await prisma.employee.findFirst({
+    const employee = await prisma.employee.findUnique({
         where: {username: username}
     });
 
