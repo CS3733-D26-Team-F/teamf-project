@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
-    "db": "*",
     "@prisma/client": "^7.6.0",
+    "db": "*",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "morgan": "^1.10.1"
