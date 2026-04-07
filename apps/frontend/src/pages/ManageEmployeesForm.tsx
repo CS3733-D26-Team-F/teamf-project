@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import {useEffect, useState} from 'react';
 import { Header } from "../components/Header"
 
 export function ManageEmployeesForm() {
     const [formData, setFormData] = useState({
-        full_name: '', edits: '', personstatus: '', priority: '', email: '', comments: ''
+        full_name: '', edits: '', employee: '', priority: '', email: '', comments: ''
     });
 
     const handleSubmit = async () => {
@@ -12,8 +12,17 @@ export function ManageEmployeesForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
-        setFormData({ full_name: '', edits: '', personstatus: '', priority: '', email: '', comments: '' });
+        setFormData({ full_name: '', edits: '', employee: '', priority: '', email: '', comments: '' });
     };
+
+    const [employees, setEmployees] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch('http://localhost:3000/employees')
+            .then(res => res.json())
+            .then(data => setEmployees(data.map((e: {username: string}) => e.username)));
+    }, []);
+
 
     return (
         <>
@@ -63,28 +72,11 @@ export function ManageEmployeesForm() {
                 {/* Question 3 */}
                 <label htmlFor="employeeSelect">What Employee are you Updating Status for?</label>
                 <select name="employeeSelect" id="employeeSelect"
-                        onChange={e => setFormData({...formData, personstatus: e.target.value})}>
-                    <optgroup label="Default">
-                        <option value="">Select...</option>
-                    </optgroup>
-                    <optgroup label="BackEnd">
-                        <option value="John">John</option>
-                        <option value="Berenis">Berenis</option>
-                        <option value="Andrew">Andrew</option>
-                        <option value="Milan">Milan</option>
-                        <option value="Bowen">Bowen</option>
-                    </optgroup>
-                    <optgroup label="FrontEnd">
-                        <option value="Molly">Molly</option>
-                        <option value="Chloe">Chloe</option>
-                        <option value="Jeremia">Jeremia</option>
-                        <option value="Adrian">Adrian</option>
-                        <option value="Ryan">Ryan</option>
-                    </optgroup>
-                    <optgroup label="Administration">
-                        <option value="Professor Wilson Wong">Professor Wilson Wong</option>
-                        <option value="Phuong Tran">Phuong Tran</option>
-                    </optgroup>
+                        onChange={e => setFormData({...formData, employee: e.target.value})}>
+                    <option value="">Select...</option>
+                    {employees.map(username => (
+                        <option key={username} value={username}>{username}</option>
+                    ))}
                 </select>
 
                 {/* Question 4 */}
