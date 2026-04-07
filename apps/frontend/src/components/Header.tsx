@@ -1,12 +1,9 @@
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
-import {useEffect, useState} from "react";
+import ThemeToggle from "./ThemeToggle.tsx";
 
 export function Header() {
-    const [theme, setTheme] = useState('default');
-    useEffect(() => {
-        document.documentElement.setAttribute("data-theme", theme);
-    }, [theme]);
+
     return (
         <header className="menu">
             <div className="logo">
@@ -20,8 +17,7 @@ export function Header() {
                 <Link to="/manageemployees">Employees</Link>
                 <Link to="/businessanalyst">Business Analyst</Link>
                 <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
-                <button onClick={() => setTheme("default")}>Default Theme</button>
-                <button onClick={() => setTheme("high-visibility")}>Other Theme</button>
+                <ThemeToggle />
             </nav>
         </header>
     );
