@@ -4,9 +4,29 @@ import {useEffect, useState} from "react";
 
 export function Header() {
     const [theme, setTheme] = useState('default');
+    const [persona, setPersona] = useState<string | null>(null);
+
+    useEffect(() => {
+        setPersona(localStorage.getItem('persona'));
+    }, []);
+
+    useEffect(() => {
+        const handleStorage = () => {
+            setPersona(localStorage.getItem('persona'));
+        };
+
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
+
     useEffect(() => {
         document.documentElement.setAttribute("data-theme", theme);
     }, [theme]);
+
+    const isAdmin = persona === 'Admin';
+    const isUnderwriter = persona === 'Underwriter';
+    const isBusinessAnalyst = persona === 'Business Analyst';
+
     return (
         <header className="menu">
             <div className="logo">
@@ -15,14 +35,24 @@ export function Header() {
                 </Link>
             </div>
             <nav className="menu-links">
-                <a><Link to="/">Home</Link></a>
-                <Link to="/managecontent">Manage Content</Link>
-                <Link to="/manageemployees">Employees</Link>
-                <Link to="/businessanalyst">Business Analyst</Link>
-                <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
+                <Link to="/">Home</Link>
+
+                {isAdmin && <Link to="/managecontent">Manage Content</Link>}
+                {isAdmin && <Link to="/manageemployees">Employees</Link>}
+                {(isAdmin || isBusinessAnalyst) && (
+                    <Link to="/businessanalyst">Business Analyst</Link>
+                )}
+                {(isAdmin || isUnderwriter) && (
+
+                    <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
+                )}
+
+
                 <button onClick={() => setTheme("default")}>Default Theme</button>
                 <button onClick={() => setTheme("high-visibility")}>Other Theme</button>
             </nav>
         </header>
     );
 }
+
+
