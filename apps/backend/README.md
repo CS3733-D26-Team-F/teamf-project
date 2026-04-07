@@ -32,7 +32,25 @@ Testing login function:
         "username": "testingtesting",
         "password": "wpiiscool"
         }
-- Test username or password for different error prints! 
+- Test username or password for different error prints!
+
+## Database Correlations
+Employee:
+- username (unique, VARCHAR(50))
+- password (VARCHAR(20))
+- persona (VARCAR(20), CHECK ('Admin', 'Underwriter', 'Business Analyst'))
+- admin (admin?)
+
+Admin
+- adid (foreign key only, nothing else unique right now)
+
+Functions
+- "/addEmployee" adds a new employee
+- "/login" does the login check based on username and password
+- "/deleteEmployee/:username" deletes an employee based on the username (replace :username with the name in question)
+- "/employee" displays the list of employees
+- "/contentforms" lists the content form data
+
 
 ## First-time setup only
 

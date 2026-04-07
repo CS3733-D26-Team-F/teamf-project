@@ -25,7 +25,8 @@ model contentform {
 model employee {
   empid    Int    @id @default(autoincrement())
   username String @unique(map: "unique_user") @db.VarChar(50)
-  password String @unique(map: "unique_password") @db.VarChar(20)
+  password String @db.VarChar(20)
+  persona  String @db.VarChar(50)
   admin    admin?
 }
 
@@ -44,5 +45,5 @@ model employee_manage {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model admin {
   adid     Int      @id
-  employee employee @relation(fields: [adid], references: [empid], onDelete: NoAction, onUpdate: NoAction)
+  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
 }
