@@ -760,7 +760,8 @@ export type ContentformScalarFieldEnum = (typeof ContentformScalarFieldEnum)[key
 export const EmployeeScalarFieldEnum = {
   empid: 'empid',
   username: 'username',
-  password: 'password'
+  password: 'password',
+  persona: 'persona'
 } as const
 
 export type EmployeeScalarFieldEnum = (typeof EmployeeScalarFieldEnum)[keyof typeof EmployeeScalarFieldEnum]

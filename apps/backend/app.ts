@@ -74,13 +74,25 @@ app.post('/contentforms', async (req, res) => {
                 persona,
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
-                content_type,x
+                content_type,
                 status }
         });
         res.json(content);
     } catch (error) {
         console.error(error);
         res.status(500).send('Error creating content');
+    }
+});
+app.post('/employee_manage', async (req, res) => {
+    try {
+        const { full_name, edits, personstatus, priority, email, comments } = req.body;
+        const employeeManage = await prisma.employee_manage.create({
+            data: { full_name, edits, personstatus, priority, email, comments }
+        });
+        res.json(employeeManage);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error creating employee management request');
     }
 });
 // Start server

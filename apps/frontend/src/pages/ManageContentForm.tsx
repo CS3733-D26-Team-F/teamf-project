@@ -15,6 +15,8 @@ export function ManageContentForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
+        setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
+        (e.target as HTMLFormElement).reset();
     };
     return (
         <>

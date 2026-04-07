@@ -39,18 +39,21 @@ export type EmployeeMinAggregateOutputType = {
   empid: number | null
   username: string | null
   password: string | null
+  persona: string | null
 }
 
 export type EmployeeMaxAggregateOutputType = {
   empid: number | null
   username: string | null
   password: string | null
+  persona: string | null
 }
 
 export type EmployeeCountAggregateOutputType = {
   empid: number
   username: number
   password: number
+  persona: number
   _all: number
 }
 
@@ -67,18 +70,21 @@ export type EmployeeMinAggregateInputType = {
   empid?: true
   username?: true
   password?: true
+  persona?: true
 }
 
 export type EmployeeMaxAggregateInputType = {
   empid?: true
   username?: true
   password?: true
+  persona?: true
 }
 
 export type EmployeeCountAggregateInputType = {
   empid?: true
   username?: true
   password?: true
+  persona?: true
   _all?: true
 }
 
@@ -172,6 +178,7 @@ export type EmployeeGroupByOutputType = {
   empid: number
   username: string
   password: string
+  persona: string | null
   _count: EmployeeCountAggregateOutputType | null
   _avg: EmployeeAvgAggregateOutputType | null
   _sum: EmployeeSumAggregateOutputType | null
@@ -201,6 +208,7 @@ export type employeeWhereInput = {
   empid?: Prisma.IntFilter<"employee"> | number
   username?: Prisma.StringFilter<"employee"> | string
   password?: Prisma.StringFilter<"employee"> | string
+  persona?: Prisma.StringNullableFilter<"employee"> | string | null
   admin?: Prisma.XOR<Prisma.AdminNullableScalarRelationFilter, Prisma.adminWhereInput> | null
 }
 
@@ -208,23 +216,26 @@ export type employeeOrderByWithRelationInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  persona?: Prisma.SortOrderInput | Prisma.SortOrder
   admin?: Prisma.adminOrderByWithRelationInput
 }
 
 export type employeeWhereUniqueInput = Prisma.AtLeast<{
   empid?: number
   username?: string
+  password?: string
   AND?: Prisma.employeeWhereInput | Prisma.employeeWhereInput[]
   OR?: Prisma.employeeWhereInput[]
   NOT?: Prisma.employeeWhereInput | Prisma.employeeWhereInput[]
-  password?: Prisma.StringFilter<"employee"> | string
+  persona?: Prisma.StringNullableFilter<"employee"> | string | null
   admin?: Prisma.XOR<Prisma.AdminNullableScalarRelationFilter, Prisma.adminWhereInput> | null
-}, "empid" | "username">
+}, "empid" | "username" | "password">
 
 export type employeeOrderByWithAggregationInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  persona?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.employeeCountOrderByAggregateInput
   _avg?: Prisma.employeeAvgOrderByAggregateInput
   _max?: Prisma.employeeMaxOrderByAggregateInput
@@ -239,11 +250,13 @@ export type employeeScalarWhereWithAggregatesInput = {
   empid?: Prisma.IntWithAggregatesFilter<"employee"> | number
   username?: Prisma.StringWithAggregatesFilter<"employee"> | string
   password?: Prisma.StringWithAggregatesFilter<"employee"> | string
+  persona?: Prisma.StringNullableWithAggregatesFilter<"employee"> | string | null
 }
 
 export type employeeCreateInput = {
   username: string
   password: string
+  persona?: string | null
   admin?: Prisma.adminCreateNestedOneWithoutEmployeeInput
 }
 
@@ -251,12 +264,14 @@ export type employeeUncheckedCreateInput = {
   empid?: number
   username: string
   password: string
+  persona?: string | null
   admin?: Prisma.adminUncheckedCreateNestedOneWithoutEmployeeInput
 }
 
 export type employeeUpdateInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
+  persona?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   admin?: Prisma.adminUpdateOneWithoutEmployeeNestedInput
 }
 
@@ -264,6 +279,7 @@ export type employeeUncheckedUpdateInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
+  persona?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   admin?: Prisma.adminUncheckedUpdateOneWithoutEmployeeNestedInput
 }
 
@@ -271,23 +287,27 @@ export type employeeCreateManyInput = {
   empid?: number
   username: string
   password: string
+  persona?: string | null
 }
 
 export type employeeUpdateManyMutationInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
+  persona?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type employeeUncheckedUpdateManyInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
+  persona?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type employeeCountOrderByAggregateInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  persona?: Prisma.SortOrder
 }
 
 export type employeeAvgOrderByAggregateInput = {
@@ -298,12 +318,14 @@ export type employeeMaxOrderByAggregateInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  persona?: Prisma.SortOrder
 }
 
 export type employeeMinOrderByAggregateInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  persona?: Prisma.SortOrder
 }
 
 export type employeeSumOrderByAggregateInput = {
@@ -336,12 +358,14 @@ export type employeeUpdateOneRequiredWithoutAdminNestedInput = {
 export type employeeCreateWithoutAdminInput = {
   username: string
   password: string
+  persona?: string | null
 }
 
 export type employeeUncheckedCreateWithoutAdminInput = {
   empid?: number
   username: string
   password: string
+  persona?: string | null
 }
 
 export type employeeCreateOrConnectWithoutAdminInput = {
@@ -363,12 +387,14 @@ export type employeeUpdateToOneWithWhereWithoutAdminInput = {
 export type employeeUpdateWithoutAdminInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
+  persona?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type employeeUncheckedUpdateWithoutAdminInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
+  persona?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -377,6 +403,7 @@ export type employeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   empid?: boolean
   username?: boolean
   password?: boolean
+  persona?: boolean
   admin?: boolean | Prisma.employee$adminArgs<ExtArgs>
 }, ExtArgs["result"]["employee"]>
 
@@ -384,21 +411,24 @@ export type employeeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   empid?: boolean
   username?: boolean
   password?: boolean
+  persona?: boolean
 }, ExtArgs["result"]["employee"]>
 
 export type employeeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   empid?: boolean
   username?: boolean
   password?: boolean
+  persona?: boolean
 }, ExtArgs["result"]["employee"]>
 
 export type employeeSelectScalar = {
   empid?: boolean
   username?: boolean
   password?: boolean
+  persona?: boolean
 }
 
-export type employeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"empid" | "username" | "password", ExtArgs["result"]["employee"]>
+export type employeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"empid" | "username" | "password" | "persona", ExtArgs["result"]["employee"]>
 export type employeeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   admin?: boolean | Prisma.employee$adminArgs<ExtArgs>
 }
@@ -414,6 +444,7 @@ export type $employeePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     empid: number
     username: string
     password: string
+    persona: string | null
   }, ExtArgs["result"]["employee"]>
   composites: {}
 }
@@ -841,6 +872,7 @@ export interface employeeFieldRefs {
   readonly empid: Prisma.FieldRef<"employee", 'Int'>
   readonly username: Prisma.FieldRef<"employee", 'String'>
   readonly password: Prisma.FieldRef<"employee", 'String'>
+  readonly persona: Prisma.FieldRef<"employee", 'String'>
 }
     
 
