@@ -97,11 +97,11 @@ app.post('/updateEmployee', async (req, res) => {
         return res.status(400).send('Current username is required');
     }
 
-        const updateData: {
-            username?: string;
-            password?: string;
-            persona?: string;
-        } = {};
+    const updateData: {
+        username?: string;
+        password?: string;
+        persona?: string;
+    } = {};
 
     if (newUsername) updateData.username = newUsername;
     if (password) updateData.password = password;
@@ -116,6 +116,22 @@ app.post('/updateEmployee', async (req, res) => {
             where: { username: username },
             data: updateData
         });
+        if (persona.trim() == 'Admin'){
+            await prisma.admin.create({
+                data:{
+                    adid: employee.empid
+                }
+            })
+        } else {
+            const check = await prisma.admin.findUnique({
+                where: { adid: employee.empid}
+            });
+            if (check){
+                await prisma.admin.delete({
+                    where: {adid: employee.empid},
+                })
+            }
+        }
         return res.status(200).json({
             message: 'Employee updated',
             data: employee
