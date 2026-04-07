@@ -209,8 +209,33 @@ app.delete('/deleteEmployee/:username', async (req, res) => {
     }
 });
 
+app.post('/updateTheme', async (req, res) => {
+    const { empid, theme } = req.body;
+    if (!empid || theme === undefined) {
+        return res.status(400).send('Missing field required, need to provide theme');
+    }
+
+    try {
+        const employee = await prisma.employee.update({
+            where: { empid: empid },
+            data: { theme: theme }
+        });
+        return res.status(200).json({
+            message: 'Theme updated',
+            data: employee
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+
+
+
 export default app;
