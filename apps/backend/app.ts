@@ -279,7 +279,11 @@ app.post('/contentforms', async (req, res) => {
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
                 content_type,
-                status }
+                status,
+                employee: {
+                    connect: { username: owner }
+                }
+            }
         });
         res.json(content);
     } catch (error) {
