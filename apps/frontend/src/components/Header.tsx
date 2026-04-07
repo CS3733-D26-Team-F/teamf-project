@@ -8,7 +8,7 @@ export function Header() {
         document.documentElement.setAttribute("data-theme", theme);
     }, [theme]);
     return (
-        <header className="menu">
+        <header className="main-header">
             <div className="logo">
                 <Link to="/">
                     <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />

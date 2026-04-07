@@ -1,4 +1,3 @@
-import { TemplatePage } from './pages/TemplatePage';
 import { BusinessAnalyst } from './pages/BusinessAnalyst';
 import { CoreCommercialUnderwriter} from "./pages/CoreCommercialUnderwriter.tsx";
 import { ManageContentForm} from "./pages/ManageContentForm.tsx";
@@ -6,7 +5,7 @@ import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { MainMenu } from './pages/MainMenu';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
-
+import { Login } from './pages/Login.tsx';
 
 export default function App() {
     return (
@@ -15,7 +14,7 @@ export default function App() {
 
             <Routes>
                 <Route path="/" element={<MainMenu/>}/>
-                <Route path="/template" element={<TemplatePage />}/>
+                <Route path="/login" element={<Login />}/>
                 <Route path="/businessanalyst" element={<BusinessAnalyst/>}/>
                 <Route path="/corecommercialunderwriter" element={<CoreCommercialUnderwriter/>}/>
                 <Route path="/managecontent" element={<ManageContentForm/>}/>

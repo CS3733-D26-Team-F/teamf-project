@@ -6,7 +6,7 @@ export function ManageEmployeesForm() {
             <Header />
             <br />
 
-            <form>
+            <form className="content-management">
                 <h1>Employee Management Form</h1>
                 <br/>
                 <hr />
