@@ -85,9 +85,9 @@ app.post('/contentforms', async (req, res) => {
 });
 app.post('/employee_manage', async (req, res) => {
     try {
-        const { full_name, edits, employee, priority, email, comments } = req.body;
+        const { username, edits, employee, priority, email, comments } = req.body;
         const employeeManage = await prisma.employee_manage.create({
-            data: { full_name, edits, employee, priority, email, comments }
+            data: { username, edits, employee, priority, email, comments }
         });
         res.json(employeeManage);
     } catch (error) {
