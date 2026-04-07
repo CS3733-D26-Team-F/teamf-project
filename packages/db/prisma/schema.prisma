@@ -28,6 +28,7 @@ model employee {
   username String  @unique(map: "unique_user") @db.VarChar(50)
   password String  @unique(map: "unique_password") @db.VarChar(20)
   persona  String? @db.VarChar(50)
+  theme    Int?    @default(0)
   admin    admin?
 }
 
