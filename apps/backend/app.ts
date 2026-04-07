@@ -89,9 +89,41 @@ app.post('/getEmployee', async (req, res) => {
     }
 });
 
+//update employee takes the current username and then optionally any data that want to be changed
 app.post('/updateEmployee', async (req, res) => {
-    const {username, password, persona}
-})
+    const {username,newUsername,password,persona} = req.body;
+
+    if(!username) {
+        return res.status(400).send('Current username is required');
+    }
+
+        const updateData: {
+            username?: string;
+            password?: string;
+            persona?: string;
+        } = {};
+
+    if (newUsername) updateData.username = newUsername;
+    if (password) updateData.password = password;
+    if (persona) updateData.persona = persona;
+
+    if (Object.keys(updateData).length === 0) {
+        return res.status(400).send('No fields to update');
+    }
+
+    try {
+        const employee = await prisma.employee.update({
+            where: { username: username },
+            data: updateData
+        });
+        return res.status(200).json({
+            message: 'Employee updated',
+            data: employee
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
 
 app.post('/addEmployee', async (req, res) => {
     const {username, password} = req.body;
@@ -107,7 +139,7 @@ app.post('/addEmployee', async (req, res) => {
             },
         });
         return res.status(200).json({
-            message: 'new employee added',
+            message: 'New employee added',
             data: newEmp
         });
     } catch (error) {
