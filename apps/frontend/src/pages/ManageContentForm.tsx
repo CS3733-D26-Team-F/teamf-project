@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "../components/Header"
 
 export function ManageContentForm() {
     const [formData, setFormData] = useState({
         name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: ''
     });
+    const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
+
+    useEffect(() => {
+        fetch('http://localhost:3000/employees')
+            .then(res => res.json())
+            .then(data => setEmployees(data));
+    }, [])
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({ ...formData, [e.target.id]: e.target.value });
+        const { id, name, value } = e.target;
+        setFormData(prev => ({ ...prev, [id || name]: value}));
     };
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,14 +36,19 @@ export function ManageContentForm() {
                 <br/>
                 <hr />
                 <br />
-                <label htmlFor="docName"> Name of Hyperlink or Document:</label>
+                <label htmlFor="name"> Name of Hyperlink or Document:</label>
                 <input type="text" id="name" onChange={handleChange} />
                 <br/><br/>
                 <label htmlFor="url">URL Link:</label>
                 <input type="text" id="url" onChange={handleChange} />
                 <br/><br/>
-                <label htmlFor="contentOwner">Name of Content Owner:</label>
-                <input type="text" id="owner" onChange={handleChange} />
+                <label htmlFor="owner">Name of Content Owner:</label>
+                <select id="owner" value={formData.owner} onChange={handleChange}>
+                    <option value="" disabled hidden>Select</option>
+                    {employees.map(emp => (
+                        <option key={emp.empid} value={emp.username}>{emp.username}</option>
+                    ))}
+                </select>
                 <br/><br/>
                 <label htmlFor="persona">Job Position: </label>
                 <select name="Job Position" id="persona" onChange={handleChange}>

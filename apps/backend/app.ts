@@ -269,7 +269,9 @@ app.post('/employees', async (req, res) => {
 });
 app.post('/contentforms', async (req, res) => {
     try {
+        console.log('full body req:', req.body);
         const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        console.log('owner value received:', owner);
         const content = await prisma.contentform.create({
             data: {
                 name,
@@ -279,7 +281,11 @@ app.post('/contentforms', async (req, res) => {
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
                 content_type,
-                status }
+                status,
+                employee: {
+                    connect: { username : owner }
+                }
+            }
         });
         res.json(content);
     } catch (error) {

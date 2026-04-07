@@ -3,7 +3,7 @@ import { Header } from "../components/Header"
 
 export function ManageEmployeesForm() {
     const [formData, setFormData] = useState({
-        full_name: '', edits: '', employee: '', priority: '', email: '', comments: ''
+        username: '', edits: '', employee: '', priority: '', email: '', comments: ''
     });
 
     const handleSubmit = async () => {
@@ -12,7 +12,7 @@ export function ManageEmployeesForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
-        setFormData({ full_name: '', edits: '', employee: '', priority: '', email: '', comments: '' });
+        setFormData({ username: '', edits: '', employee: '', priority: '', email: '', comments: '' });
     };
 
     const [employees, setEmployees] = useState<string[]>([]);
@@ -34,9 +34,9 @@ export function ManageEmployeesForm() {
                 <br/>
                 <hr />
                 <br />
-                <label htmlFor="full_name">Your Full Name:</label>
-                <input type="text" id="full_name" name="full_name" value={formData.full_name}
-                       onChange={e => setFormData({...formData, full_name: e.target.value})}/>
+                <label htmlFor="username">Your Full Name:</label>
+                <input type="text" id="username" name="username" value={formData.username}
+                       onChange={e => setFormData({...formData, username: e.target.value})}/>
                 <br/><br/><br/><br/>
 
                 <h2>Permissions Section</h2>
