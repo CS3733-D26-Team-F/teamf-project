@@ -275,18 +275,7 @@ app.post('/updateContentForm', async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
-app.post('/employees', async (req, res) => {
-    try {
-        const { first_name, last_name, email, persona, salary } = req.body;
-        const employee = await prisma.employee.create({
-            data: { first_name, last_name, email, persona, salary }
-        });
-        res.json(employee);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error creating employee');
-    }
-});
+
 app.post('/contentforms', async (req, res) => {
     try {
         const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;

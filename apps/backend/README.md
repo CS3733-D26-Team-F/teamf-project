@@ -55,7 +55,8 @@ Functions
 - "/employee_manage" as a post enters data for the employee manage form
 - "/contentforms" as a post enters data for the content form
 - "/deleteContentForm" deletes an existing content form
-- "/" updates a content form
+- "/updateContentForm" updates a content form
+- "/updateTheme" updates the theme for the employee
 
 
 ## First-time setup only
