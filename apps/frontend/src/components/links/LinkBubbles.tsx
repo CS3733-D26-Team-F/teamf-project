@@ -9,7 +9,6 @@ export type MenuItem = {
 type LinkProps = {
     items: MenuItem[];
     col_lg: number;
-//    onDelete: (label: string) => void;
     onDelete: (id: number) => void;
     onEdit: (id: number) => void;
 };
