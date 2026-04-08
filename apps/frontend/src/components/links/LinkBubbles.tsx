@@ -1,9 +1,9 @@
-import {type ReactNode, useEffect, useState} from "react";
 import { Link } from "react-router-dom";
 
 export type MenuItem = {
     label: string;
     path: string;
+    id: string;
 };
 
 type LinkProps = {
@@ -57,25 +57,5 @@ export function LinksWithProps(props: LinkProps) {
     )
 }
 
-export function LinksDemo() {
-    const [items, setItems] = useState<MenuItem[]>([]);
-    const persona = localStorage.getItem("persona");
-    useEffect(() => {
-        async function loadContent() {
-            const res = await fetch(`http://localhost:3000/contentforms/persona/${persona}`);
-            const data = await res.json();
-
-            const mapped: MenuItem[] = data.map((item: any) => ({
-                label: item.name,
-                path: item.url
-            }));
-            setItems(mapped);
-        }
-        loadContent();
-    }, [persona]);
-    return (
-        <LinksWithProps items={items} col_lg={3}/>
-    );
-}
 
 
