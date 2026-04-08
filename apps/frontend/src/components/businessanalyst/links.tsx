@@ -5,18 +5,6 @@ import {useEffect, useState} from "react";
 export function LinksDemo() {
     const [items, setItems] = useState<MenuItem[]>([]);
     const persona = localStorage.getItem("persona");
-    async function handleDelete(item: MenuItem) {
-        try {
-            await fetch(`http://localhost:3000/contentforms/${item.id}`, {
-                method: "DELETE"
-            });
-
-            // Remove from UI
-            setItems(prev => prev.filter(i => i.id !== item.id));
-        } catch (err) {
-            console.error("Delete failed", err);
-        }
-    }
     useEffect(() => {
         async function loadContent() {
             const res = await fetch(`http://localhost:3000/contentforms/persona/${persona}`);
@@ -24,15 +12,28 @@ export function LinksDemo() {
 
             const mapped: MenuItem[] = data.map((item: any) => ({
                 label: item.name,
-                path: item.url,
-                id: item.id
+                path: item.url
             }));
             setItems(mapped);
         }
         loadContent()
     }, [persona]);
+    async function deleteItem(label: string) {
+        const confirmed = window.confirm("Are you sure you want to delete this item?");
+        if (!confirmed) return;
+
+        await fetch(`http://localhost:3000/contentforms/${label}`, {
+            method: "DELETE"
+        });
+
+        setItems(prev => prev.filter(item => item.label !== label));
+    }
     return (
-        <LinksWithProps items={items} col_lg={3}/>
+        <LinksWithProps
+            items={items}
+            col_lg={3}
+            onDelete={deleteItem}
+        />
     );
 }
 

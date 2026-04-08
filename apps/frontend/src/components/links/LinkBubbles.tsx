@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 export type MenuItem = {
     label: string;
     path: string;
-    id: string;
 };
 
 type LinkProps = {
     items: MenuItem[];
     col_lg: number;
-
+    onDelete: (label: string) => void;
 };
 
 const colMap: Record<number, string> = {
@@ -36,6 +35,16 @@ export function LinksWithProps(props: LinkProps) {
                             h-48 sm:h-56 lg:h-64
                         "
                         >
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    props.onDelete(item.label);
+                                }}
+                                className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                            >
+                                Delete
+                            </button>
                             <br/>
                             <h3 className="text-center font-semibold text-yale-blue">
                                 {item.label}
