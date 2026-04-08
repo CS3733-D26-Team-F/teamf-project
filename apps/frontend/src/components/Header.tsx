@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import ThemeToggle from "./ThemeToggle.tsx";
+import { Profile } from "./Profile.tsx";
+
 export function Header() {
     const [theme, setTheme] = useState('default');
     const [persona, setPersona] = useState<string | null>(() =>
@@ -54,7 +56,10 @@ export function Header() {
 
                     <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
                 )}
+                <Profile />
                 <ThemeToggle />
+
+                
 
             </nav>
         </header>
