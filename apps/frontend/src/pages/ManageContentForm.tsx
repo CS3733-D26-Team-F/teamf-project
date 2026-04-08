@@ -161,7 +161,7 @@ export function ManageContentForm() {
                         <option value="Archived">Archived</option>
                     </select>
                     <br/><br/>
-                    <button type="button" onClick={() => {
+                    <button type="reset" onClick={() => {
                         setFormData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
                         setFile(null);
                         formRef.current?.reset();
