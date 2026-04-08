@@ -68,7 +68,8 @@ export function ManageContentForm() {
 
     const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
     const formRef = useRef<HTMLFormElement>(null);
-    const allowedAccess = localStorage.getItem('persona') === 'Admin';
+    const allowedAccess = localStorage.getItem('persona') === 'Admin'
+        || localStorage.getItem('persona') === 'Underwriter' || localStorage.getItem('persona') === 'Business Analyst';
     if (allowedAccess) {
         return (
             <>

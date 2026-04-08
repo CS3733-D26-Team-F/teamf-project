@@ -556,6 +556,18 @@ app.put('/contentforms/:id', async (req, res) => {
     }
 });
 
+app.get('/contentforms/employee/:empid', async (req, res) => {
+    try {
+        const empid = parseInt(req.params.empid);
+        const contentForms = await prisma.contentform.findMany({
+            where: {empid}
+        });
+        res.json(contentForms);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
