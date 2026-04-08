@@ -4,7 +4,9 @@ const app = express();
 import dotenv from 'dotenv';
 import {PrismaClient} from '@prisma/client';
 import {PrismaPg} from "@prisma/adapter-pg";
+import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
+import multer from 'multer';
 app.use(cors());
 
 dotenv.config();
@@ -16,6 +18,10 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({adapter});
 const port = process.env.PORT || 3000;
 
+//set up stuff for passing the files using multipart form data
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+const upload = multer({ storage: multer.memoryStorage() });
+
 app.use(cors({
     origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE"],
@@ -25,6 +31,11 @@ app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
 
+/**
+ *
+ * Requests after this
+ *
+ */
 
 app.get('/', (req, res) => {
     res.sendStatus(200);
@@ -288,30 +299,118 @@ app.post('/updateContentForm', async (req, res) => {
     }
 });
 
-app.post('/contentforms', async (req, res) => {
+// the emid shoudld be the logged in user
+app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
     try {
-        const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const {empid} = req.body;
+        const file = req.file;
+
+        if (!file || !empid) {
+            return res.status(400).json({error: 'Missing required fields'});
+        }
+
+        const employee = await prisma.employee.findUnique({
+            where: { empid: parseInt(empid) }
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found this should be the current user'});
+        }
+
+        const persona = employee.persona;
+
+        const {data, error} = await supabase.storage
+            .from(persona)
+            .upload(file.originalname, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true // upsert means that an existing file will be overwritten :)
+            });
+
+        if (error) {
+            return res.status(500).json({error: 'Something went wrong with the upload'});
+        }
+
+        const {data: urlData} = supabase.storage
+            .from(persona)
+            .getPublicUrl(file.originalname);
+
+        return res.status(200).json({
+            message: 'File uploaded successfully',
+            url: urlData.publicUrl,
+            bucket: persona,
+            filename: file.originalname
+        });
+
+    } catch (error) {
+        return res.status(500).json({error: 'Something went wrong with the upload'});
+    }
+});
+
+
+app.post('/contentforms', upload.single('file'), async (req, res) => {
+    try {
+        const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({error: 'File is required'});
+        }
+
+        const employee = await prisma.employee.findUnique({
+            where: {username: ownerUsername}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found this should be the current user'});
+        }
+
+        const persona = employee.persona;
+
+        const {data, error} = await supabase.storage
+            .from(persona)
+            .upload(file.originalname, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+
+        if (error) {
+            return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
+        }
+
+        // Get the public URL to store in the DB
+        const {data: urlData} = supabase.storage
+            .from(persona)
+            .getPublicUrl(file.originalname);
+
+        // Create the content form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
-                name,
-                url,
-                owner,
+                name: filename,
+                url: urlData.publicUrl,
+                username: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
                 content_type,
                 status,
                 employee: {
-                    connect: { username: owner }
+                    connect: {username: ownerUsername}
                 }
             }
         });
-        res.json(content);
+
+        return res.status(200).json({
+            message: 'Content form created successfully',
+            data: content,
+            url: urlData.publicUrl
+        });
+
     } catch (error) {
         console.error(error);
         res.status(500).send('Error creating content');
     }
 });
+
 app.post('/employee_manage', async (req, res) => {
     try {
         const { username, edits, employee, priority, email, comments } = req.body;
