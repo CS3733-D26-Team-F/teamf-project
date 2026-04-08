@@ -125,7 +125,7 @@ export function ManageContentForm() {
                         <option value="Archived">Archived</option>
                     </select>
                     <br/><br/>
-                    <button type="button" onClick={() => { setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' }); formRef.current?.reset(); }}>Reset</button>
+                    <button type="reset" onClick={() => { setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' }); formRef.current?.reset(); }}>Reset</button>
                     <button type="submit">Submit</button>
                 </form>
             </>
