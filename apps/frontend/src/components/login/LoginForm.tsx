@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import * as React from "react";
 
-export default function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
+export function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -84,12 +84,13 @@ async function setSessionTo(persona: string) {
     if (persona === 'Admin') {
         displayAdmin();
         console.log('Admin access');
-
     }
+
     if (persona === 'Underwriter'){
         displayUnderwriter();
         console.log('Underwriter access');
     }
+
     if (persona === 'Business Analyst'){
         displayBusinessAnalyst();
         console.log('Business Analyst access');
