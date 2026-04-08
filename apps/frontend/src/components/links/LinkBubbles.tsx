@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 export type MenuItem = {
+    id: number;
     label: string;
     path: string;
 };
@@ -8,7 +9,8 @@ export type MenuItem = {
 type LinkProps = {
     items: MenuItem[];
     col_lg: number;
-    onDelete: (label: string) => void;
+//    onDelete: (label: string) => void;
+    onDelete: (id: number) => void;
 };
 
 const colMap: Record<number, string> = {
@@ -28,6 +30,7 @@ export function LinksWithProps(props: LinkProps) {
                         <div
                             key={i}
                             className="
+                            relative
                             flex flex-col items-center justify-center
                             bg-pale-sky rounded-xl p-6 px-6 shadow
                             hover:bg-gray-300 hover:shadow-lg
@@ -37,14 +40,15 @@ export function LinksWithProps(props: LinkProps) {
                         >
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation();
+                                    e.stopPropagation(); // prevent navigation
                                     e.preventDefault();
-                                    props.onDelete(item.label);
+                                    props.onDelete(item.id);
                                 }}
-                                className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                                className="absolute bottom-3 right-3 bg-yale-blue text-fresh-sky px-3 py-1 rounded hover:bg-fresh-sky hover:text-yale-blue"
                             >
                                 Delete
                             </button>
+
                             <br/>
                             <h3 className="text-center font-semibold text-yale-blue">
                                 {item.label}

@@ -11,6 +11,7 @@ export function LinksDemo() {
             const data = await res.json();
 
             const mapped: MenuItem[] = data.map((item: any) => ({
+                id: item.id,
                 label: item.name,
                 path: item.url
             }));
@@ -18,15 +19,15 @@ export function LinksDemo() {
         }
         loadContent()
     }, [persona]);
-    async function deleteItem(label: string) {
+    async function deleteItem(id: number) {
         const confirmed = window.confirm("Are you sure you want to delete this item?");
         if (!confirmed) return;
 
-        await fetch(`http://localhost:3000/contentforms/${label}`, {
+        await fetch(`http://localhost:3000/contentforms/${id}`, {
             method: "DELETE"
         });
 
-        setItems(prev => prev.filter(item => item.label !== label));
+        setItems(prev => prev.filter(item => item.id !== id));
     }
     return (
         <LinksWithProps
