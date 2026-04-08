@@ -320,16 +320,21 @@ app.post('/employee_manage', async (req, res) => {
     }
 });
 
-app.post('/deleteContentForm', async (req, res) => {
-    const {name} = req.body;
+app.delete('/deleteContentForm/:name', async (req, res)=> {
+    const {name} = req.params;
 
-    if (!name) {
-        return res.status(400).send("Name of content is required");
+    const contentform1 = await prisma.contentform.findUnique({
+        where: {name: name}
+    });
+
+    if (!contentform1) {
+        return res.status(400).send("No content form of this name");
     }
 
     try {
+
         const contentForm = await prisma.contentform.delete({
-            where: {name: name}
+            where: {name: contentform1.name}
         });
         return res.status(200).json({
             message: 'Content form deleted successfully',
