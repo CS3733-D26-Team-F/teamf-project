@@ -10,6 +10,7 @@ import './App.css'
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 
+
 export default function App() {
     return (
         // Each Route should be a page from src/pages

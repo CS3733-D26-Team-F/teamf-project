@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant hover (&:hover);
+
 @theme {
     --color-frozen-water: var(--frozen-water);
     --color-pacific-blue: var(--pacific-blue);
@@ -214,12 +216,13 @@ form {
 
         button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
 
-        button[type="reset"] {
-            background-color: var(--color-pacific-blue);
-            color: white;
-        }
 
-        button[type="reset"]:hover { background-color: var(--color-frozen-water); }
+    button[type="reset"] {
+        background-color: var(--color-yale-blue);
+        color: white;
+    }
+
+    button[type="reset"]:hover { background-color: var(--color-fresh-sky); }
 
         label, label[htmlFor="employeeSelect"]{
             color: var(--color-yale-blue);

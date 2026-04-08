@@ -1,46 +1,57 @@
+import { useState, useEffect, useRef } from "react";
 import { Header } from "../components/Header"
+import { AccessDenied } from "../components/AccessDenied.tsx"
 
 export function ManageContentForm() {
-    return (
+
+    const allowedAccess = localStorage.getItem('persona') === 'Admin';
+    if (allowedAccess) {
+        return (
         <>
             <Header />
-
-            <form>
+            <form ref={formRef} onSubmit={handleSubmit}>
                 <h1>Manage Content Form</h1>
                 <br/>
                 <hr />
                 <br />
-                <label htmlFor="docName"> Name of Hyperlink or Document:</label>
-                <input type="text" id="docName"/>
+                <label htmlFor="name">Name of Hyperlink or Document:</label>
+                <input type="text" id="name" value={formData.name} onChange={handleChange} />
                 <br/><br/>
                 <label htmlFor="url">URL Link:</label>
-                <input type="text" id="url"/>
+                <input type="text" id="url" value={formData.url} onChange={handleChange} />
                 <br/><br/>
-                <label htmlFor="contentOwner">Name of Content Owner:</label>
-                <input type="text" id="contentOwner"/>
+                <label htmlFor="owner">Name of Content Owner:</label>
+                <select id="owner" value={formData.owner} onChange={handleChange}>
+                    <option value="" disabled hidden>Select</option>
+                    {employees.map(emp => (
+                        <option key={emp.empid} value={emp.username}>{emp.username}</option>
+                    ))}
+                </select>
                 <br/><br/>
-                <label htmlFor="persona">Job Position: </label>
-                <select name="Job Position" id="persona">
-                    <option value="" disabled selected hidden>Select</option>
+                <label htmlFor="persona">Job Position:</label>
+                <select id="persona" value={formData.persona} onChange={handleChange}>
+                    <option value="" disabled hidden>Select</option>
                     <option value="Underwriter">Underwriter</option>
                     <option value="Business Analyst">Business Analyst</option>
                 </select>
                 <br/><br/>
-                <label htmlFor="lastModifiedDate">Last Modified Date:</label>
-                <input type="date" id="lastModifiedDate" name="lastModifiedDate"/>
+                <label htmlFor="date_modified">Last Modified Date:</label>
+                <input type="date" id="date_modified" value={formData.date_modified} onChange={handleChange} />
                 <br/><br/>
-                <label htmlFor="expirationDate">Expiration Date:</label>
-                <input type="date" id="expirationDate" name="expirationDate"/>
+                <label htmlFor="expiration_date">Expiration Date:</label>
+                <input type="date" id="expiration_date" value={formData.expiration_date} onChange={handleChange} />
                 <br/><br/>
                 <h3>Content Type:</h3>
-                <label htmlFor="referenceContent"> Reference Content</label>
-                <input type="radio" id="referenceContent" name="contentType"/>
-                <label htmlFor="workflowContent"> Workflow Content</label>
-                <input type="radio" id="workflowContent" name="contentType"/>
+                <input type="radio" name="content_type" value="Reference" onChange={handleChange}
+                       checked={formData.content_type === 'Reference'} />
+                <label> Reference Content</label>
+                <input type="radio" name="content_type" value="Workflow" onChange={handleChange}
+                       checked={formData.content_type === 'Workflow'} />
+                <label> Workflow Content</label>
                 <br/><br/>
-                <label htmlFor="docStatus">Document Status:</label>
-                <select name="Document Status" id="docStatus">
-                    <option value="" disabled selected hidden>Select</option>
+                <label htmlFor="status">Document Status:</label>
+                <select id="status" value={formData.status} onChange={handleChange}>
+                    <option value="" disabled hidden>Select</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Internal Review">Internal Review</option>
                     <option value="Client Review">Client Review</option>
@@ -49,9 +60,13 @@ export function ManageContentForm() {
                     <option value="Archived">Archived</option>
                 </select>
                 <br/><br/>
-
-                <button type="reset">Reset</button><button type="submit">Submit</button>
+                <button type="button" onClick={() => { setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' }); formRef.current?.reset(); }}>Reset</button>
+                <button type="submit">Submit</button>
             </form>
         </>
     );
+    } else {
+        return <AccessDenied />;
+    }
+    
 }

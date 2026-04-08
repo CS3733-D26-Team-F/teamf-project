@@ -74,6 +74,7 @@ Use `Ctrl + C` in each terminal.
 - http://localhost:3000/employees
 - http://localhost:3000/contentforms
 - http://localhost:3000/employee_manage
+- http://localhost:3000/login
 
 Notes:
 
