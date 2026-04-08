@@ -54,9 +54,11 @@ Functions
 - "/updateEmployee" updates the employee information
 - "/employee_manage" as a post enters data for the employee manage form
 - "/contentforms" as a post enters data for the content form
-- "/deleteContentForm" deletes an existing content form
-- "/updateContentForm" updates a content form
+- "/deleteContentForm/:name" deletes an existing content form based on its name
+- "/updateContentForm" updates a content form when prompted with the name of the form
 - "/updateTheme" updates the theme for the employee
+- "/contentforms/persona/:persona" retrieves all the content forms of a certain persona
+- "/contentforms/persona/:persona/:field" retrieves a list of values in the field of a type of content form (all names, urls, etc.)
 
 
 ## First-time setup only
