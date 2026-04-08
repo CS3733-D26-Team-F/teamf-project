@@ -56,11 +56,15 @@ app.post('/login', async (req, res) => {
 
     if (employee && employee.password === password) {
         console.log(`Okay: ${username}`);
+
+        //receive session info from front end, including empid, username, and persona
+
         return res.status(200).json({
             message: 'okay',
             employee: {
                 empid: employee.empid,
-                username: employee.username
+                username: employee.username,
+                persona: employee.persona
             }
         });
     } else {
@@ -145,13 +149,15 @@ app.post('/updateEmployee', async (req, res) => {
 
 app.post('/addEmployee', async (req, res) => {
     const {username, password, persona} = req.body;
-
+    
     if (!username || !password) {
         return res.status(400).send('Missing field required');
     }
 
     try {
         if (persona.trim() == 'Admin'){
+
+            
             const newAdmin = await prisma.employee.create({
                 data: {
                     username: username,
@@ -169,6 +175,7 @@ app.post('/addEmployee', async (req, res) => {
                 data: newAdmin
             });
         } else {
+
             const newEmp = await prisma.employee.create({
                 data: {
                     username,

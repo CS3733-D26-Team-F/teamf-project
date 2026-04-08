@@ -1,29 +1,10 @@
 import {useEffect, useState} from 'react';
 import { Header } from "../components/Header"
+import { AccessDenied } from "../components/AccessDenied.tsx"
 
 export function ManageEmployeesForm() {
-    const [formData, setFormData] = useState({
-        full_name: '', edits: '', employee: '', priority: '', email: '', comments: ''
-    });
-
-    const handleSubmit = async () => {
-        await fetch('http://localhost:3000/employee_manage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
-        setFormData({ full_name: '', edits: '', employee: '', priority: '', email: '', comments: '' });
-    };
-
-    const [employees, setEmployees] = useState<string[]>([]);
-
-    useEffect(() => {
-        fetch('http://localhost:3000/employees')
-            .then(res => res.json())
-            .then(data => setEmployees(data.map((e: {username: string}) => e.username)));
-    }, []);
-
-
+    const allowedAccess = localStorage.getItem('persona') === 'Admin';
+    if (allowedAccess) {
     return (
         <>
             <Header />
@@ -119,4 +100,7 @@ export function ManageEmployeesForm() {
             </form>
         </>
     );
+} else {
+    return <AccessDenied />;
+    }
 }
