@@ -349,6 +349,7 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
 
 app.post('/contentforms', upload.single('file'), async (req, res) => {
     try {
+        console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
 
@@ -387,7 +388,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
             data: {
                 name: filename,
                 url: urlData.publicUrl,
-                username: ownerUsername,
+                owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
@@ -406,7 +407,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('contentform create error:', error);
         res.status(500).send('Error creating content');
     }
 });

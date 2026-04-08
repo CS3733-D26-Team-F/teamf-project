@@ -7,14 +7,28 @@ export function ManageContentForm() {
 
     const [searchParams] = useSearchParams();
     const editId = searchParams.get('edit')
+    const persona = localStorage.getItem("persona")
+    const username = localStorage.getItem("username")
     const [formData, setFormData] = useState({
-        name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: ''
+        name: '',
+        owner: persona === 'Admin' ? '' : username ?? '',
+        persona: '',
+        date_modified: '',
+        expiration_date: '',
+        content_type: '',
+        status: ''
     });
+    const [file, setFile] = useState<File | null>(null);
+    const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
+    const formRef = useRef<HTMLFormElement>(null);
+
 
     useEffect(() => {
-        fetch('http://localhost:3000/employees')
-            .then(res => res.json())
-            .then(data => setEmployees(data));
+        if (persona === 'Admin') {
+            fetch('http://localhost:3000/employees')
+                .then(res => res.json())
+                .then(data => setEmployees(data));
+        }
     }, []);
 
     useEffect(() => {
@@ -23,7 +37,6 @@ export function ManageContentForm() {
                 .then(res => res.json())
                 .then(data => setFormData({
                     name: data.name,
-                    url: data.url,
                     owner: data.owner,
                     persona: data.persona,
                     date_modified: data.date_modified?.split('T')[0] ?? '',
@@ -42,7 +55,7 @@ export function ManageContentForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.url || !formData.owner || !formData.persona ||
+        if (!formData.name || !formData.owner || !formData.persona ||
             !formData.date_modified || !formData.expiration_date ||
             !formData.content_type || !formData.status) {
             alert('Please fill in all fields before submitting.');
@@ -56,20 +69,39 @@ export function ManageContentForm() {
                 body: JSON.stringify(formData)
             });
         } else {
+            if (!file) {
+                alert('Please upload a file.');
+                return;
+            }
+            const formPayload = new FormData();
+            formPayload.append('filename', formData.name);
+            formPayload.append('ownerUsername', formData.owner);
+            formPayload.append('date_modified', formData.date_modified);
+            formPayload.append('expiration_date', formData.expiration_date);
+            formPayload.append('content_type', formData.content_type);
+            formPayload.append('status', formData.status);
+            formPayload.append('file', file);
+
             await fetch('http://localhost:3000/contentforms', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: formPayload
             });
         }
-        setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
+        setFormData({
+            name: '',
+            owner: persona === 'Admin' ? '' : username ?? '',
+            persona: '',
+            date_modified: '',
+            expiration_date: '',
+            content_type: '',
+            status: ''
+        });
+        setFile(null);
         formRef.current?.reset();
     };
 
-    const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
-    const formRef = useRef<HTMLFormElement>(null);
-    const allowedAccess = localStorage.getItem('persona') === 'Admin'
-        || localStorage.getItem('persona') === 'Underwriter' || localStorage.getItem('persona') === 'Business Analyst';
+    const allowedAccess = persona === 'Admin'
+        || persona === 'Underwriter' || persona === 'Business Analyst';
     if (allowedAccess) {
         return (
             <>
@@ -82,16 +114,20 @@ export function ManageContentForm() {
                     <label htmlFor="name">Name of Hyperlink or Document:</label>
                     <input type="text" id="name" value={formData.name} onChange={handleChange} />
                     <br/><br/>
-                    <label htmlFor="url">URL Link:</label>
-                    <input type="text" id="url" value={formData.url} onChange={handleChange} />
+                    <label htmlFor="file">Upload File:</label>
+                    <input type="file" id="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                     <br/><br/>
                     <label htmlFor="owner">Name of Content Owner:</label>
-                    <select id="owner" value={formData.owner} onChange={handleChange}>
-                        <option value="" disabled hidden>Select</option>
-                        {employees.map(emp => (
-                            <option key={emp.empid} value={emp.username}>{emp.username}</option>
-                        ))}
-                    </select>
+                    {persona === 'Admin' ? (
+                        <select id="owner" value={formData.owner} onChange={handleChange}>
+                            <option value="" disabled hidden>Select</option>
+                            {employees.map(emp => (
+                                <option key={emp.empid} value={emp.username}>{emp.username}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <input type="text" id="owner" value={formData.owner} readOnly />
+                    )}
                     <br/><br/>
                     <label htmlFor="persona">Job Position:</label>
                     <select id="persona" value={formData.persona} onChange={handleChange}>
@@ -125,7 +161,11 @@ export function ManageContentForm() {
                         <option value="Archived">Archived</option>
                     </select>
                     <br/><br/>
-                    <button type="button" onClick={() => { setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' }); formRef.current?.reset(); }}>Reset</button>
+                    <button type="button" onClick={() => {
+                        setFormData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
+                        setFile(null);
+                        formRef.current?.reset();
+                    }}>Reset</button>
                     <button type="submit">Submit</button>
                 </form>
             </>
