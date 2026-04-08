@@ -121,7 +121,9 @@ export function ManageContentForm() {
                     {persona === 'Admin' ? (
                         <select id="owner" value={formData.owner} onChange={handleChange}>
                             <option value="" disabled hidden>Select</option>
-                            {employees.map(emp => (
+                            {employees
+                                .filter(emp => emp.persona !== 'Admin')
+                                .map(emp => (
                                 <option key={emp.empid} value={emp.username}>{emp.username}</option>
                             ))}
                         </select>
