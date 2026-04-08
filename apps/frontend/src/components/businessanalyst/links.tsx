@@ -5,6 +5,7 @@ import {useNavigate} from "react-router-dom";
 export function LinksDemo() {
     const [items, setItems] = useState<MenuItem[]>([]);
     const persona = localStorage.getItem("persona");
+    //const empid = localStorage.getItem("empid");
     const navigate = useNavigate();
     useEffect(() => {
         async function loadContent() {
