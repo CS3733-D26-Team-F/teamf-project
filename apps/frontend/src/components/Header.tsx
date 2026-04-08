@@ -5,7 +5,7 @@ import ThemeToggle from "./ThemeToggle.tsx";
 export function Header() {
 
     return (
-        <header className="menu">
+        <header className="main-header">
             <div className="logo">
                 <Link to="/">
                     <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
