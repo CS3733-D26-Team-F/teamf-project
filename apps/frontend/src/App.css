@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant hover (&:hover);
+
 @theme {
     --color-frozen-water: var(--frozen-water);
     --color-pacific-blue: var(--pacific-blue);
@@ -38,103 +40,119 @@ a {
 }
 
 header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
     background-color: var(--color-yale-blue);
-    padding: 1rem;
 
-    .logo {
+    &.main-header {
         display: flex;
         flex-direction: row;
+        justify-content: space-between;
+        padding: 1rem;
 
-        img {
-            width: 15rem;
-            height: auto;
+        .logo {
+            display: flex;
+            flex-direction: row;
+
+            img {
+                width: 15rem;
+                height: auto;
+            }
+        }
+
+        nav {
+            display: flex;
+            gap: 1rem;
+            font-size: 1.1rem;
+            align-items: center;
+            flex-wrap: nowrap;
+            font-family: sans-serif;
+
+            a, button {
+                padding: 8px 12px;
+                color:white;
+                &:hover {
+                    background-color: var(--color-fresh-sky);
+                    border-radius: 4px;
+                    transition: all 0.2s ease;
+                }
+            }
         }
     }
 
-    nav {
+    &.login-header {
         display: flex;
-        gap: 1rem;
-        font-size: 1.1rem;
+        justify-content: center;
         align-items: center;
-        flex-wrap: nowrap;
-        font-family: sans-serif;
 
-        a, button{
-            padding: 8px 12px;
-            color:white;
-            &:hover{
-                background-color: var(--color-fresh-sky);
-                border-radius: 4px;
-                transition: all 0.2s ease;
-            }
+        img {
+            padding: 2rem;
+            max-width: 750px;
+            height: auto;
         }
     }
 }
 
 main {
-    position: relative;
-    min-height: 60vh;
-    
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    &.main-menu {
+        position: relative;
+        min-height: 60vh;
 
-    overflow: hidden;
-    color: white;
-    text-align: center;
-    font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
 
-    background: linear-gradient(135deg, #00355f 0%, #005580 45%, #ffffff 100%);
+        overflow: hidden;
+        color: white;
+        text-align: center;
+        font-family: sans-serif;
 
-    .image-stack {
-        position: absolute;
-        inset: 0;
-    }
+        background: linear-gradient(135deg, #00355f 0%, #005580 45%, #ffffff 100%);
 
-    .slide {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: auto;
-        object-fit: cover;
-        opacity: 0;
-        transition: opacity 1s ease-in-out;
-
-        &.active {
-            opacity: 1;
-        }
-    }
-
-    .overlay {
-        position: absolute;
-        inset: 0;
-          background: linear-gradient(
-                  #00355F80,
-                  #00558090
-          );
-          pointer-events: none;
-    }
-
-    .content {
-        z-index: 1;
-
-        h1 {
-            font-size: 3.8rem;
-            font-weight: 900;
-            margin: 1rem;
+        .image-stack {
+            position: absolute;
+            inset: 0;
         }
 
-        p {
-            font-size: 1.5rem;
-            font-weight: 900;
-            margin: 0.75rem;
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+
+            &.active {
+                opacity: 1;
+            }
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                    #00355F80,
+                    #00558090
+            );
+            pointer-events: none;
+        }
+
+        .content {
+            z-index: 1;
+
+            h1 {
+                font-size: 3.8rem;
+                font-weight: 900;
+                margin: 1rem;
+            }
+
+            p {
+                font-size: 1.5rem;
+                font-weight: 900;
+                margin: 0.75rem;
+            }
         }
     }
-
 }
 
 section.links {
@@ -144,97 +162,154 @@ section.links {
 /*Hero formatting*/
 
 form {
-    display: block;
-    text-align: left;
-    background-color: var(--color-frozen-water);
-    color: var(--color-yale-blue);
-    gap: 10rem;
-    border-radius: 2rem;
-    margin: 1rem;
-    padding: 1rem;
+    &.content-management {
 
-    h1 {
-        font-family: Roboto, sans-serif;
-        text-align: center;
-    }
-
-    h2 {
-        font-family: Roboto, sans-serif;
-        font-size: 2rem;;
-        outline: 3px solid var(--color-yale-blue);
-        text-align: center;
-    }
-
-    body {
-        font-family: Roboto, sans-serif;
+        display: block;
+        text-align: left;
+        background-color: var(--color-frozen-water);
         color: var(--color-yale-blue);
-        justify-content: left;
-    }
+        gap: 10rem;
+        border-radius: 2rem;
+        margin: 1rem;
+        padding: 1rem;
 
-    input, textarea {
-        font-family: Roboto, sans-serif;
-        padding: 10px;
-        font-size: 1rem;
-        color: var(--color-yale-blue);
-    }
+        h1 {
+            font-family: Roboto, sans-serif;
+            text-align: center;
+        }
 
-    button {
-        font-family: Roboto, sans-serif;
-        padding: 12px;
-        width: 15%;
-        border-radius: 30px;
-        font-size: 1rem;
-        margin-inline: 10rem;
-        margin-top: 3rem;
-        margin-bottom: 5rem;
-    }
+        h2 {
+            font-family: Roboto, sans-serif;
+            font-size: 2rem;;
+            outline: 3px solid var(--color-yale-blue);
+            text-align: center;
+        }
 
-    button[type="submit"] {
+        body {
+            font-family: Roboto, sans-serif;
+            color: var(--color-yale-blue);
+            justify-content: left;
+        }
+
+        input, textarea {
+            font-family: Roboto, sans-serif;
+            padding: 10px;
+            font-size: 1rem;
+            color: var(--color-yale-blue);
+        }
+
+        button {
+            font-family: Roboto, sans-serif;
+            padding: 12px;
+            width: 15%;
+            border-radius: 30px;
+            font-size: 1rem;
+            margin-inline: 10rem;
+            margin-top: 3rem;
+            margin-bottom: 5rem;
+        }
+
+        button[type="submit"] {
+            background-color: var(--color-yale-blue);
+            color: white;
+        }
+
+        button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
+
+
+    button[type="reset"] {
         background-color: var(--color-yale-blue);
         color: white;
     }
 
-    button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
+    button[type="reset"]:hover { background-color: var(--color-fresh-sky); }
 
-    button[type="reset"] {
-        background-color: var(--color-pacific-blue);
-        color: white;
+        label, label[htmlFor="employeeSelect"]{
+            color: var(--color-yale-blue);
+            font-size: 1.5rem;
+            text-align: left;
+            margin: 0.75rem;
+        }
+
+        select {
+            color: var(--color-yale-blue);
+            font-size: 1rem;
+            text-align: left;
+            margin: 0.75rem;
+        }
+
+        input[type=radio] {
+            text-align: left;
+            transform: scale(2);
+            margin: 1rem;
+            color: var(--color-pacific-blue);
+        }
+
+        input[type="text"] {
+            background-color: var(--color-pale-sky); /* Light blue background */
+            color: #333;               /* Dark grey text */
+            border: 2px solid var(--color-pacific-blue); /* Blue border */
+        }
+
+        h1 {
+            font-family: Roboto, sans-serif;
+            color: var(--color-yale-blue);
+            font-size: 56px;
+            letter-spacing: -1.68px;
+            margin: 32px 0;
+            text-align: center;
+
+            @media (max-width: 1024px) {
+                font-size: 36px;
+                margin: 20px 0;
+            }
+        }
     }
 
-    button[type="reset"]:hover { background-color: var(--color-frozen-water); }
+    &.login-form {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin: 4rem 10rem;
 
-    label, label[htmlFor="employeeSelect"]{
-        color: var(--color-yale-blue);
-        font-size: 1.5rem;
-        text-align: left;
-        margin: 0.75rem;
-    }
+        div.entry {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 6rem;
+        }
 
-    select {
-        color: var(--color-yale-blue);
-        font-size: 1rem;
-        text-align: left;
-        margin: 0.75rem;
-    }
+        label {
+            color: var(--color-yale-blue);
+            font-size: 2.2rem;
+            text-align: left;
+            margin: 0.75rem;
+        }
 
-    input[type=radio] {
-        text-align: left;
-        transform: scale(2);
-        margin: 1rem;
-        color: var(--color-pacific-blue);
-    }
+        input, textarea {
+            font-family: Roboto, sans-serif;
+            padding: 0px 10px;
+            font-size: 2.2rem;
+            color: var(--color-yale-blue);
+        }
 
-    h1 {
-        font-family: Roboto, sans-serif;
-        color: var(--color-yale-blue);
-        font-size: 56px;
-        letter-spacing: -1.68px;
-        margin: 32px 0;
-        text-align: center;
+        input[type="text"], input[type="password"] {
+            color: #333;               /* Dark grey text */
+            border: 6px solid var(--color-yale-blue); /* Blue border */
+        }
 
-        @media (max-width: 1024px) {
-            font-size: 36px;
-            margin: 20px 0;
+        button {
+            border-radius: 30px;
+            font-family: Roboto, sans-serif;
+            font-size: 2.2rem;
+            padding: 1rem 5rem;
+            color: white;
+            background-color: var(--color-yale-blue);
+            transition: all 0.2s ease;
+
+            &:hover {
+                background-color: var(--color-fresh-sky);
+            }
         }
     }
 }
@@ -259,10 +334,3 @@ textarea {
     width: 50%;
     height: 50px;
 }
-
-input[type="text"] {
-    background-color: var(--color-pale-sky); /* Light blue background */
-    color: #333;               /* Dark grey text */
-    border: 2px solid var(--color-pacific-blue); /* Blue border */
-}
-

@@ -22,6 +22,11 @@ const port = process.env.PORT || 3000;
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
 const upload = multer({ storage: multer.memoryStorage() });
 
+app.use(cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -67,11 +72,15 @@ app.post('/login', async (req, res) => {
 
     if (employee && employee.password === password) {
         console.log(`Okay: ${username}`);
+
+        //receive session info from front end, including empid, username, and persona
+
         return res.status(200).json({
             message: 'okay',
             employee: {
                 empid: employee.empid,
-                username: employee.username
+                username: employee.username,
+                persona: employee.persona
             }
         });
     } else {
@@ -163,6 +172,8 @@ app.post('/addEmployee', async (req, res) => {
 
     try {
         if (persona.trim() == 'Admin'){
+
+
             const newAdmin = await prisma.employee.create({
                 data: {
                     username: username,
@@ -180,6 +191,7 @@ app.post('/addEmployee', async (req, res) => {
                 data: newAdmin
             });
         } else {
+
             const newEmp = await prisma.employee.create({
                 data: {
                     username,
@@ -412,16 +424,21 @@ app.post('/employee_manage', async (req, res) => {
     }
 });
 
-app.post('/deleteContentForm', async (req, res) => {
-    const {name} = req.body;
+app.delete('/deleteContentForm/:name', async (req, res)=> {
+    const {name} = req.params;
 
-    if (!name) {
-        return res.status(400).send("Name of content is required");
+    const contentform1 = await prisma.contentform.findUnique({
+        where: {name: name}
+    });
+
+    if (!contentform1) {
+        return res.status(400).send("No content form of this name");
     }
 
     try {
+
         const contentForm = await prisma.contentform.delete({
-            where: {name: name}
+            where: {name: contentform1.name}
         });
         return res.status(200).json({
             message: 'Content form deleted successfully',
@@ -432,7 +449,74 @@ app.post('/deleteContentForm', async (req, res) => {
     }
 });
 
+app.get('/contentforms/persona/:persona', async (req, res) => {
+    const {persona} = req.params;
+    try {
+        if (persona === 'Admin') {
+            const contentForm = await prisma.contentform.findMany({
+                where: {persona: {in: ['Underwriter', 'Business Analyst']}}
+            });
+            res.json(contentForm)
+        } else {
+            const contentForms = await prisma.contentform.findMany({
+                where: {persona: persona}
+            });
+            res.json(contentForms)
+        }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
 
+app.get('/contentforms/persona/:persona/:field', async (req, res) => {
+    const {persona, field} = req.params;
+    try {
+        if (persona === 'Admin') {
+            const contentForm = await prisma.contentform.findMany({
+                where: {persona: {in: ['Underwriter', 'Business Analyst']}},
+                select: {[field]: true}
+            });
+            const links = contentForm.map(item => item[field])
+            res.json(links);
+        } else {
+            const contentForms = await prisma.contentform.findMany({
+                where: {persona: persona},
+                select: {[field]: true}
+            });
+            const links = contentForms.map(item => item[field])
+            res.json(links);
+        }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+app.post('/login', async (req, res) => {
+    const {username, password} = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Please input username and password');
+    }
+
+    const employee = await prisma.employee.findFirst({
+        where: {username: username}
+    });
+
+    if (employee && employee.password === password) {
+        console.log(`Okay: ${username}`);
+        return res.status(200).json({
+            message: 'okay',
+            employee: {
+                empid: employee.empid,
+                username: employee.username,
+                isLoggedIn: true,
+            }
+        });
+    } else {
+        console.log(`failed: ${username}`);
+        return res.status(401).send('Invalid username or password');
+    }
+});
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
