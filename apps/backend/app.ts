@@ -450,21 +450,26 @@ app.delete('/deleteContentForm/:name', async (req, res)=> {
 });
 
 app.get('/contentforms/persona/:persona', async (req, res) => {
-    const {persona} = req.params;
+    const { persona } = req.params;
     try {
-        if (persona === 'Admin') {
-            const contentForm = await prisma.contentform.findMany({
-                where: {persona: {in: ['Underwriter', 'Business Analyst']}}
-            });
-            res.json(contentForm)
-        } else {
-            const contentForms = await prisma.contentform.findMany({
-                where: {persona: persona}
-            });
-            res.json(contentForms)
-        }
+        const contentForms = await prisma.contentform.findMany({
+            where: { persona: persona }
+        });
+        res.json(contentForms);
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+app.get('/contentforms/admin', async (req, res) => {
+    try {
+        const [underwriterForms, businessAnalystForms] = await Promise.all([
+            prisma.contentform.findMany({ where: { persona: 'Underwriter' } }),
+            prisma.contentform.findMany({ where: { persona: 'Business Analyst' } })
+        ]);
+        res.json({ Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms });
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
     }
 });
 
