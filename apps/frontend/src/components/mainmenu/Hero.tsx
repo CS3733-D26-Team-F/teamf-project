@@ -20,7 +20,7 @@ export function Hero() {
     }, []);
 
     return(
-        <main>
+        <main className="main-menu">
             <div className="image-stack">
                 {images.map((src, i) => (
                     <img

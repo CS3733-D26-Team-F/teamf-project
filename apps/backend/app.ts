@@ -16,6 +16,11 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({adapter});
 const port = process.env.PORT || 3000;
 
+app.use(cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -149,7 +154,7 @@ app.post('/updateEmployee', async (req, res) => {
 
 app.post('/addEmployee', async (req, res) => {
     const {username, password, persona} = req.body;
-    
+
     if (!username || !password) {
         return res.status(400).send('Missing field required');
     }
@@ -157,7 +162,7 @@ app.post('/addEmployee', async (req, res) => {
     try {
         if (persona.trim() == 'Admin'){
 
-            
+
             const newAdmin = await prisma.employee.create({
                 data: {
                     username: username,
@@ -382,6 +387,32 @@ app.get('/contentforms/persona/:persona/:field', async (req, res) => {
     }
 });
 
+app.post('/login', async (req, res) => {
+    const {username, password} = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Please input username and password');
+    }
+
+    const employee = await prisma.employee.findFirst({
+        where: {username: username}
+    });
+
+    if (employee && employee.password === password) {
+        console.log(`Okay: ${username}`);
+        return res.status(200).json({
+            message: 'okay',
+            employee: {
+                empid: employee.empid,
+                username: employee.username,
+                isLoggedIn: true,
+            }
+        });
+    } else {
+        console.log(`failed: ${username}`);
+        return res.status(401).send('Invalid username or password');
+    }
+});
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
