@@ -522,6 +522,7 @@ app.post('/login', async (req, res) => {
         return res.status(401).send('Invalid username or password');
     }
 });
+
 app.get('/contentforms/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
@@ -554,6 +555,7 @@ app.put('/contentforms/:id', async (req, res) => {
         res.status(500).json({ error: 'Something went wrong' });
     }
 });
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

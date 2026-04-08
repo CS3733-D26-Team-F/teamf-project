@@ -48,6 +48,7 @@ export function LinksWithProps(props: LinkProps) {
                             >
                                 Edit
                             </button>
+
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation(); // prevent navigation

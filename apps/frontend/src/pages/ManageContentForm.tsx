@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Header } from "../components/Header"
+import {useSearchParams} from "react-router-dom";
 import { AccessDenied } from "../components/AccessDenied.tsx"
 
 export function ManageContentForm() {
 
+    const [searchParams] = useSearchParams();
+    const editId = searchParams.get('edit')
     const [formData, setFormData] = useState({
         name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: ''
     });
@@ -13,6 +16,23 @@ export function ManageContentForm() {
             .then(res => res.json())
             .then(data => setEmployees(data));
     }, []);
+
+    useEffect(() => {
+        if (editId) {
+            fetch(`http://localhost:3000/contentforms/${editId}`)
+                .then(res => res.json())
+                .then(data => setFormData({
+                    name: data.name,
+                    url: data.url,
+                    owner: data.owner,
+                    persona: data.persona,
+                    date_modified: data.date_modified?.split('T')[0] ?? '',
+                    expiration_date: data.expiration_date?.split('T')[0] ?? '',
+                    content_type: data.content_type,
+                    status: data.status
+                }));
+        }
+    }, [editId]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { id, name, value } = e.target;
@@ -29,12 +49,19 @@ export function ManageContentForm() {
             return;
         }
 
-        await fetch('http://localhost:3000/contentforms', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
-        });
-
+        if (editId) {
+            await fetch(`http://localhost:3000/contentforms/${editId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        } else {
+            await fetch('http://localhost:3000/contentforms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        }
         setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
         formRef.current?.reset();
     };
