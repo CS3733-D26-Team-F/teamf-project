@@ -36,6 +36,37 @@ app.use(morgan('dev'));
  * Requests after this
  *
  */
+app.post("/auth/sync", checkJwt, async (req, res) => {
+    const auth0Id = req.auth.payload.sub;
+    const { username } = req.body;
+
+    try {
+        let employee = await prisma.employee.findUnique({ where: { auth0Id } });
+
+        if (!employee) {
+            employee = await prisma.employee.findFirst({
+                where: {
+                    OR: [{ username }],
+                },
+            });
+
+            if (employee) {
+                employee = await prisma.employee.update({
+                    where: { empid: employee.empid },
+                    data: { auth0Id },
+                });
+            } else {
+                employee = await prisma.employee.create({
+                    data: { auth0Id, username },
+                });
+            }
+        }
+
+        res.json({ empid: employee.empid, username: employee.username });
+    } catch (err) {
+        res.status(500).json({ error: "Sync failed", detail: err.message });
+    }
+});
 
 app.get('/', (req, res) => {
     res.sendStatus(200);

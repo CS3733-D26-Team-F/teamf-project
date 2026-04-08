@@ -19,9 +19,6 @@ model contentform {
   content_type    String    @db.VarChar(50)
   status          String    @db.VarChar(50)
   empid           Int?
-  is_favorite     Boolean   @default(false)
-  deleted_at      DateTime? @db.Date
-  is_deleted      Boolean   @default(false)
   employee        employee? @relation(fields: [empid], references: [empid])
 }
 
@@ -30,14 +27,10 @@ model contentform {
 model employee {
   empid       Int           @id @default(autoincrement())
   username    String        @unique(map: "unique_user") @db.VarChar(50)
-  password    String?       @db.VarChar(20)
+  password    String        @db.VarChar(20)
   persona     String        @db.VarChar(50)
   theme       Int?          @default(0)
   isLoggedIn  Boolean?      @default(false)
-  auth0Id     String?       @unique @db.VarChar
-  first_name  String?
-  last_name   String?
-  created_at  DateTime?     @default(now()) @db.Timestamp(6)
   admin       admin?
   contentform contentform[]
 }
