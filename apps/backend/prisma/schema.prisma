@@ -18,7 +18,7 @@ model contentform {
   expiration_date DateTime @db.Date
   content_type    String   @db.VarChar(50)
   status          String   @db.VarChar(50)
-  empid           Int
+  empid           Int      // this is the link that gets created from bellow
   employee        employee @relation(fields: [empid], references: [empid])
 }
 
