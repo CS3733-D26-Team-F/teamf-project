@@ -1,5 +1,5 @@
 import { LoginHeader } from "../components/login/LoginHeader";
-import LoginForm from "../components/login/LoginForm";
+import { LoginForm } from "../components/login/LoginForm";
 import { useState } from "react";
 
 type Employee = {

@@ -25,16 +25,16 @@ app.use(morgan('dev'));
 app.get('/', (req, res) => {
     res.sendStatus(200);
 });
-app.get('/employees', async (req, res) => {
-    try {
-        const employees = await prisma.employee.findMany();
-        console.log ('Employee Data:', employees)
-        res.json(employees);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Not Found');
-    }
-});
+// app.get('/employees', async (req, res) => {
+//     try {
+//         const employees = await prisma.employee.findMany();
+//         console.log ('Employee Data:', employees)
+//         res.json(employees);
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).send('Not Found');
+//     }
+// });
 app.get('/contentforms', async (req, res) => {
     try {
         const contentForms = await prisma.contentform.findMany();
