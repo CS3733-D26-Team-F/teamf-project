@@ -61,7 +61,7 @@ export function LinksWithProps(props: LinkProps) {
                             </button>
 
                             <br/>
-                            <h3 className="text-center font-semibold text-yale-blue">
+                            <h3 className="text-center text-3xl font-bold text-yale-blue">
                                 {item.label}
                             </h3>
                         </div>
