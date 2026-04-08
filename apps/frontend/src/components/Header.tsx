@@ -5,10 +5,17 @@ import {useEffect, useState} from "react";
 
 export function Header() {
     const [theme, setTheme] = useState('default');
-    const [persona, setPersona] = useState<string | null>(null);
+    const [persona, setPersona] = useState<string | null>(() =>
+        localStorage.getItem('persona')
+    );
 
     useEffect(() => {
-        setPersona(localStorage.getItem('persona'));
+        const handleStorage = () => {
+            setPersona(localStorage.getItem('persona'));
+        }
+
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
     useEffect(() => {
@@ -37,10 +44,8 @@ export function Header() {
             </div>
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
-                <ThemeToggle />
-                <Link to="/">Home</Link>
 
-                {isAdmin && <Link to="/managecontent">Manage Content</Link>}
+                <Link to="/managecontent">Manage Content</Link>
                 {isAdmin && <Link to="/manageemployees">Employees</Link>}
                 {(isAdmin || isBusinessAnalyst) && (
                     <Link to="/businessanalyst">Business Analyst</Link>
@@ -49,10 +54,8 @@ export function Header() {
 
                     <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
                 )}
+                <ThemeToggle />
 
-
-                <button onClick={() => setTheme("default")}>Default Theme</button>
-                <button onClick={() => setTheme("high-visibility")}>Other Theme</button>
             </nav>
         </header>
     );

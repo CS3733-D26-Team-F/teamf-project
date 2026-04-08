@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as React from "react";
 
-export function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
+export function LoginForm() {
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -11,7 +11,7 @@ export function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
 
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setError("");
@@ -30,8 +30,12 @@ export function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
             }
 
             const data = await response.json();
-            localStorage.setItem("employee", JSON.stringify(data.employee));
-            onLogin(data.employee);
+            // localStorage.setItem("employee", JSON.stringify(data.employee));
+            localStorage.setItem('persona', data.employee.persona);
+            localStorage.setItem('username', data.employee.username);
+            localStorage.setItem('empid', String(data.employee.empid));
+            setSessionTo(data.employee.persona);
+
             navigate("/menu");
         } finally {
             setLoading(false);
@@ -68,3 +72,50 @@ export function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
         </form>
     );
 }
+
+async function setSessionTo(persona: string) {
+
+    localStorage.getItem('persona');
+    localStorage.getItem('username');
+    localStorage.getItem('empid');
+
+
+    if (persona === 'Admin') {
+        displayAdmin();
+        console.log('Admin access');
+
+    }
+    if (persona === 'Underwriter'){
+        displayUnderwriter();
+        console.log('Underwriter access');
+    }
+    if (persona === 'Business Analyst'){
+        displayBusinessAnalyst();
+        console.log('Business Analyst access');
+    }
+    else {
+        console.log('Limit access: No persona found');
+    }
+}
+
+async function displayAdmin(){
+    document.getElementById('manage-content')!.style.display = ''
+    document.getElementById('manage-employees')!.style.display = '';
+    document.getElementById('business-analyst')!.style.display = 'block';
+    document.getElementById('core-commercial-underwriter')!.style.display = 'block';
+}
+
+async function displayUnderwriter(){
+    document.getElementById('manage-content')!.style.display = '';
+    document.getElementById('manage-employees')!.style.display = 'block';
+    document.getElementById('business-analyst')!.style.display = 'block';
+    document.getElementById('core-commercial-underwriter')!.style.display = '';
+}
+
+async function displayBusinessAnalyst(){
+    document.getElementById('manage-content')!.style.display = 'block';
+    document.getElementById('manage-employees')!.style.display = 'block';
+    document.getElementById('business-analyst')!.style.display = '';
+    document.getElementById('core-commercial-underwriter')!.style.display = 'block';
+}
+
