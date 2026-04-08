@@ -1,7 +1,11 @@
 import { Header } from "../components/Header"
+import { AccessDenied } from "../components/AccessDenied.tsx"
 
 export function ManageContentForm() {
-    return (
+
+    const allowedAccess = localStorage.getItem('persona') === 'Admin';
+    if (allowedAccess) {
+        return (
         <>
             <Header />
 
@@ -54,4 +58,8 @@ export function ManageContentForm() {
             </form>
         </>
     );
+    } else {
+        return <AccessDenied />;
+    }
+    
 }

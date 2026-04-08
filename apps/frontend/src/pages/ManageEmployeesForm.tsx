@@ -1,6 +1,9 @@
 import { Header } from "../components/Header"
+import { AccessDenied } from "../components/AccessDenied.tsx"
 
 export function ManageEmployeesForm() {
+    const allowedAccess = localStorage.getItem('persona') === 'Admin';
+    if (allowedAccess) {
     return (
         <>
             <Header />
@@ -101,4 +104,7 @@ export function ManageEmployeesForm() {
             </form>
         </>
     );
+} else {
+    return <AccessDenied />;
+    }
 }
