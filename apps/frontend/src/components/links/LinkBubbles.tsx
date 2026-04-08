@@ -9,8 +9,8 @@ export type MenuItem = {
 type LinkProps = {
     items: MenuItem[];
     col_lg: number;
-//    onDelete: (label: string) => void;
     onDelete: (id: number) => void;
+    onEdit: (id: number) => void;
 };
 
 const colMap: Record<number, string> = {
@@ -38,6 +38,16 @@ export function LinksWithProps(props: LinkProps) {
                             h-48 sm:h-56 lg:h-64
                         "
                         >
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    props.onEdit(item.id);
+                                }}
+                                className="absolute bottom-3 left-3 bg-yale-blue text-fresh-sky px-3 py-1 rounded hover:bg-fresh-sky hover:text-yale-blue"
+                            >
+                                Edit
+                            </button>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation(); // prevent navigation

@@ -522,6 +522,38 @@ app.post('/login', async (req, res) => {
         return res.status(401).send('Invalid username or password');
     }
 });
+app.get('/contentforms/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const contentForm = await prisma.contentform.findUnique({
+            where: {id}
+        });
+        if (!contentForm) return res.status(404).json({error:'Not found'});
+        res.json(contentForm);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+app.put('/contentforms/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: {
+                name, url, owner, persona,
+                date_modified: new Date(date_modified),
+                expiration_date: new Date(expiration_date),
+                content_type, status,
+                employee: { connect: { username: owner } }
+            }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
