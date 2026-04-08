@@ -1,3 +1,4 @@
+import {useEffect, useState} from 'react';
 import { Header } from "../components/Header"
 import { AccessDenied } from "../components/AccessDenied.tsx"
 
@@ -9,98 +10,93 @@ export function ManageEmployeesForm() {
             <Header />
             <br />
 
-            <form>
+            <form onSubmit={handleSubmit}>
                 <h1>Employee Management Form</h1>
                 <br/>
                 <hr />
                 <br />
-            <label htmlFor="fullname">Your Full Name:</label>
-            <input type="text" id="fullname" name="fullname"/>
-            <br/><br/><br/><br/>
+                <label htmlFor="full_name">Your Full Name:</label>
+                <input type="text" id="full_name" name="full_name" value={formData.full_name}
+                       onChange={e => setFormData({...formData, full_name: e.target.value})}/>
+                <br/><br/><br/><br/>
 
-            <h2>Permissions Section</h2>
+                <h2>Permissions Section</h2>
                 <br />
 
-            {/* Question 2 */}
-            <h3> What employee edits are you trying to make? </h3>
-            <br/>
+                {/* Question 2 */}
+                <h3> What employee edits are you trying to make? </h3>
+                <br/>
 
                 <div>
-            <input type="radio" id="updatePermissions" name="employeeEdits"/>
-            <label htmlFor="updatePermissions">Update Employee Permissions. </label>
+                    <input type="radio" id="updatePermissions" name="employeeEdits" value="Update Employee Permissions"
+                           onChange={() => setFormData({...formData, edits: 'Update Employee Permissions.'})}/>
+                    <label htmlFor="updatePermissions">Update Employee Permissions. </label>
                 </div>
                 <div>
-            <input type="radio" id="addEmployee" name="employeeEdits"/>
-            <label htmlFor="addEmployee">Add a new Employee.</label>
+                    <input type="radio" id="addEmployee" name="employeeEdits" value="Add a new Employee"
+                           onChange={() => setFormData({...formData, edits: 'Add a new Employee.'})}/>
+                    <label htmlFor="addEmployee">Add a new Employee.</label>
                 </div>
                 <div>
-            <input type="radio" id="removeEmployee" name="employeeEdits"/>
-            <label htmlFor="removeEmployee">Remove an Employee.</label>
+                    <input type="radio" id="removeEmployee" name="employeeEdits" value="Remove an Employee"
+                           onChange={() => setFormData({...formData, edits: 'Remove an Employee.'})}/>
+                    <label htmlFor="removeEmployee">Remove an Employee.</label>
                 </div>
                 <div>
-            <input type="radio" id="other" name="employeeEdits"/>
-            <label htmlFor="other">Other</label>
+                    <input type="radio" id="other" name="employeeEdits" value="Other"
+                           onChange={() => setFormData({...formData, edits: 'Other'})}/>
+                    <label htmlFor="other">Other</label>
                 </div>
 
-            <br/><br/>
+                <br/><br/>
 
-            {/* Question 3 */}
-            <label htmlFor="employeeSelect">What Employee are you Updating Status for?</label>
-            <select name="employeeSelect" id="employeeSelect">
-                <optgroup label="Default">
+                {/* Question 3 */}
+                <label htmlFor="employeeSelect">What Employee are you Updating Status for?</label>
+                <select name="employeeSelect" id="employeeSelect"
+                        onChange={e => setFormData({...formData, employee: e.target.value})}>
                     <option value="">Select...</option>
-                </optgroup>
-                <optgroup label="BackEnd">
-                    <option value="">John</option>
-                    <option value="">Berenis</option>
-                    <option value="">Andrew</option>
-                    <option value="">Milan</option>
-                    <option value="">Bowen</option>
-                </optgroup>
-                <optgroup label="FrontEnd">
-                    <option value="">Molly</option>
-                    <option value="">Chloe</option>
-                    <option value="">Jeremia</option>
-                    <option value="">Adrian</option>
-                    <option value="">Ryan</option>
-                </optgroup>
-                <optgroup label="Administration">
-                    <option value="">Professor Wilson Wong</option>
-                    <option value="">Phuong Tran</option>
-                </optgroup>
-            </select>
+                    {employees.map(username => (
+                        <option key={username} value={username}>{username}</option>
+                    ))}
+                </select>
 
-            {/* Question 4 */}
-            <h3> What priority is this? </h3>
-            <br/>
+                {/* Question 4 */}
+                <h3> What priority is this? </h3>
+                <br/>
 
-            <input type="radio" id="HighPriority" name="EditPriority"/>
-            <label htmlFor="HighPriority">Highest Priority</label>
+                <input type="radio" id="HighPriority" name="EditPriority" value="Highest Priority"
+                       onChange={() => setFormData({...formData, priority: 'Highest Priority'})}/>
+                <label htmlFor="HighPriority">Highest Priority</label>
 
-            <input type="radio" id="addEmployee" name="EditPriority"/>
-            <label htmlFor="addEmployee">Regular Priority</label>
+                <input type="radio" id="RegularPriority" name="EditPriority" value="Regular Priority"
+                       onChange={() => setFormData({...formData, priority: 'Regular Priority'})}/>
+                <label htmlFor="RegularPriority">Regular Priority</label>
 
-            <input type="radio" id="removeEmployee" name="EditPriority"/>
-            <label htmlFor="removeEmployee">Low Priority</label>
-            <br/><br/>
+                <input type="radio" id="LowPriority" name="EditPriority" value="Low Priority"
+                       onChange={() => setFormData({...formData, priority: 'Low Priority'})}/>
+                <label htmlFor="LowPriority">Low Priority</label>
+                <br/><br/>
 
-            {/* Question 5 */}
-            <h3> Should the Employee be emailed a notice of this Request </h3>
-            <br/>
+                {/* Question 5 */}
+                <h3> Should the Employee be emailed a notice of this Request </h3>
+                <br/>
 
-            <input type="radio" id="yesNoticeEmail" name="noticeEmail"/>
-            <label htmlFor="yesNoticeEmail">Yes.</label>
+                <input type="radio" id="yesNoticeEmail" name="noticeEmail" value="Yes"
+                       onChange={() => setFormData({...formData, email: 'Yes.'})}/>
+                <label htmlFor="yesNoticeEmail">Yes.</label>
 
-            <input type="radio" id="noNoticeEmail" name="noticeEmail"/>
-            <label htmlFor="noNoticeEmail">No.</label>
-            <br/><br/>
+                <input type="radio" id="noNoticeEmail" name="noticeEmail" value="No"
+                       onChange={() => setFormData({...formData, email: 'No.'})}/>
+                <label htmlFor="noNoticeEmail">No.</label>
+                <br/><br/>
 
-            {/* Comment Box */}
-            <label htmlFor="comments">Comments</label><br/>
-            <textarea id="comments"></textarea>
-            <br/>
+                {/* Comment Box */}
+                <label htmlFor="comments">Comments</label><br/>
+                <textarea id="comments" value={formData.comments}
+                          onChange={e => setFormData({...formData, comments: e.target.value})}></textarea>
+                <br/>
 
-            <button type="reset">Reset</button><button type="submit">Submit</button>
+                <button type="reset">Reset</button><button type="submit">Submit</button>
             </form>
         </>
     );

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
-import {useEffect, useState} from "react";
+import ThemeToggle from "./ThemeToggle.tsx";
 
 export function Header() {
     const [theme, setTheme] = useState('default');

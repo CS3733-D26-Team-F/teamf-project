@@ -49,7 +49,14 @@ Functions
 - "/login" does the login check based on username and password
 - "/deleteEmployee/:username" deletes an employee based on the username (replace :username with the name in question)
 - "/employee" displays the list of employees
-- "/contentforms" lists the content form data
+- "/contentforms" as a get lists the content form data
+- "/getEmployee" displays a singular employee
+- "/updateEmployee" updates the employee information
+- "/employee_manage" as a post enters data for the employee manage form
+- "/contentforms" as a post enters data for the content form
+- "/deleteContentForm" deletes an existing content form
+- "/updateContentForm" updates a content form
+- "/updateTheme" updates the theme for the employee
 
 
 ## First-time setup only
