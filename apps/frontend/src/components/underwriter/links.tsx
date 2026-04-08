@@ -36,9 +36,6 @@ export function LinksDemo() {
 
         setItems(prev => prev.filter(item => item.id !== id));
     }
-    function editItem(id: number) {
-        navigate(`/managecontent?edit=${id}`);
-    }
 
     function editItem(id: number) {
         navigate(`/managecontent?edit=${id}`);
