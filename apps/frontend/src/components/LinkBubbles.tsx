@@ -1,15 +1,15 @@
-import type {ReactNode} from "react";
+import {type ReactNode, useEffect, useState} from "react";
 import { Link } from "react-router-dom";
 
 export type MenuItem = {
-    icon: ReactNode;
     label: string;
-    path?: string;
+    path: string;
 };
 
 type LinkProps = {
     items: MenuItem[];
     col_lg: number;
+
 };
 
 const colMap: Record<number, string> = {
@@ -36,9 +36,6 @@ export function LinksWithProps(props: LinkProps) {
                             h-48 sm:h-56 lg:h-64
                         "
                         >
-                            <div className="h-20 flex items-center justify-center">
-                                {item.icon}
-                            </div>
                             <br/>
                             <h3 className="text-center font-semibold text-yale-blue">
                                 {item.label}
@@ -58,6 +55,27 @@ export function LinksWithProps(props: LinkProps) {
             </div>
         </div>
     )
+}
+
+export function LinksDemo() {
+    const [items, setItems] = useState<MenuItem[]>([]);
+    const persona = localStorage.getItem("persona");
+    useEffect(() => {
+        async function loadContent() {
+            const res = await fetch(`http://localhost:3000/contentforms/persona/${persona}`);
+            const data = await res.json();
+
+            const mapped: MenuItem[] = data.map((item: any) => ({
+                label: item.name,
+                path: item.url
+            }));
+            setItems(mapped);
+        }
+        loadContent();
+    }, [persona]);
+    return (
+        <LinksWithProps items={items} col_lg={3}/>
+    );
 }
 
 
