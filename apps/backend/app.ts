@@ -333,6 +333,47 @@ app.post('/deleteContentForm', async (req, res) => {
     }
 });
 
+app.get('/contentforms/persona/:persona', async (req, res) => {
+    const {persona} = req.params;
+    try {
+        if (persona === 'Admin') {
+            const contentForm = await prisma.contentform.findMany({
+                where: {persona: {in: ['Underwriter', 'Business Analyst']}}
+            });
+            res.json(contentForm)
+        } else {
+            const contentForms = await prisma.contentform.findMany({
+                where: {persona: persona}
+            });
+            res.json(contentForms)
+        }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+app.get('/contentforms/persona/:persona/:field', async (req, res) => {
+    const {persona, field} = req.params;
+    try {
+        if (persona === 'Admin') {
+            const contentForm = await prisma.contentform.findMany({
+                where: {persona: {in: ['Underwriter', 'Business Analyst']}},
+                select: {[field]: true}
+            });
+            const links = contentForm.map(item => item[field])
+            res.json(links);
+        } else {
+            const contentForms = await prisma.contentform.findMany({
+                where: {persona: persona},
+                select: {[field]: true}
+            });
+            const links = contentForms.map(item => item[field])
+            res.json(links);
+        }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
 
 // Start server
 app.listen(port, () => {
