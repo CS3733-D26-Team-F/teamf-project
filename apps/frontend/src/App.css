@@ -75,7 +75,29 @@ header {
                     transition: all 0.2s ease;
                 }
             }
+
+            .profile-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 8px 12px;
+                color: white;
+                border-radius: 4px;
+
+                &:hover {
+                    background-color: var(--color-fresh-sky);
+                    transition: all 0.2s ease;
+                }
+
+                img {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    border-radius: 999px;
+                    object-fit: cover;
+                }
+            }
         }
+        
     }
 
     &.login-header {
@@ -333,6 +355,14 @@ textarea {
     color: #333333;            /* Dark gray text */
     width: 50%;
     height: 50px;
+}
+
+footer.main-footer {
+    background-color: var(--color-yale-blue);
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    font-family: sans-serif;
 }
 
 input[type="file"]::file-selector-button {
