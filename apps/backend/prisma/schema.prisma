@@ -9,36 +9,46 @@ datasource db {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model contentform {
-  id              Int       @id @default(autoincrement())
-  name            String?   @db.VarChar(100)
-  url             String?   @db.VarChar(2083)
-  owner           String?   @db.VarChar(50)
-  persona         String?   @db.VarChar(50)
-  date_modified   DateTime? @db.Date
-  expiration_date DateTime? @db.Date
-  content_type    String?   @db.VarChar(50)
-  status          String?   @db.VarChar(50)
+  id              Int      @id @default(autoincrement())
+  name            String   @unique @db.VarChar(100)
+  url             String   @unique @db.VarChar(2083)
+  owner           String?  @db.VarChar(50)
+  persona         String   @db.VarChar(50)
+  date_modified   DateTime @db.Date
+  expiration_date DateTime @db.Date
+  content_type    String   @db.VarChar(50)
+  status          String   @db.VarChar(50)
+  empid           Int
+  employee        employee @relation(fields: [empid], references: [empid])
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee {
-  eid        Int      @id @default(autoincrement())
-  first_name String?  @db.VarChar(50)
-  last_name  String?  @db.VarChar(50)
-  persona    String?  @db.VarChar(50)
-  email      String?  @unique @db.VarChar(50)
-  salary     Decimal? @db.Decimal(10, 2)
+  empid       Int           @id @default(autoincrement())
+  username    String        @unique(map: "unique_user") @db.VarChar(50)
+  password    String        @db.VarChar(20)
+  persona     String        @db.VarChar(50)
+  theme       Int?          @default(0)
+  isLoggedIn  Boolean?      @default(false)
+  admin       admin?
+  contentform contentform[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee_manage {
-  emid         Int     @id @default(autoincrement())
-  full_name    String? @db.VarChar(100)
-  edits        String? @db.VarChar(50)
-  personstatus String? @db.VarChar(50)
-  priority     String? @db.VarChar(50)
-  email        String? @db.VarChar(50)
-  comments     String? @db.VarChar(1000)
+  emid     Int     @id @default(autoincrement())
+  username String  @db.VarChar(100)
+  edits    String  @db.VarChar(50)
+  priority String  @db.VarChar(50)
+  email    String  @db.VarChar(50)
+  comments String? @db.VarChar(1000)
+  employee String? @db.VarChar(50)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model admin {
+  adid     Int      @id
+  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
 }

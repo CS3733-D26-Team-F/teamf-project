@@ -12,7 +12,7 @@ export function Header() {
                 </Link>
             </div>
             <nav className="menu-links">
-                <a><Link to="/">Home</Link></a>
+                <Link to="/menu">Home</Link>
                 <Link to="/managecontent">Manage Content</Link>
                 <Link to="/manageemployees">Employees</Link>
                 <Link to="/businessanalyst">Business Analyst</Link>

@@ -22,6 +22,7 @@
   "private": true,
   "packageManager": "npm@10.9.3",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",
     "prisma": "^7.6.0",
     "turbo": "^2.9.1"
@@ -33,6 +34,7 @@
     "@mui/material": "^7.3.9",
     "@tailwindcss/vite": "^4.2.2",
     "@types/express": "^5.0.6",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "expresss": "^0.0.0",
@@ -42,7 +44,6 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"
   },
-
   "workspaces": [
     "apps/*",
     "packages/*"

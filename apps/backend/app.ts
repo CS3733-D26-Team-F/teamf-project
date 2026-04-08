@@ -4,6 +4,7 @@ const app = express();
 import dotenv from 'dotenv';
 import {PrismaClient} from "@prisma/client";
 import {PrismaPg} from "@prisma/adapter-pg";
+import cors from "cors";
 
 dotenv.config();
 
@@ -13,6 +14,11 @@ const adapter = new PrismaPg( {
 const prisma = new PrismaClient({adapter});
 const port = process.env.PORT || 3000;
 
+app.use(cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -47,6 +53,32 @@ app.get('/employee_manage', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send('Not Found');
+    }
+});
+app.post('/login', async (req, res) => {
+    const {username, password} = req.body;
+
+    if (!username || !password) {
+        return res.status(400).send('Please input username and password');
+    }
+
+    const employee = await prisma.employee.findFirst({
+        where: {username: username}
+    });
+
+    if (employee && employee.password === password) {
+        console.log(`Okay: ${username}`);
+        return res.status(200).json({
+            message: 'okay',
+            employee: {
+                empid: employee.empid,
+                username: employee.username,
+                isLoggedIn: true,
+            }
+        });
+    } else {
+        console.log(`failed: ${username}`);
+        return res.status(401).send('Invalid username or password');
     }
 });
 // Start server
