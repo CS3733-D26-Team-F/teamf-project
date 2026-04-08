@@ -4,6 +4,43 @@ import { AccessDenied } from "../components/AccessDenied.tsx"
 
 export function ManageContentForm() {
 
+    const [formData, setFormData] = useState({
+        name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: ''
+    });
+
+    useEffect(() => {
+        fetch('http://localhost:3000/employees')
+            .then(res => res.json())
+            .then(data => setEmployees(data));
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { id, name, value } = e.target;
+        setFormData(prev => ({ ...prev, [id || name]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!formData.name || !formData.url || !formData.owner || !formData.persona ||
+            !formData.date_modified || !formData.expiration_date ||
+            !formData.content_type || !formData.status) {
+            alert('Please fill in all fields before submitting.');
+            return;
+        }
+
+        await fetch('http://localhost:3000/contentforms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        setFormData({ name: '', url: '', owner: '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
+        formRef.current?.reset();
+    };
+
+    const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
+    const formRef = useRef<HTMLFormElement>(null);
     const allowedAccess = localStorage.getItem('persona') === 'Admin';
     if (allowedAccess) {
         return (
