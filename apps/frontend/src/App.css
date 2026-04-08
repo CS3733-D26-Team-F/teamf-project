@@ -75,7 +75,29 @@ header {
                     transition: all 0.2s ease;
                 }
             }
+
+            .profile-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 8px 12px;
+                color: white;
+                border-radius: 4px;
+
+                &:hover {
+                    background-color: var(--color-fresh-sky);
+                    transition: all 0.2s ease;
+                }
+
+                img {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    border-radius: 999px;
+                    object-fit: cover;
+                }
+            }
         }
+        
     }
 
     &.login-header {
@@ -335,22 +357,11 @@ textarea {
     height: 50px;
 }
 
-input[type="file"]::file-selector-button {
+footer.main-footer {
     background-color: var(--color-yale-blue);
     color: white;
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-family: Roboto, sans-serif;
+    text-align: center;
+    padding: 1rem;
+    font-family: sans-serif;
 }
 
-input[type="file"]::file-selector-button:hover {
-    background-color: var(--color-fresh-sky);
-}
-
-input[type="file"] {
-    color: var(--color-yale-blue); /* text "No file chosen" */
-    font-size: 1rem;
-    font-family: Roboto, sans-serif;
-}
