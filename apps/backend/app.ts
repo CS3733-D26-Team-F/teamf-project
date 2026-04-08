@@ -7,7 +7,7 @@ import {PrismaPg} from "@prisma/adapter-pg";
 import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
-const { auth, requiresAuth } = require("express-oauth2-jwt-bearer");
+import { auth, requiresAuth } from "express-oauth2-jwt-bearer";
 
 app.use(cors());
 
@@ -34,8 +34,8 @@ app.use(morgan('dev'));
 // Send HTTP 200 at root
 
 const checkJwt = auth({
-    audience: process.env.AUTH0_AUDIENCE,
-    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+    audience: process.env.AUTHO_AUDIENCE,
+    issuerBaseURL: `https://${process.env.AUTHO_DOMAIN}/`,
 });
 
 /**
