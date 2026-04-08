@@ -1,15 +1,16 @@
-import type {ReactNode} from "react";
 import { Link } from "react-router-dom";
 
 export type MenuItem = {
-    icon: ReactNode;
+    id: number;
     label: string;
-    path?: string;
+    path: string;
 };
 
 type LinkProps = {
     items: MenuItem[];
     col_lg: number;
+    onDelete: (id: number) => void;
+    onEdit: (id: number) => void;
 };
 
 const colMap: Record<number, string> = {
@@ -29,6 +30,7 @@ export function LinksWithProps(props: LinkProps) {
                         <div
                             key={i}
                             className="
+                            relative
                             flex flex-col items-center justify-center
                             bg-pale-sky rounded-xl p-6 px-6 shadow
                             hover:bg-gray-300 hover:shadow-lg
@@ -36,11 +38,30 @@ export function LinksWithProps(props: LinkProps) {
                             h-48 sm:h-56 lg:h-64
                         "
                         >
-                            <div className="h-20 flex items-center justify-center">
-                                {item.icon}
-                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    props.onEdit(item.id);
+                                }}
+                                className="absolute bottom-3 left-3 bg-yale-blue text-fresh-sky px-3 py-1 rounded hover:bg-fresh-sky hover:text-yale-blue"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation(); // prevent navigation
+                                    e.preventDefault();
+                                    props.onDelete(item.id);
+                                }}
+                                className="absolute bottom-3 right-3 bg-yale-blue text-fresh-sky px-3 py-1 rounded hover:bg-fresh-sky hover:text-yale-blue"
+                            >
+                                Delete
+                            </button>
+
                             <br/>
-                            <h3 className="text-center font-semibold text-yale-blue">
+                            <h3 className="text-center text-3xl font-bold text-yale-blue">
                                 {item.label}
                             </h3>
                         </div>
@@ -59,5 +80,6 @@ export function LinksWithProps(props: LinkProps) {
         </div>
     )
 }
+
 
 

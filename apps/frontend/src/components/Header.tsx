@@ -6,7 +6,6 @@ import ThemeToggle from "./ThemeToggle.tsx";
 import { Profile } from "./Profile.tsx";
 
 export function Header() {
-    const [theme, setTheme] = useState('default');
     const [persona, setPersona] = useState<string | null>(() =>
         localStorage.getItem('persona')
     );
@@ -28,10 +27,6 @@ export function Header() {
         window.addEventListener('storage', handleStorage);
         return () => window.removeEventListener('storage', handleStorage);
     }, []);
-
-    useEffect(() => {
-        document.documentElement.setAttribute("data-theme", theme);
-    }, [theme]);
 
     const isAdmin = persona === 'Admin';
     const isUnderwriter = persona === 'Underwriter';

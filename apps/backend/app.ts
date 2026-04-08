@@ -23,7 +23,7 @@ const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_AN
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:5175"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 }));
@@ -349,6 +349,7 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
 
 app.post('/contentforms', upload.single('file'), async (req, res) => {
     try {
+        console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
 
@@ -387,7 +388,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
             data: {
                 name: filename,
                 url: urlData.publicUrl,
-                username: ownerUsername,
+                owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
@@ -406,7 +407,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('contentform create error:', error);
         res.status(500).send('Error creating content');
     }
 });
@@ -522,6 +523,52 @@ app.post('/login', async (req, res) => {
         return res.status(401).send('Invalid username or password');
     }
 });
+
+app.get('/contentforms/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const contentForm = await prisma.contentform.findUnique({
+            where: {id}
+        });
+        if (!contentForm) return res.status(404).json({error:'Not found'});
+        res.json(contentForm);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+app.put('/contentforms/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: {
+                name, url, owner, persona,
+                date_modified: new Date(date_modified),
+                expiration_date: new Date(expiration_date),
+                content_type, status,
+                employee: { connect: { username: owner } }
+            }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+app.get('/contentforms/employee/:empid', async (req, res) => {
+    try {
+        const empid = parseInt(req.params.empid);
+        const contentForms = await prisma.contentform.findMany({
+            where: {empid}
+        });
+        res.json(contentForms);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

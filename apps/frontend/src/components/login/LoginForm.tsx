@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import * as React from "react";
 
-export function LoginForm({ onLogin }: { onLogin: (employee: any) => void }) {
+export function LoginForm() {
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
