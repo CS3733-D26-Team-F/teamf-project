@@ -334,16 +334,27 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
     }
 });
 
+
 app.post('/contentforms', upload.single('file'), async (req, res) => {
     try {
-        const { name, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
 
         if (!file) {
-            return res.status(400).json({ error: 'File is required' });
+            return res.status(400).json({error: 'File is required'});
         }
 
-        const { data, error } = await supabase.storage
+        const employee = await prisma.employee.findUnique({
+            where: {username: ownerUsername}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found this should be the current user'});
+        }
+
+        const persona = employee.persona;
+
+        const {data, error} = await supabase.storage
             .from(persona)
             .upload(file.originalname, file.buffer, {
                 contentType: file.mimetype,
@@ -351,27 +362,27 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
             });
 
         if (error) {
-            return res.status(500).json({ error: 'Failed to upload file to bucket', details: error.message });
+            return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
         }
 
         // Get the public URL to store in the DB
-        const { data: urlData } = supabase.storage
+        const {data: urlData} = supabase.storage
             .from(persona)
             .getPublicUrl(file.originalname);
 
         // Create the content form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
-                name,
+                name: filename,
                 url: urlData.publicUrl,
-                owner,
+                username: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
                 content_type,
                 status,
                 employee: {
-                    connect: { username: owner }
+                    connect: {username: ownerUsername}
                 }
             }
         });
