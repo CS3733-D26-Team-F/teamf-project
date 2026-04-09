@@ -19,9 +19,6 @@ export function ManageContentForm() {
         status: ''
     });
     const [file, setFile] = useState<File | null>(null);
-    const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
-    const formRef = useRef<HTMLFormElement>(null);
-
 
     useEffect(() => {
         if (persona === 'Admin') {
