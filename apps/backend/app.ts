@@ -7,7 +7,7 @@ import {PrismaPg} from "@prisma/adapter-pg";
 import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
-import { auth, requiresAuth } from "express-oauth2-jwt-bearer";
+import { auth } from "express-oauth2-jwt-bearer";
 
 app.use(cors());
 
@@ -29,6 +29,7 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -74,6 +75,32 @@ app.post("/auth/sync", checkJwt, async (req, res) => {
         res.status(500).json({ error: "Sync failed", detail: err.message });
     }
 });
+
+app.get('/auth/verify', checkJwt, async (req, res) => {
+    try {
+        const auth0Id = (req.auth as any).payload.sub;
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id: auth0Id},
+            select: {
+                empid: true,
+                username: true,
+                persona: true,
+            }
+        });
+
+        if (!employee) {
+            return res.status(401).json({error: "No employee found"});
+        }
+        res.json(employee);
+    } catch (err) {
+        res.status(500).json({error: "Sync failed"});
+    }
+});
+
+app.post('/auth/logout', checkJwt, async (req, res) => {
+    res.json({message: "Logged out"});
+});
+
 
 app.get('/', (req, res) => {
     res.sendStatus(200);
@@ -127,7 +154,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.post('/getEmployee', async (req, res) => {
+app.post('/getEmployee', checkJwt, async (req, res) => {
     const {username} = req.body;
 
     if (!username) {
@@ -150,7 +177,7 @@ app.post('/getEmployee', async (req, res) => {
 });
 
 //update employee takes the current username and then optionally any data that want to be changed
-app.post('/updateEmployee', async (req, res) => {
+app.post('/updateEmployee', checkJwt, async (req, res) => {
     const {username,newUsername,password,persona} = req.body;
 
     if(!username) {
@@ -201,7 +228,7 @@ app.post('/updateEmployee', async (req, res) => {
     }
 });
 
-app.post('/addEmployee', async (req, res) => {
+app.post('/addEmployee', checkJwt, async (req, res) => {
     const {username, password, persona} = req.body;
 
     if (!username || !password) {
@@ -247,7 +274,7 @@ app.post('/addEmployee', async (req, res) => {
     }
 });
 
-app.delete('/deleteEmployee/:username', async (req, res) => {
+app.delete('/deleteEmployee/:username', checkJwt, async (req, res) => {
     try{
         const { username } = req.params;
 
@@ -272,7 +299,7 @@ app.delete('/deleteEmployee/:username', async (req, res) => {
     }
 });
 
-app.post('/updateTheme', async (req, res) => {
+app.post('/updateTheme', checkJwt, async (req, res) => {
     const { empid, theme } = req.body;
     if (!empid || theme === undefined) {
         return res.status(400).send('Missing field required, need to provide theme');
@@ -292,7 +319,7 @@ app.post('/updateTheme', async (req, res) => {
     }
 });
 
-app.post('/updateContentForm', async (req, res) => {
+app.post('/updateContentForm', checkJwt, async (req, res) => {
     const {name, newName, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
 
     if (!name) {
@@ -338,7 +365,7 @@ app.post('/updateContentForm', async (req, res) => {
 });
 
 // the emid shoudld be the logged in user
-app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
+app.post('/addFileToBucket', checkJwt, upload.single('file'), async (req, res) => {
     try {
         const {empid} = req.body;
         const file = req.file;
@@ -385,7 +412,7 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
 });
 
 
-app.post('/contentforms', upload.single('file'), async (req, res) => {
+app.post('/contentforms', checkJwt, upload.single('file'), async (req, res) => {
     try {
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
@@ -450,7 +477,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
     }
 });
 
-app.post('/employee_manage', async (req, res) => {
+app.post('/employee_manage', checkJwt, async (req, res) => {
     try {
         const { username, edits, employee, priority, email, comments } = req.body;
         const employeeManage = await prisma.employee_manage.create({
@@ -488,7 +515,7 @@ app.delete('/deleteContentForm/:name', async (req, res)=> {
     }
 });
 
-app.get('/contentforms/persona/:persona', async (req, res) => {
+app.get('/contentforms/persona/:persona', checkJwt, async (req, res) => {
     const { persona } = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
@@ -500,7 +527,7 @@ app.get('/contentforms/persona/:persona', async (req, res) => {
     }
 });
 
-app.get('/contentforms/admin', async (req, res) => {
+app.get('/contentforms/admin', checkJwt, async (req, res) => {
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
             prisma.contentform.findMany({ where: { persona: 'Underwriter' } }),
@@ -512,7 +539,7 @@ app.get('/contentforms/admin', async (req, res) => {
     }
 });
 
-app.get('/contentforms/persona/:persona/:field', async (req, res) => {
+app.get('/contentforms/persona/:persona/:field', checkJwt, async (req, res) => {
     const {persona, field} = req.params;
     try {
         if (persona === 'Admin') {
@@ -562,7 +589,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.get('/contentforms/:id', async (req, res) => {
+app.get('/contentforms/:id', checkJwt, async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
@@ -575,7 +602,7 @@ app.get('/contentforms/:id', async (req, res) => {
     }
 });
 
-app.put('/contentforms/:id', async (req, res) => {
+app.put('/contentforms/:id', checkJwt, async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
@@ -595,7 +622,7 @@ app.put('/contentforms/:id', async (req, res) => {
     }
 });
 
-app.get('/contentforms/employee/:empid', async (req, res) => {
+app.get('/contentforms/employee/:empid', checkJwt, async (req, res) => {
     try {
         const empid = parseInt(req.params.empid);
         const contentForms = await prisma.contentform.findMany({
