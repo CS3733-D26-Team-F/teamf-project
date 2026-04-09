@@ -209,12 +209,12 @@ app.post('/addEmployee', async (req, res) => {
     }
 });
 
-app.delete('/deleteEmployee/:id', async (req, res) => {
+app.delete('/deleteEmployee/:name', async (req, res) => {
     try{
-        const id = parseInt(req.params.id);
+        const {username} = req.body;
 
         const user = await prisma.employee.findUnique({
-            where: { empid:id }
+            where: { username:username }
         });
 
         if (!user) {
@@ -222,7 +222,7 @@ app.delete('/deleteEmployee/:id', async (req, res) => {
         }
 
         const deletedEmp = await prisma.employee.delete({
-            where: { empid: user.empid }
+            where: { username: username }
         });
 
         return res.status(200).json({
