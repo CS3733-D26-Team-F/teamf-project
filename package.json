@@ -31,6 +31,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@gfazioli/mantine-list-view-table": "^3.0.0",
     "@mantine/core": "^9.0.1",
     "@mantine/hooks": "^9.0.1",
     "@mantine/notifications": "^9.0.1",
