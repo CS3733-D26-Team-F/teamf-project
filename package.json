@@ -31,9 +31,13 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mantine/core": "^9.0.1",
+    "@mantine/hooks": "^9.0.1",
+    "@mantine/notifications": "^9.0.1",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@prisma/client": "^7.6.0",
+    "@tabler/icons-react": "^3.41.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/express": "^5.0.6",
     "cors": "^2.8.6",

@@ -6,7 +6,7 @@
 
 ### What's needed
 
-- Node.js 
+- Node.js
 - A Postgres connection string
 - PowerShell
 
@@ -118,4 +118,3 @@ Frontend is up but no data appears:
    - `apps/frontend` = React UI
    - `apps/backend` = Express API
    - `packages/db` = Prisma/shared DB client
-

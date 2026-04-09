@@ -7,6 +7,7 @@ import { Login } from "./pages/Login";
 import { MainMenu } from './pages/MainMenu';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
+import {MantineProvider} from "@mantine/core";
 // import { ProtectedRoute } from './components/ProtectedRoute';
 
 
@@ -14,16 +15,8 @@ import './App.css'
 export default function App() {
     return (
         // Each Route should be a page from src/pages
+    <MantineProvider>
         <BrowserRouter>
-
-            {/*<Routes>*/}
-            {/*    <Route path="/" element={<Login/>}/>*/}
-            {/*    <Route path="/menu" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />*/}
-            {/*    <Route path="/businessanalyst" element={<ProtectedRoute><BusinessAnalyst /></ProtectedRoute>} />*/}
-            {/*    <Route path="/corecommercialunderwriter" element={<ProtectedRoute><CoreCommercialUnderwriter /></ProtectedRoute>} />*/}
-            {/*    <Route path="/managecontent" element={<ProtectedRoute><ManageContentForm /></ProtectedRoute>} />*/}
-            {/*    <Route path="/manageemployees" element={<ProtectedRoute><ManageEmployeesForm /></ProtectedRoute>} />*/}
-            {/*</Routes>*/}
             <Routes>
                 <Route path="/" element={<Login/>}/>
                 <Route path="/menu" element={<MainMenu />} />
@@ -33,5 +26,6 @@ export default function App() {
                 <Route path="/manageemployees" element={<ManageEmployeesForm />} />
             </Routes>
         </BrowserRouter>
+    </MantineProvider>
     );
 }
