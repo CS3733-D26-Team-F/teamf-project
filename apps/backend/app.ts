@@ -209,12 +209,12 @@ app.post('/addEmployee', async (req, res) => {
     }
 });
 
-app.delete('/deleteEmployee/:username', async (req, res) => {
+app.delete('/deleteEmployee/:id', async (req, res) => {
     try{
-        const { username } = req.params;
+        const id = parseInt(req.params.id);
 
         const user = await prisma.employee.findUnique({
-            where: { username: username }
+            where: { empid:id }
         });
 
         if (!user) {
@@ -425,11 +425,11 @@ app.post('/employee_manage', async (req, res) => {
     }
 });
 
-app.delete('/deleteContentForm/:name', async (req, res)=> {
-    const {name} = req.params;
+app.delete('/deleteContentForm/:id', async (req, res)=> {
+    const id = parseInt(req.params.id);
 
     const contentform1 = await prisma.contentform.findUnique({
-        where: {name: name}
+        where: {id: id}
     });
 
     if (!contentform1) {
@@ -439,7 +439,7 @@ app.delete('/deleteContentForm/:name', async (req, res)=> {
     try {
 
         const contentForm = await prisma.contentform.delete({
-            where: {name: contentform1.name}
+            where: {id:id}
         });
         return res.status(200).json({
             message: 'Content form deleted successfully',
