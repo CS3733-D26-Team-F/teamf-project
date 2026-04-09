@@ -24,6 +24,8 @@ export function ManageEmployeesForm() {
             .then(data => setEmployees(data.map((e: {username: string}) => e.username)));
     }, []);
 
+
+
     const allowedAccess = localStorage.getItem('persona') === 'Admin';
     if (allowedAccess) {
         return (

@@ -30,7 +30,7 @@ export function LinksDemo() {
         const confirmed = window.confirm("Are you sure you want to delete this item?");
         if (!confirmed) return;
 
-        await fetch(`http://localhost:3000/contentforms/${id}`, {
+        await fetch(`http://localhost:3000/deleteContentForm/${id}`, {
             method: "DELETE"
         });
 
