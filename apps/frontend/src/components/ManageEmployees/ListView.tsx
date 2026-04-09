@@ -1,6 +1,5 @@
 import '@mantine/core/styles.css';
-import {Loader, Center, Text, List, ThemeIcon} from "@mantine/core";
-import { IconUser } from "@tabler/icons-react";
+import {Loader, Center, Text, Table} from "@mantine/core";
 import { useEffect, useState } from "react";
 
 type Employee = {
@@ -29,22 +28,28 @@ export function EmployeeListView() {
     }
 
     return (
-        <List
-            spacing="lg"
-            icon={
-                <ThemeIcon color="blue" size={28} radius="xl">
-                    <IconUser size={18} />
-                </ThemeIcon>
-            }
-        >
-            {employees.map((emp) => (
-                <List.Item key={emp.empid}>
-                    <Text fw={600}>{emp.username}</Text>
-                    <Text size="sm" c="dimmed">
-                        {emp.persona}
-                    </Text>
-                </List.Item>
-            ))}
-        </List>
+        <Table striped highlightOnHover withTableBorder withColumnBorders>
+            <Table.Thead>
+                <Table.Tr>
+                    <Table.Th>
+                        <Text fw={700} size="lg" c="var(--color-yale-blue)">Username</Text>
+                    </Table.Th>
+                    <Table.Th>
+                        <Text fw={700} size="lg" c="var(--color-yale-blue)">Persona</Text>
+                    </Table.Th>
+                </Table.Tr>
+            </Table.Thead>
+
+            <Table.Tbody>
+                {employees.map((emp) => (
+                    <Table.Tr key={emp.empid}>
+                        <Table.Td>
+                            <Text fw={600}>{emp.username}</Text>
+                        </Table.Td>
+                        <Table.Td>{emp.persona}</Table.Td>
+                    </Table.Tr>
+                ))}
+            </Table.Tbody>
+            </Table>
     )
 }
