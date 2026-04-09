@@ -100,8 +100,12 @@ export function ManageContentForm() {
         formRef.current?.reset();
     };
 
-    const allowedAccess = persona === 'Admin'
-        || persona === 'Underwriter' || persona === 'Business Analyst';
+
+    const [employees, setEmployees] = useState<{empid: number, username: string}[]>([]);
+    const formRef = useRef<HTMLFormElement>(null);
+    const allowedAccess = localStorage.getItem('persona') === 'Admin' || localStorage.getItem('persona') === 'Business Analyst'|| localStorage.getItem('persona') === 'Underwriter';
+
+
     if (allowedAccess) {
         return (
             <>
