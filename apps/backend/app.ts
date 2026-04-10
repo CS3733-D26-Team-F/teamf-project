@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
 import { auth } from "express-oauth2-jwt-bearer";
+import { ManagementClient } from 'auth0';
 
 app.use(cors());
 
@@ -35,70 +36,68 @@ app.use(morgan('dev'));
 // Send HTTP 200 at root
 
 const checkJwt = auth({
-    audience: process.env.AUTHO_AUDIENCE,
-    issuerBaseURL: `https://${process.env.AUTHO_DOMAIN}/`,
+    audience: process.env.AUTH0_AUDIENCE,
+    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+    tokenSigningAlg: 'RS256'
 });
+
+async function getManagementToken(): Promise<string> {
+    const res = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            grant_type:    'client_credentials',
+            client_id:     process.env.AUTH0_MGMT_CLIENT_ID,
+            client_secret: process.env.AUTH0_MGMT_CLIENT_SECRET,
+            audience:      `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
+        }),
+    });
+    const data = await res.json();
+    if (!data.access_token) {
+        throw new Error(`Failed to get management token: ${JSON.stringify(data)}`);
+    }
+    return data.access_token;
+}
 
 /**
  *
  * Requests after this
  *
  */
-app.post("/auth/sync", checkJwt, async (req, res) => {
-    const auth0Id = req.auth.payload.sub;
-    const { username } = req.body;
-
+// Used for login
+app.post('/api/auth/login', checkJwt, async (req, res) => {
     try {
-        let employee = await prisma.employee.findUnique({ where: { auth0Id } });
+        const auth0Id  = req.auth!.payload.sub as string;
+        const username = req.auth!.payload['nickname'] as string;
 
-        if (!employee) {
-            employee = await prisma.employee.findFirst({
-                where: {
-                    OR: [{ username }],
-                },
-            });
-
-            if (employee) {
-                employee = await prisma.employee.update({
-                    where: { empid: employee.empid },
-                    data: { auth0Id },
-                });
-            } else {
-                employee = await prisma.employee.create({
-                    data: { auth0Id, username },
-                });
-            }
-        }
-
-        res.json({ empid: employee.empid, username: employee.username });
-    } catch (err) {
-        res.status(500).json({ error: "Sync failed", detail: err.message });
-    }
-});
-
-app.get('/auth/verify', checkJwt, async (req, res) => {
-    try {
-        const auth0Id = (req.auth as any).payload.sub;
-        const employee = await prisma.employee.findUnique({
-            where: {auth0Id: auth0Id},
-            select: {
-                empid: true,
-                username: true,
-                persona: true,
-            }
+        const employee = await prisma.employee.upsert({
+            where:  { auth0Id },
+            create: {
+                auth0Id,
+                username
+            },
         });
 
-        if (!employee) {
-            return res.status(401).json({error: "No employee found"});
-        }
-        res.json(employee);
+        res.json({ employee });
     } catch (err) {
-        res.status(500).json({error: "Sync failed"});
+        console.error(err);
+        res.status(500).json({ error: 'Login sync failed' });
     }
 });
 
-app.post('/auth/logout', checkJwt, async (req, res) => {
-    res.json({message: "Logged out"});
+// Looks up current employee logged in
+app.get('/api/auth/me', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    const employee = await prisma.employee.findUnique({ where: { auth0Id } });
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    res.json({ employee });
+});
+
+// Possible for additional logout options
+app.post('/api/auth/logout', checkJwt, async (_req, res) => {
+    res.json({ message: 'Logged out' });
 });
 
 
@@ -124,37 +123,8 @@ app.get('/employee_manage', async (req, res) => {
     res.json(employeeManage);
 });
 
-app.post('/login', async (req, res) => {
-    const {username, password} = req.body;
-
-    if (!username || !password) {
-        return res.status(400).send('Please input username and password');
-    }
-
-    const employee = await prisma.employee.findUnique({
-        where: {username: username}
-    });
-
-    if (employee && employee.password === password) {
-        console.log(`Okay: ${username}`);
-
-        //receive session info from front end, including empid, username, and persona
-
-        return res.status(200).json({
-            message: 'okay',
-            employee: {
-                empid: employee.empid,
-                username: employee.username,
-                persona: employee.persona
-            }
-        });
-    } else {
-        console.log(`failed: ${username}`);
-        return res.status(401).send('Invalid username or password');
-    }
-});
-
 app.post('/getEmployee', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
 
     if (!username) {
@@ -178,6 +148,8 @@ app.post('/getEmployee', checkJwt, async (req, res) => {
 
 //update employee takes the current username and then optionally any data that want to be changed
 app.post('/updateEmployee', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {username,newUsername,password,persona} = req.body;
 
     if(!username) {
@@ -229,25 +201,51 @@ app.post('/updateEmployee', checkJwt, async (req, res) => {
 });
 
 app.post('/addEmployee', checkJwt, async (req, res) => {
-    const {username, password, persona} = req.body;
+    const auth0Id = req.auth!.payload.sub as string;
 
-    if (!username || !password) {
+    const {username, password, persona, first_name, last_name} = req.body;
+
+    if (!username || !password || !persona) {
         return res.status(400).send('Missing field required');
     }
 
     try {
-        if (persona.trim() == 'Admin'){
+        const token = await getManagementToken();
+
+        const createRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                connection: 'Username-Password-Authentication',
+                username,
+                password,
+                email: `${username}@noemail.internal`,
+                email_verified: true,
+            }),
+        });
+
+        if (!auth0User.user_id) {
+            if (auth0User.statusCode === 409) {
+                return res.status(409).json({error: 'Username already exists'});
+            }
+            return res.status(500).json({error: 'Failed to create Auth0 user', details: auth0User});
+        }
+
+        if (persona.trim() == 'Admin') {
 
 
             const newAdmin = await prisma.employee.create({
                 data: {
                     username: username,
-                    password: password,
                     persona: persona,
+                    first_name: first_name,
+                    last_name: last_name,
+                    created_at: new Date(),
                     admin: {
-                        create: {
-
-                        }
+                        create: {}
                     }
                 },
             })
@@ -261,7 +259,10 @@ app.post('/addEmployee', checkJwt, async (req, res) => {
                 data: {
                     username,
                     password,
-                    persona
+                    persona,
+                    first_name,
+                    last_name,
+                    created_at: new Date(),
                 },
             });
             return res.status(200).json({
@@ -270,11 +271,13 @@ app.post('/addEmployee', checkJwt, async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({error: 'Server error'});
     }
 });
 
 app.delete('/deleteEmployee/:username', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     try{
         const { username } = req.params;
 
@@ -284,6 +287,19 @@ app.delete('/deleteEmployee/:username', checkJwt, async (req, res) => {
 
         if (!user) {
             return res.status(404).send('Not Found');
+        }
+
+        const deleteRes = await fetch(
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+            {
+                method:  'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+            }
+        );
+
+        if (deleteRes.status !== 204) {
+            const error = await deleteRes.json();
+            return res.status(500).json({ error: 'Failed to delete from Auth0', details: error });
         }
 
         const deletedEmp = await prisma.employee.delete({
@@ -300,6 +316,8 @@ app.delete('/deleteEmployee/:username', checkJwt, async (req, res) => {
 });
 
 app.post('/updateTheme', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const { empid, theme } = req.body;
     if (!empid || theme === undefined) {
         return res.status(400).send('Missing field required, need to provide theme');
@@ -320,6 +338,8 @@ app.post('/updateTheme', checkJwt, async (req, res) => {
 });
 
 app.post('/updateContentForm', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {name, newName, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
 
     if (!name) {
@@ -367,6 +387,8 @@ app.post('/updateContentForm', checkJwt, async (req, res) => {
 // the emid shoudld be the logged in user
 app.post('/addFileToBucket', checkJwt, upload.single('file'), async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         const {empid} = req.body;
         const file = req.file;
 
@@ -414,6 +436,8 @@ app.post('/addFileToBucket', checkJwt, upload.single('file'), async (req, res) =
 
 app.post('/contentforms', checkJwt, upload.single('file'), async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
@@ -479,6 +503,8 @@ app.post('/contentforms', checkJwt, upload.single('file'), async (req, res) => {
 
 app.post('/employee_manage', checkJwt, async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         const { username, edits, employee, priority, email, comments } = req.body;
         const employeeManage = await prisma.employee_manage.create({
             data: { username, edits, employee, priority, email, comments }
@@ -491,6 +517,8 @@ app.post('/employee_manage', checkJwt, async (req, res) => {
 });
 
 app.delete('/deleteContentForm/:name', async (req, res)=> {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {name} = req.params;
 
     const contentform1 = await prisma.contentform.findUnique({
@@ -516,6 +544,8 @@ app.delete('/deleteContentForm/:name', async (req, res)=> {
 });
 
 app.get('/contentforms/persona/:persona', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const { persona } = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
@@ -529,6 +559,8 @@ app.get('/contentforms/persona/:persona', checkJwt, async (req, res) => {
 
 app.get('/contentforms/admin', checkJwt, async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         const [underwriterForms, businessAnalystForms] = await Promise.all([
             prisma.contentform.findMany({ where: { persona: 'Underwriter' } }),
             prisma.contentform.findMany({ where: { persona: 'Business Analyst' } })
@@ -540,6 +572,8 @@ app.get('/contentforms/admin', checkJwt, async (req, res) => {
 });
 
 app.get('/contentforms/persona/:persona/:field', checkJwt, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {persona, field} = req.params;
     try {
         if (persona === 'Admin') {
@@ -562,35 +596,10 @@ app.get('/contentforms/persona/:persona/:field', checkJwt, async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
-    const {username, password} = req.body;
-
-    if (!username || !password) {
-        return res.status(400).send('Please input username and password');
-    }
-
-    const employee = await prisma.employee.findFirst({
-        where: {username: username}
-    });
-
-    if (employee && employee.password === password) {
-        console.log(`Okay: ${username}`);
-        return res.status(200).json({
-            message: 'okay',
-            employee: {
-                empid: employee.empid,
-                username: employee.username,
-                isLoggedIn: true,
-            }
-        });
-    } else {
-        console.log(`failed: ${username}`);
-        return res.status(401).send('Invalid username or password');
-    }
-});
-
 app.get('/contentforms/:id', checkJwt, async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         const id = parseInt(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
             where: {id}
@@ -604,6 +613,8 @@ app.get('/contentforms/:id', checkJwt, async (req, res) => {
 
 app.put('/contentforms/:id', checkJwt, async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         const id = parseInt(req.params.id);
         const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
         const updated = await prisma.contentform.update({
@@ -624,6 +635,8 @@ app.put('/contentforms/:id', checkJwt, async (req, res) => {
 
 app.get('/contentforms/employee/:empid', checkJwt, async (req, res) => {
     try {
+        const auth0Id = req.auth!.payload.sub as string;
+
         const empid = parseInt(req.params.empid);
         const contentForms = await prisma.contentform.findMany({
             where: {empid}
