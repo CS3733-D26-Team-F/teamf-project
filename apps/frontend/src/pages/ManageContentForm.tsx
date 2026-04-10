@@ -118,7 +118,8 @@ export function ManageContentForm() {
         formRef.current?.reset();
     };
 
-    const [employees, setEmployees] = useState<{ empid: number, username: string, persona: string }[]>([]);
+
+    const [employees, setEmployees] = useState<{empid: number, username: string, persona: string}[]>([]);
     const formRef = useRef<HTMLFormElement>(null);
     const allowedAccess = localStorage.getItem('persona') === 'Admin' || localStorage.getItem('persona') === 'Business Analyst' || localStorage.getItem('persona') === 'Underwriter';
 

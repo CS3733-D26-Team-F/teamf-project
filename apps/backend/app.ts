@@ -170,21 +170,25 @@ app.post('/updateEmployee', async (req, res) => {
 });
 
 app.post('/addEmployee', async (req, res) => {
-    const {username, password, persona} = req.body;
+    const {username, password, persona, first_name, last_name} = req.body;
 
-    if (!username || !password) {
+    if (!username || !password || !first_name || !last_name) {
         return res.status(400).send('Missing field required');
     }
 
+    console.log('Adding employee:', { username, password, persona, first_name, last_name });
     try {
         if (persona.trim() == 'Admin') {
 
 
             const newAdmin = await prisma.employee.create({
                 data: {
-                    username: username,
-                    password: password,
-                    persona: persona,
+                    username,
+                    password,
+                    persona,
+                    first_name,
+                    last_name,
+                    created_at: new Date(),
                     admin: {
                         create: {}
                     }
@@ -200,7 +204,10 @@ app.post('/addEmployee', async (req, res) => {
                 data: {
                     username,
                     password,
-                    persona
+                    persona,
+                    first_name,
+                    last_name,
+                    created_at: new Date(),
                 },
             });
             return res.status(200).json({
@@ -209,16 +216,17 @@ app.post('/addEmployee', async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(500).json({error: 'Server error'});
+        console.error('Add employee error:', error);
+        res.status(500).json({ error: 'Server error' });
     }
 });
 
 app.delete('/deleteEmployee/:name', async (req, res) => {
-    try {
-        const {username} = req.body;
+    try{
+        const {name} = req.params;
 
         const user = await prisma.employee.findUnique({
-            where: {username: username}
+            where: { username:name }
         });
 
         if (!user) {
@@ -226,7 +234,7 @@ app.delete('/deleteEmployee/:name', async (req, res) => {
         }
 
         const deletedEmp = await prisma.employee.delete({
-            where: {username: username}
+            where: { username: name }
         });
 
         return res.status(200).json({
