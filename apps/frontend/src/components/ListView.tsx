@@ -12,16 +12,10 @@ export function ListView<T>(props: ListViewData<T>) {
             data={props.data}
             rowKey="id"
             withTableBorder
-            withColumnBorders
             highlightOnHover
-            horizontalSpacing={{ base: 'xs', md: 'sm', lg: 'md' }}
-            verticalSpacing={{ base: 'xs', md: 'sm' }}
-            headerTitleFontSize={{ base: 'xs', md: 'sm' }}
-            headerTitleFontWeight={{ base: 500, lg: 600 }}
-            cellFontSize={{ base: 'xs', md: 'sm' }}
-            onRowClick={(record) => {
-                alert(`Clicked: ${record.name}`);
-            }}
+            stickyHeader
+            stickyHeaderOffset={60}
+            headerTitleFontWeight={700}
         />
     );
 }
