@@ -147,10 +147,10 @@ app.post('/getEmployee', checkJwt, async (req, res) => {
 });
 
 //update employee takes the current username and then optionally any data that want to be changed
-app.post('/updateEmployee', checkJwt, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
+app.patch('/updateEmployee', checkJwt, async (req, res) => {
+    const token = await getManagementToken();
 
-    const {username,newUsername,password,persona} = req.body;
+    const {username,newUsername,newPassword,persona, first_name, last_name} = req.body;
 
     if(!username) {
         return res.status(400).send('Current username is required');
@@ -158,13 +158,15 @@ app.post('/updateEmployee', checkJwt, async (req, res) => {
 
     const updateData: {
         username?: string;
-        password?: string;
         persona?: string;
+        first_name?: string;
+        last_name?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
-    if (password) updateData.password = password;
+    if (first_name) updateData.first_name = first_name;
     if (persona) updateData.persona = persona;
+    if (last_name) updateData.first_name = last_name;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
@@ -175,6 +177,35 @@ app.post('/updateEmployee', checkJwt, async (req, res) => {
             where: { username: username },
             data: updateData
         });
+
+        const auth0Updates: Record<string, string> = {};
+        if (newPassword) auth0Updates.password = newPassword;
+        if (newUsername) {
+            auth0Updates.username = newUsername;
+            auth0Updates.email    = `${newUsername}@noemail.internal`;
+        }
+
+        const updateRes = await fetch(
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+            {
+                method:  'PATCH',
+                headers: {
+                    Authorization:  `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(auth0Updates),
+            }
+        );
+
+        if (!updateRes.ok) {
+            const error = await updateRes.json();
+            if (updateRes.status === 409) {
+                return res.status(409).json({ error: 'Username already in use' });
+            }
+            return res.status(500).json({ error: 'Failed to update Auth0 user', details: error });
+        }
+
+
         if (persona.trim() == 'Admin'){
             await prisma.admin.create({
                 data:{
