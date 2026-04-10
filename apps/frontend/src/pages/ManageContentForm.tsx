@@ -102,7 +102,6 @@ export function ManageContentForm() {
     const formRef = useRef<HTMLFormElement>(null);
     const allowedAccess = localStorage.getItem('persona') === 'Admin' || localStorage.getItem('persona') === 'Business Analyst'|| localStorage.getItem('persona') === 'Underwriter';
 
-
     if (allowedAccess) {
         return (
             <>
