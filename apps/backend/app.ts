@@ -1,12 +1,14 @@
 import express from 'express';
 import morgan from 'morgan';
+
 const app = express();
 import dotenv from 'dotenv';
 import {PrismaClient} from '@prisma/client';
 import {PrismaPg} from "@prisma/adapter-pg";
-import { createClient } from '@supabase/supabase-js';
+import {createClient} from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
+
 app.use(cors());
 
 dotenv.config();
@@ -20,7 +22,10 @@ const port = process.env.PORT || 3000;
 
 //set up stuff for passing the files using multipart form data
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({storage: multer.memoryStorage()});
+
+// setting up constent for checkin/checkout document stuff
+const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};
 
 app.use(cors({
     origin: ["http://localhost:5173", "http://localhost:5175"],
@@ -58,6 +63,7 @@ app.get('/employee_manage', async (req, res) => {
     console.log('Employee Manage Data:', employeeManage);
     res.json(employeeManage);
 });
+
 
 app.post('/login', async (req, res) => {
     const {username, password} = req.body;
@@ -107,15 +113,15 @@ app.post('/getEmployee', async (req, res) => {
             data: employee
         });
     } catch (error) {
-        res.status(404).json({ error: 'User not Found' });
+        res.status(404).json({error: 'User not Found'});
     }
 });
 
 //update employee takes the current username and then optionally any data that want to be changed
 app.post('/updateEmployee', async (req, res) => {
-    const {username,newUsername,password,persona} = req.body;
+    const {username, newUsername, password, persona} = req.body;
 
-    if(!username) {
+    if (!username) {
         return res.status(400).send('Current username is required');
     }
 
@@ -135,20 +141,20 @@ app.post('/updateEmployee', async (req, res) => {
 
     try {
         const employee = await prisma.employee.update({
-            where: { username: username },
+            where: {username: username},
             data: updateData
         });
-        if (persona.trim() == 'Admin'){
+        if (persona.trim() == 'Admin') {
             await prisma.admin.create({
-                data:{
+                data: {
                     adid: employee.empid
                 }
             })
         } else {
             const check = await prisma.admin.findUnique({
-                where: { adid: employee.empid}
+                where: {adid: employee.empid}
             });
-            if (check){
+            if (check) {
                 await prisma.admin.delete({
                     where: {adid: employee.empid},
                 })
@@ -159,7 +165,7 @@ app.post('/updateEmployee', async (req, res) => {
             data: employee
         });
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -171,7 +177,7 @@ app.post('/addEmployee', async (req, res) => {
     }
 
     try {
-        if (persona.trim() == 'Admin'){
+        if (persona.trim() == 'Admin') {
 
 
             const newAdmin = await prisma.employee.create({
@@ -180,9 +186,7 @@ app.post('/addEmployee', async (req, res) => {
                     password: password,
                     persona: persona,
                     admin: {
-                        create: {
-
-                        }
+                        create: {}
                     }
                 },
             })
@@ -205,16 +209,16 @@ app.post('/addEmployee', async (req, res) => {
             });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({error: 'Server error'});
     }
 });
 
 app.delete('/deleteEmployee/:name', async (req, res) => {
-    try{
+    try {
         const {username} = req.body;
 
         const user = await prisma.employee.findUnique({
-            where: { username:username }
+            where: {username: username}
         });
 
         if (!user) {
@@ -222,7 +226,7 @@ app.delete('/deleteEmployee/:name', async (req, res) => {
         }
 
         const deletedEmp = await prisma.employee.delete({
-            where: { username: username }
+            where: {username: username}
         });
 
         return res.status(200).json({
@@ -230,27 +234,27 @@ app.delete('/deleteEmployee/:name', async (req, res) => {
             data: deletedEmp
         })
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({error: 'Server error'});
     }
 });
 
 app.post('/updateTheme', async (req, res) => {
-    const { empid, theme } = req.body;
+    const {empid, theme} = req.body;
     if (!empid || theme === undefined) {
         return res.status(400).send('Missing field required, need to provide theme');
     }
 
     try {
         const employee = await prisma.employee.update({
-            where: { empid: empid },
-            data: { theme: theme }
+            where: {empid: empid},
+            data: {theme: theme}
         });
         return res.status(200).json({
             message: 'Theme updated',
             data: employee
         });
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -310,7 +314,7 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
         }
 
         const employee = await prisma.employee.findUnique({
-            where: { empid: parseInt(empid) }
+            where: {empid: parseInt(empid)}
         });
 
         if (!employee) {
@@ -414,9 +418,9 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
 
 app.post('/employee_manage', async (req, res) => {
     try {
-        const { username, edits, employee, priority, email, comments } = req.body;
+        const {username, edits, employee, priority, email, comments} = req.body;
         const employeeManage = await prisma.employee_manage.create({
-            data: { username, edits, employee, priority, email, comments }
+            data: {username, edits, employee, priority, email, comments}
         });
         res.json(employeeManage);
     } catch (error) {
@@ -425,7 +429,7 @@ app.post('/employee_manage', async (req, res) => {
     }
 });
 
-app.delete('/deleteContentForm/:id', async (req, res)=> {
+app.delete('/deleteContentForm/:id', async (req, res) => {
     const id = parseInt(req.params.id);
 
     const contentform1 = await prisma.contentform.findUnique({
@@ -439,38 +443,38 @@ app.delete('/deleteContentForm/:id', async (req, res)=> {
     try {
 
         const contentForm = await prisma.contentform.delete({
-            where: {id:id}
+            where: {id: id}
         });
         return res.status(200).json({
             message: 'Content form deleted successfully',
             data: contentForm
         });
-    }catch (error) {
+    } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
 
 app.get('/contentforms/persona/:persona', async (req, res) => {
-    const { persona } = req.params;
+    const {persona} = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
-            where: { persona: persona }
+            where: {persona: persona}
         });
         res.json(contentForms);
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
 app.get('/contentforms/admin', async (req, res) => {
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
-            prisma.contentform.findMany({ where: { persona: 'Underwriter' } }),
-            prisma.contentform.findMany({ where: { persona: 'Business Analyst' } })
+            prisma.contentform.findMany({where: {persona: 'Underwriter'}}),
+            prisma.contentform.findMany({where: {persona: 'Business Analyst'}})
         ]);
-        res.json({ Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms });
+        res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -492,6 +496,26 @@ app.get('/contentforms/persona/:persona/:field', async (req, res) => {
             const links = contentForms.map(item => item[field])
             res.json(links);
         }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+app.get('/contentforms/filter/:persona/:file_type', async (req, res) => {
+    const {persona, file_type} = req.params;
+    try {
+        const where: any = {};
+        if (persona === 'Admin') {
+            where.persona = {in: ['Underwriter', 'Business Analyst']};
+        } else {
+            where.persona = persona;
+        }
+        const contentForm = await prisma.contentform.findMany({where})
+        const filtered = contentForm.filter(form => {
+            const ext = form.url.split('.').pop();
+            return ext === file_type;
+        });
+        res.json(filtered);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -530,30 +554,99 @@ app.get('/contentforms/:id', async (req, res) => {
         const contentForm = await prisma.contentform.findUnique({
             where: {id}
         });
-        if (!contentForm) return res.status(404).json({error:'Not found'});
+        if (!contentForm) return res.status(404).json({error: 'Not found'});
         res.json(contentForm);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
 
+app.post('/contentforms/:id/checkout', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const {username} = req.body;
+    if (!username) {
+        return res.status(400).send('Requires username');
+    }
+
+    if (checkOutMem[id]) {
+        const {username: takenBy, checkedOut} = checkOutMem[id];
+        if (takenBy !== username) {
+            return res.status(423).json({
+                error: `Document is checked out by ${takenBy} since ${checkedOut}`
+            });
+        }
+    }
+    checkOutMem[id] = {username, checkedOut: new Date()};
+    return res.status(200).json({message: 'Document checked out'});
+});
+
+app.post('/contentforms/:id/checkin', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const {username} = req.body;
+
+    if (!checkOutMem[id]) {
+        return res.status(400).send('Document isnt checked out')
+    }
+    ;
+    if (checkOutMem[id].username !== username) {
+        return res.status(401).json({error: "You can only check in documents that you have checked out"});
+    }
+
+    delete checkOutMem[id];
+    return res.status(200).json({message: 'Document checked in'});
+});
+
+app.get('/contentforms/:id/checkout_status', async (req, res) => {
+    const id = parseInt(req.params.id);
+
+    if (!checkOutMem[id]) {
+        return res.status(401).json({isCheckedOut: false});
+    }
+    return res.status(200).json({
+        isCheckedOut: true,
+        checkedOutBy: checkOutMem[id].username,
+        checkedOutAt: checkOutMem[id].checkedOut
+    });
+})
+
+app.get('/contentforms/checkout/all', async (req, res) => {
+    try {
+        const checkedOutId = Object.keys(checkOutMem).map(Number);
+        if (checkedOutId.length === 0) {
+            return res.status(200).json([]);
+        }
+        const forms = await prisma.contentform.findMany({
+            where: {id: {in: checkedOutId}}
+        });
+
+        const result = forms.map(form => ({
+            ...form,
+            checkedOutBy: checkOutMem[form.id].username,
+            checkedOutAt: checkOutMem[form.id].checkedOut
+        }));
+        return res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({error: 'Something is Wrong'});
+    }
+});
+
 app.put('/contentforms/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const {name, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
         const updated = await prisma.contentform.update({
-            where: { id },
+            where: {id},
             data: {
                 name, url, owner, persona,
                 date_modified: new Date(date_modified),
                 expiration_date: new Date(expiration_date),
                 content_type, status,
-                employee: { connect: { username: owner } }
+                employee: {connect: {username: owner}}
             }
         });
         res.json(updated);
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -573,7 +666,6 @@ app.get('/contentforms/employee/:empid', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
-
 
 
 export default app;
