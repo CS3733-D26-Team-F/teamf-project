@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { Header } from "../components/Header"
+import {useState, useEffect, useRef} from "react";
+import {Header} from "../components/Header"
 import {useSearchParams} from "react-router-dom";
-import { AccessDenied } from "../components/AccessDenied.tsx"
+import {AccessDenied} from "../components/AccessDenied.tsx"
 
 export function ManageContentForm() {
 
@@ -30,6 +30,21 @@ export function ManageContentForm() {
 
     useEffect(() => {
         if (editId) {
+            const username = localStorage.getItem("username");
+            fetch(`http://localhost:3000/contentforms/${editId}/checkout_status`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.isCheckedOut && data.checkedOutBy !== username) {
+                        alert(` Document is being edited by ${data.CheckedOutBy}`);
+                    } else {
+                        fetch(`http://localhost:3000/contentforms/${editId}/checkout`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({username})
+                        });
+                    }
+                });
+
             fetch(`http://localhost:3000/contentforms/${editId}`)
                 .then(res => res.json())
                 .then(data => setFormData({
@@ -45,12 +60,18 @@ export function ManageContentForm() {
     }, [editId]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { id, name, value } = e.target;
-        setFormData(prev => ({ ...prev, [id || name]: value }));
+        const {id, name, value} = e.target;
+        setFormData(prev => ({...prev, [id || name]: value}));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        await fetch(`http://localhost:3000/contentforms/${editId}/checkin`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username})
+        });
 
         if (!formData.name || !formData.owner || !formData.persona ||
             !formData.date_modified || !formData.expiration_date ||
@@ -62,7 +83,7 @@ export function ManageContentForm() {
         if (editId) {
             await fetch(`http://localhost:3000/contentforms/${editId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(formData)
             });
         } else {
@@ -100,22 +121,22 @@ export function ManageContentForm() {
 
     const [employees, setEmployees] = useState<{empid: number, username: string, persona: string}[]>([]);
     const formRef = useRef<HTMLFormElement>(null);
-    const allowedAccess = localStorage.getItem('persona') === 'Admin' || localStorage.getItem('persona') === 'Business Analyst'|| localStorage.getItem('persona') === 'Underwriter';
+    const allowedAccess = localStorage.getItem('persona') === 'Admin' || localStorage.getItem('persona') === 'Business Analyst' || localStorage.getItem('persona') === 'Underwriter';
 
     if (allowedAccess) {
         return (
             <>
-                <Header />
+                <Header/>
                 <form ref={formRef} className="content-management" onSubmit={handleSubmit}>
                     <h1>Manage Content Form</h1>
                     <br/>
-                    <hr />
-                    <br />
+                    <hr/>
+                    <br/>
                     <label htmlFor="name">Name of Hyperlink or Document:</label>
-                    <input type="text" id="name" value={formData.name} onChange={handleChange} />
+                    <input type="text" id="name" value={formData.name} onChange={handleChange}/>
                     <br/><br/>
                     <label htmlFor="file">Upload File:</label>
-                    <input type="file" id="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                    <input type="file" id="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)}/>
                     <br/><br/>
                     <label htmlFor="owner">Name of Content Owner:</label>
                     {persona === 'Admin' ? (
@@ -128,7 +149,7 @@ export function ManageContentForm() {
                                 ))}
                         </select>
                     ) : (
-                        <input type="text" id="owner" value={formData.owner} readOnly />
+                        <input type="text" id="owner" value={formData.owner} readOnly/>
                     )}
                     <br/><br/>
                     <label htmlFor="persona">Job Position:</label>
@@ -139,17 +160,17 @@ export function ManageContentForm() {
                     </select>
                     <br/><br/>
                     <label htmlFor="date_modified">Last Modified Date:</label>
-                    <input type="date" id="date_modified" value={formData.date_modified} onChange={handleChange} />
+                    <input type="date" id="date_modified" value={formData.date_modified} onChange={handleChange}/>
                     <br/><br/>
                     <label htmlFor="expiration_date">Expiration Date:</label>
-                    <input type="date" id="expiration_date" value={formData.expiration_date} onChange={handleChange} />
+                    <input type="date" id="expiration_date" value={formData.expiration_date} onChange={handleChange}/>
                     <br/><br/>
                     <h3>Content Type:</h3>
                     <input type="radio" name="content_type" value="Reference" onChange={handleChange}
-                           checked={formData.content_type === 'Reference'} />
+                           checked={formData.content_type === 'Reference'}/>
                     <label> Reference Content</label>
                     <input type="radio" name="content_type" value="Workflow" onChange={handleChange}
-                           checked={formData.content_type === 'Workflow'} />
+                           checked={formData.content_type === 'Workflow'}/>
                     <label> Workflow Content</label>
                     <br/><br/>
                     <label htmlFor="status">Document Status:</label>
@@ -164,15 +185,30 @@ export function ManageContentForm() {
                     </select>
                     <br/><br/>
                     <button type="reset" onClick={() => {
-                        setFormData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: '', date_modified: '', expiration_date: '', content_type: '', status: '' });
+
+                        fetch(`http://localhost:3000/contentforms/${editId}/checkin`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({username})
+                        });
+                        setFormData({
+                            name: '',
+                            owner: persona === 'Admin' ? '' : username ?? '',
+                            persona: '',
+                            date_modified: '',
+                            expiration_date: '',
+                            content_type: '',
+                            status: ''
+                        });
                         setFile(null);
                         formRef.current?.reset();
-                    }}>Reset</button>
+                    }}>Reset
+                    </button>
                     <button type="submit">Submit</button>
                 </form>
             </>
         );
     } else {
-        return <AccessDenied />;
+        return <AccessDenied/>;
     }
 }
