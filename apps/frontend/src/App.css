@@ -3,27 +3,27 @@
 @custom-variant hover (&:hover);
 
 @theme {
-    --color-frozen-water: var(--frozen-water);
-    --color-pacific-blue: var(--pacific-blue);
+    --color-papaya-whip: var(--papaya-whip);
+    --color-dark-beige: var(--dark-beige);
     --color-yale-blue: var(--yale-blue);
     --color-pale-sky: var(--pale-sky);
     --color-fresh-sky: var(--fresh-sky);
 }
 
 :root {
-    --frozen-water: #BEE9E8;
-    --pacific-blue: #62B6CB;
+    --papaya-whip: #FFEFD5;
+    --dark-beige: #D0C0A7;
     --yale-blue: #1B4965;
     --pale-sky: #CAE9FF;
     --fresh-sky: #5FA8D3;
 }
 
 [data-theme="high-visibility"] {
-    --frozen-water: #FF6600;
-    --pacific-blue: White;
-    --yale-blue: Black;
-    --pale-sky: #CC0000;
-    --fresh-sky: #0066CC;
+    --papaya-whip: #f57600;
+    --dark-beige: #c44601;
+    --yale-blue: #054fb9;
+    --pale-sky: #8babf1;
+    --fresh-sky: #0073e6;
 }
 
 /* Menu Formatting */
@@ -188,7 +188,7 @@ form {
 
         display: block;
         text-align: left;
-        background-color: var(--color-frozen-water);
+        background-color: var(--color-papaya-whip);
         color: var(--color-yale-blue);
         gap: 10rem;
         border-radius: 2rem;
@@ -264,13 +264,13 @@ form {
             text-align: left;
             transform: scale(2);
             margin: 1rem;
-            color: var(--color-pacific-blue);
+            color: var(--color-dark-beige);
         }
 
         input[type="text"] {
             background-color: var(--color-pale-sky); /* Light blue background */
             color: #333;               /* Dark grey text */
-            border: 2px solid var(--color-pacific-blue); /* Blue border */
+            border: 2px solid var(--color-dark-beige); /* Blue border */
         }
 
         h1 {
