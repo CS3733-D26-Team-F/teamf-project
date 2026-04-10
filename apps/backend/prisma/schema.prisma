@@ -31,6 +31,10 @@ model employee {
   persona     String        @db.VarChar(50)
   theme       Int?          @default(0)
   isLoggedIn  Boolean?      @default(false)
+  auth0Id     String?       @unique @db.VarChar
+  first_name  String
+  last_name   String
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
   admin       admin?
   contentform contentform[]
 }
