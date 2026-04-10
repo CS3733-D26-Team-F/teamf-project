@@ -98,7 +98,8 @@ export function ManageContentForm() {
     };
 
 
-
+    const [employees, setEmployees] = useState<{empid: number, username: string, persona: string}[]>([]);
+    const formRef = useRef<HTMLFormElement>(null);
     const allowedAccess = localStorage.getItem('persona') === 'Admin' || localStorage.getItem('persona') === 'Business Analyst'|| localStorage.getItem('persona') === 'Underwriter';
 
 
@@ -124,8 +125,8 @@ export function ManageContentForm() {
                             {employees
                                 .filter(emp => emp.persona !== 'Admin')
                                 .map(emp => (
-                                <option key={emp.empid} value={emp.username}>{emp.username}</option>
-                            ))}
+                                    <option key={emp.empid} value={emp.username}>{emp.username}</option>
+                                ))}
                         </select>
                     ) : (
                         <input type="text" id="owner" value={formData.owner} readOnly />
