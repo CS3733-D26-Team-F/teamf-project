@@ -1,0 +1,29 @@
+.root {
+    padding: calc(var(--mantine-spacing-xl) * 1.5);
+}
+
+.value {
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1.5;
+}
+
+.diff {
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+}
+
+.icon {
+    color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+}
+
+.title {
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.paper {
+    background-color: var(--yale-blue);
+    color: white;
+}
