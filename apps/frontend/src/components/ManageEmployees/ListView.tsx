@@ -1,12 +1,18 @@
 import '@mantine/core/styles.css';
 import { useEffect, useState } from "react";
 import { ListView } from "../ListView.tsx";
+import { Badge } from '@mantine/core';
 
 type Employee = {
     empid: number;
+    first_name: string;
+    last_name: string;
     username: string;
     persona: string;
 }
+
+const personas = ["Admin", "Underwriter", "Business Analyst"];
+
 
 export function EmployeeListView() {
     const [employees, setEmployee] = useState<Employee[]>([]);
@@ -20,59 +26,33 @@ export function EmployeeListView() {
             .finally(() => setLoading(false));
     }, [])
 
+    const personaColors: Record<string, string> = {
+        "Admin": "var(--yale-blue)",
+        "Underwriter": "var(--pale-sky)",
+        "Business Analyst": "var(--fresh-sky)",
+    };
+
+    const getPersonaColor = (persona: string) =>
+        personaColors[persona] ?? "gray";
+
     return (
         <ListView<Employee>
             data={employees}
             columns={[
-                { key: "username", label: "Username" },
-                { key: "persona", label: "Persona" },
+                { key: "first_name", label: "First Name", sortable: true },
+                { key: "last_name", label: "Last Name", sortable: true },
+                { key: "username", label: "Username", sortable: true },
+                {
+                    key: "persona",
+                    label: "Persona",
+                    sortable: true,
+                    renderCell: (row) => (
+                        <Badge color={getPersonaColor(row.persona)} variant="light">
+                            {row.persona}
+                        </Badge>
+                    ),
+                },
             ]}
-    />
+        />
     )
 }
-//
-// export function EmployeeListView() {
-//     const [employees, setEmployee] = useState<Employee[]>([]);
-//     const [loading, setLoading] = useState(false);
-//
-//     useEffect(() => {
-//         fetch("http://localhost:3000/employees")
-//         .then(res => res.json())
-//         .then(data => setEmployee(data))
-//             .finally(() => setLoading(false));
-//     }, [])
-//
-//     if (loading) {
-//         return (
-//             <Center mt="xl">
-//                 <Loader />
-//             </Center>
-//         )
-//     }
-//
-//     return (
-//         <Table striped highlightOnHover withTableBorder withColumnBorders>
-//             <Table.Thead>
-//                 <Table.Tr>
-//                     <Table.Th>
-//                         <Text fw={700} size="lg" c="var(--color-yale-blue)">Username</Text>
-//                     </Table.Th>
-//                     <Table.Th>
-//                         <Text fw={700} size="lg" c="var(--color-yale-blue)">Persona</Text>
-//                     </Table.Th>
-//                 </Table.Tr>
-//             </Table.Thead>
-//
-//             <Table.Tbody>
-//                 {employees.map((emp) => (
-//                     <Table.Tr key={emp.empid}>
-//                         <Table.Td>
-//                             <Text fw={600}>{emp.username}</Text>
-//                         </Table.Td>
-//                         <Table.Td>{emp.persona}</Table.Td>
-//                     </Table.Tr>
-//                 ))}
-//             </Table.Tbody>
-//             </Table>
-//     )
-// }
