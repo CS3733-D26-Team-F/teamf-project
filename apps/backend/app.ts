@@ -3,11 +3,15 @@ import morgan from 'morgan';
 
 const app = express();
 import dotenv from 'dotenv';
-import {PrismaClient} from '@prisma/client';
+
+import pkg from '@prisma/client';
+
 import {PrismaPg} from "@prisma/adapter-pg";
 import {createClient} from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
+
+const { PrismaClient } = pkg;
 
 app.use(cors());
 
