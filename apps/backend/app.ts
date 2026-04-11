@@ -670,6 +670,60 @@ app.get('/contentforms/employee/:empid', async (req, res) => {
     }
 });
 
+app.get('/ba-files', async (req, res) => {
+    const { data, error } = await supabase
+        .from('ba_files_with_size')
+        .select('name, file_size_kb')
+        .not('file_size_kb', 'is', null)
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file size' })
+    }
+
+    res.json(data)
+})
+
+app.get('/uw-files', async (req, res) => {
+    const { data, error } = await supabase
+        .from('underwriter_files_with_size')
+        .select('name, file_size_kb')
+        .not('file_size_kb', 'is', null)
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file size' })
+    }
+
+    res.json(data)
+})
+
+app.get('/uw-files/:name', async(req, res) => {
+    const {name} = req.params;
+    const { data, error } = await supabase
+        .from('underwriter_files_with_size') // your VIEW
+        .select('name, file_size_kb')
+        .eq('name', name)
+        .single()
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file' })
+    }
+    res.json(data)
+})
+
+app.get('/ba-files/:name', async(req, res) => {
+    const {name} = req.params;
+    const { data, error } = await supabase
+        .from('ba_files_with_size') // your VIEW
+        .select('name, file_size_kb')
+        .eq('name', name)
+        .single()
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file' })
+    }
+    res.json(data)
+})
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
