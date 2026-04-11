@@ -15,11 +15,8 @@ import {
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
 
-// Point pdf.js worker at the CDN — no bundler config needed.
-// If you prefer fully local, install pdfjs-dist and set workerSrc to the local path.
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ContentForm = {
     id: number;
@@ -39,8 +36,6 @@ type Employee = {
     username: string;
     persona: string;
 };
-
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const statusColors: Record<string, string> = {
     'In Progress': 'yellow',
@@ -72,8 +67,6 @@ function getExt(url: string) {
 function getFileType(url: string) {
     return getExt(url).toUpperCase() || 'Unknown';
 }
-
-// ─── Thumbnail components — all at module level, never inside render ──────────
 
 function OfficePlaceholder({ ext }: { ext: string }) {
     const info = officeMeta[ext] ?? { bg: '#f5f5f5', color: '#888', label: ext.toUpperCase() || 'FILE' };
@@ -170,8 +163,6 @@ function DocThumbnail({ url }: { url: string }) {
     return <OfficePlaceholder ext={ext} />;
 }
 
-// ─── SortTh ───────────────────────────────────────────────────────────────────
-
 interface SortThProps {
     field: keyof ContentForm;
     label: string;
@@ -187,8 +178,6 @@ function SortTh({ field, label, onToggle, currentField, currentDir }: SortThProp
         </Table.Th>
     );
 }
-
-// ─── TableHead ────────────────────────────────────────────────────────────────
 
 interface TableHeadProps {
     onSort: (f: keyof ContentForm) => void;
@@ -217,8 +206,6 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
         </Table.Thead>
     );
 }
-
-// ─── DocRow ───────────────────────────────────────────────────────────────────
 
 interface RowCallbacks {
     persona: string | null;
@@ -274,8 +261,6 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
     );
 }
 
-// ─── DocCard ──────────────────────────────────────────────────────────────────
-
 interface DocCardProps extends RowCallbacks {
     doc: ContentForm;
     isSelected: boolean;
@@ -324,8 +309,6 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
         </div>
     );
 }
-
-// ─── Main page component ──────────────────────────────────────────────────────
 
 export function Documents() {
     const persona = localStorage.getItem('persona');
@@ -568,7 +551,7 @@ export function Documents() {
                     </Group>
                 )}
 
-                {/* ══ LIST VIEW ══════════════════════════════════════════════ */}
+                {/*list view*/}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && (
@@ -598,7 +581,7 @@ export function Documents() {
                     </Stack>
                 )}
 
-                {/* ══ GRID VIEW ══════════════════════════════════════════════ */}
+                {/*grid view*/}
                 {viewMode === 'grid' && (
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && (
@@ -626,7 +609,7 @@ export function Documents() {
                     </Stack>
                 )}
 
-                {/* Bulk action bar */}
+                {/*bulk action bar*/}
                 {anySelected && (
                     <Box style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--color-yale-blue)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text c="white">{selectedCount} selected</Text>
@@ -645,7 +628,7 @@ export function Documents() {
                 )}
             </Box>
 
-            {/* Document viewer */}
+            {/*doc viewer*/}
             {viewerUrl && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setViewerUrl(null)}>
                     <div className="bg-white rounded-xl shadow-xl w-4/5 flex flex-col overflow-hidden" style={{ height: '80vh' }} onClick={e => e.stopPropagation()}>
@@ -660,7 +643,7 @@ export function Documents() {
                 </div>
             )}
 
-            {/* Filter modal */}
+            {/*filter modal*/}
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
@@ -674,7 +657,7 @@ export function Documents() {
                 </Stack>
             </Modal>
 
-            {/* Add modal */}
+            {/*add modal */}
             <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
@@ -703,7 +686,7 @@ export function Documents() {
                 </Stack>
             </Modal>
 
-            {/* Edit modal */}
+            {/*edit modal*/}
             <Modal opened={editOpen} onClose={closeEdit} title="Edit Document Details" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
