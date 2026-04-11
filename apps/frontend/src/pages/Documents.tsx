@@ -1,0 +1,748 @@
+import '@mantine/core/styles.css';
+import { useEffect, useState, useRef } from "react";
+import * as pdfjs from 'pdfjs-dist';
+import { Header } from "../components/Header";
+import { AccessDenied } from "../components/AccessDenied.tsx";
+import {
+    TextInput, Button, Modal, Select, MultiSelect, Group, Text,
+    Badge, Stack, Box, Table, Checkbox, ActionIcon,
+    Tooltip, SegmentedControl
+} from '@mantine/core';
+import {
+    IconSearch, IconPlus, IconEdit, IconTrash,
+    IconDownload, IconFilter, IconLayoutGrid, IconList, IconStar, IconStarFilled
+} from '@tabler/icons-react';
+import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
+import "@iamjariwala/react-doc-viewer/dist/index.css";
+
+// Point pdf.js worker at the CDN — no bundler config needed.
+// If you prefer fully local, install pdfjs-dist and set workerSrc to the local path.
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ContentForm = {
+    id: number;
+    name: string;
+    url: string;
+    owner: string;
+    persona: string;
+    date_modified: string;
+    expiration_date: string;
+    content_type: string;
+    status: string;
+    is_favorite: boolean;
+};
+
+type Employee = {
+    empid: number;
+    username: string;
+    persona: string;
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const statusColors: Record<string, string> = {
+    'In Progress': 'yellow',
+    'Internal Review': 'orange',
+    'Client Review': 'blue',
+    'Approved': 'green',
+    'Expired': 'red',
+    'Archived': 'gray',
+};
+
+const THUMBNAIL_H = 140;
+const imageExts = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
+
+const officeMeta: Record<string, { bg: string; color: string; label: string }> = {
+    pdf:  { bg: '#fde8e8', color: '#e53e3e', label: 'PDF'  },
+    docx: { bg: '#e8f0fe', color: '#1a73e8', label: 'DOCX' },
+    doc:  { bg: '#e8f0fe', color: '#1a73e8', label: 'DOC'  },
+    xlsx: { bg: '#e6f4ea', color: '#1e8e3e', label: 'XLSX' },
+    xls:  { bg: '#e6f4ea', color: '#1e8e3e', label: 'XLS'  },
+    csv:  { bg: '#e6f4ea', color: '#1e8e3e', label: 'CSV'  },
+    pptx: { bg: '#fff3e0', color: '#f09300', label: 'PPTX' },
+    ppt:  { bg: '#fff3e0', color: '#f09300', label: 'PPT'  },
+};
+
+function getExt(url: string) {
+    return url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
+}
+
+function getFileType(url: string) {
+    return getExt(url).toUpperCase() || 'Unknown';
+}
+
+// ─── Thumbnail components — all at module level, never inside render ──────────
+
+function OfficePlaceholder({ ext }: { ext: string }) {
+    const info = officeMeta[ext] ?? { bg: '#f5f5f5', color: '#888', label: ext.toUpperCase() || 'FILE' };
+    return (
+        <div style={{
+            width: '100%', height: THUMBNAIL_H, background: info.bg,
+            borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(0,0,0,0.07)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 8, userSelect: 'none',
+            overflow: 'hidden', position: 'relative',
+        }}>
+            <div style={{
+                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+                justifyContent: 'center', padding: '12px 16px', gap: 5, opacity: 0.22,
+            }}>
+                {[90, 70, 85, 60, 75, 55].map((w, i) => (
+                    <div key={i} style={{ height: 4, width: `${w}%`, background: info.color, borderRadius: 2 }} />
+                ))}
+            </div>
+            <div style={{
+                background: info.color, color: 'white', fontWeight: 800,
+                fontSize: 13, letterSpacing: 1.5, padding: '4px 12px',
+                borderRadius: 6, boxShadow: '0 2px 6px rgba(0,0,0,0.18)', zIndex: 1,
+            }}>{info.label}</div>
+        </div>
+    );
+}
+
+function PdfThumbnail({ url }: { url: string }) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const loadingTask = pdfjs.getDocument({ url, withCredentials: false });
+                const pdf = await loadingTask.promise;
+                if (cancelled) return;
+                const page = await pdf.getPage(1);
+                if (cancelled) return;
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+
+                const viewport = page.getViewport({ scale: 1 });
+                const containerW = canvas.parentElement?.offsetWidth ?? 200;
+                const scale = Math.max(containerW / viewport.width, 0.4);
+                const scaled = page.getViewport({ scale });
+                canvas.width = scaled.width;
+                canvas.height = scaled.height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                await page.render({ canvasContext: ctx, viewport: scaled }).promise;
+                if (!cancelled) setStatus('done');
+            } catch {
+                if (!cancelled) setStatus('error');
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [url]);
+
+    if (status === 'error') return <OfficePlaceholder ext="pdf" />;
+
+    return (
+        <div style={{
+            width: '100%', height: THUMBNAIL_H,
+            borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(0,0,0,0.07)',
+            overflow: 'hidden', background: '#f8f8f8',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        }}>
+            {status === 'loading' && (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <style>{`@keyframes _pdfspin { to { transform: rotate(360deg); } }`}</style>
+                    <div style={{ width: 22, height: 22, border: '3px solid #ddd', borderTopColor: '#e53e3e', borderRadius: '50%', animation: '_pdfspin 0.8s linear infinite' }} />
+                </div>
+            )}
+            <canvas ref={canvasRef} style={{ width: '100%', height: 'auto', display: status === 'done' ? 'block' : 'none' }} />
+        </div>
+    );
+}
+
+function DocThumbnail({ url }: { url: string }) {
+    const ext = getExt(url);
+    if (ext === 'pdf') return <PdfThumbnail url={url} />;
+    if (imageExts.has(ext)) {
+        return (
+            <div style={{ width: '100%', height: THUMBNAIL_H, borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', background: '#f0f0f0' }}>
+                <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </div>
+        );
+    }
+    return <OfficePlaceholder ext={ext} />;
+}
+
+// ─── SortTh ───────────────────────────────────────────────────────────────────
+
+interface SortThProps {
+    field: keyof ContentForm;
+    label: string;
+    onToggle: (f: keyof ContentForm) => void;
+    currentField: keyof ContentForm | null;
+    currentDir: 'asc' | 'desc';
+}
+
+function SortTh({ field, label, onToggle, currentField, currentDir }: SortThProps) {
+    return (
+        <Table.Th onClick={() => onToggle(field)} style={{ cursor: 'pointer' }}>
+            {label}{currentField === field ? (currentDir === 'asc' ? ' ↑' : ' ↓') : ''}
+        </Table.Th>
+    );
+}
+
+// ─── TableHead ────────────────────────────────────────────────────────────────
+
+interface TableHeadProps {
+    onSort: (f: keyof ContentForm) => void;
+    currentField: keyof ContentForm | null;
+    currentDir: 'asc' | 'desc';
+    onSelectAll: () => void;
+    allChecked: boolean;
+    indeterminate: boolean;
+}
+
+function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, indeterminate }: TableHeadProps) {
+    return (
+        <Table.Thead>
+            <Table.Tr>
+                <Table.Th w={40}><Checkbox checked={allChecked} indeterminate={indeterminate} onChange={onSelectAll} /></Table.Th>
+                <SortTh field="name" label="Document Name" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <Table.Th>File Type</Table.Th>
+                <SortTh field="persona" label="Persona" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="owner" label="Owner" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="content_type" label="Content Type" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="status" label="Status" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="date_modified" label="Date Modified" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="expiration_date" label="Expiration" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <Table.Th>Actions</Table.Th>
+            </Table.Tr>
+        </Table.Thead>
+    );
+}
+
+// ─── DocRow ───────────────────────────────────────────────────────────────────
+
+interface RowCallbacks {
+    persona: string | null;
+    onView: (url: string, label: string) => void;
+    onFavorite: (doc: ContentForm) => void;
+    onDownload: (url: string, name: string) => void;
+    onEdit: (doc: ContentForm) => void;
+    onDelete: (id: number) => void;
+}
+
+interface DocRowProps extends RowCallbacks {
+    doc: ContentForm;
+    isSelected: boolean;
+    onSelect: (id: number) => void;
+}
+
+function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
+    const canModify = persona === 'Admin' || doc.persona === persona;
+    return (
+        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name)}>
+            <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
+            <Table.Td fw={500}>{doc.name}</Table.Td>
+            <Table.Td>{getFileType(doc.url)}</Table.Td>
+            <Table.Td><Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'}>{doc.persona}</Badge></Table.Td>
+            <Table.Td>{doc.owner}</Table.Td>
+            <Table.Td>{doc.content_type}</Table.Td>
+            <Table.Td><Badge color={statusColors[doc.status] ?? 'gray'} variant="light">{doc.status}</Badge></Table.Td>
+            <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
+            <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
+            <Table.Td onClick={e => e.stopPropagation()}>
+                <Group gap="xs">
+                    <Tooltip label={doc.is_favorite ? 'Unfavorite' : 'Favorite'}>
+                        <ActionIcon variant="subtle" color="yellow" onClick={() => onFavorite(doc)}>
+                            {doc.is_favorite ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Download">
+                        <ActionIcon variant="subtle" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={16} /></ActionIcon>
+                    </Tooltip>
+                    {canModify && (
+                        <Tooltip label="Edit">
+                            <ActionIcon variant="subtle" onClick={() => onEdit(doc)}><IconEdit size={16} /></ActionIcon>
+                        </Tooltip>
+                    )}
+                    {canModify && (
+                        <Tooltip label="Delete">
+                            <ActionIcon variant="subtle" color="red" onClick={() => onDelete(doc.id)}><IconTrash size={16} /></ActionIcon>
+                        </Tooltip>
+                    )}
+                </Group>
+            </Table.Td>
+        </Table.Tr>
+    );
+}
+
+// ─── DocCard ──────────────────────────────────────────────────────────────────
+
+interface DocCardProps extends RowCallbacks {
+    doc: ContentForm;
+    isSelected: boolean;
+    onSelect: (id: number) => void;
+}
+
+function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
+    const canModify = persona === 'Admin' || doc.persona === persona;
+    return (
+        <div
+            style={{
+                position: 'relative', background: 'white', borderRadius: 12,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.1)', cursor: 'pointer',
+                transition: 'box-shadow 0.15s', overflow: 'hidden',
+                border: isSelected ? '2px solid var(--color-fresh-sky, #3b82f6)' : '2px solid transparent',
+            }}
+            onClick={() => onView(doc.url, doc.name)}
+        >
+            <DocThumbnail url={doc.url} />
+
+            <div style={{ position: 'absolute', top: 8, left: 8 }} onClick={e => e.stopPropagation()}>
+                <Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} />
+            </div>
+            <div style={{ position: 'absolute', top: 6, right: 6 }} onClick={e => e.stopPropagation()}>
+                <ActionIcon variant="filled" color={doc.is_favorite ? 'yellow' : 'gray'} size="sm" onClick={() => onFavorite(doc)}>
+                    {doc.is_favorite ? <IconStarFilled size={14} /> : <IconStar size={14} />}
+                </ActionIcon>
+            </div>
+
+            <div style={{ padding: '10px 12px 8px' }}>
+                <Text fw={700} size="sm" mb={2} style={{ color: 'var(--color-yale-blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {doc.name}
+                </Text>
+                <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
+                <Group gap={4} mb={4}>
+                    <Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'} size="xs">{doc.persona}</Badge>
+                    <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
+                    <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
+                </Group>
+                <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
+                    <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
+                    {canModify && <ActionIcon variant="subtle" size="sm" onClick={() => onEdit(doc)}><IconEdit size={14} /></ActionIcon>}
+                    {canModify && <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
+                </Group>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main page component ──────────────────────────────────────────────────────
+
+export function Documents() {
+    const persona = localStorage.getItem('persona');
+    const username = localStorage.getItem('username');
+    const today = new Date().toISOString().split('T')[0];
+
+    const [documents, setDocuments] = useState<ContentForm[]>([]);
+    const [filtered, setFiltered] = useState<ContentForm[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [search, setSearch] = useState('');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+    const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const [filterPersona, setFilterPersona] = useState<string[]>([]);
+    const [filterStatus, setFilterStatus] = useState<string[]>([]);
+    const [filterType, setFilterType] = useState<string[]>([]);
+    const [filterOwner, setFilterOwner] = useState<string[]>([]);
+    const [filterOpen, setFilterOpen] = useState(false);
+
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length;
+
+    const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
+    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+    const [favSortField, setFavSortField] = useState<keyof ContentForm | null>(null);
+    const [favSortDir, setFavSortDir] = useState<'asc' | 'desc'>('asc');
+
+    const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+    const [viewerLabel, setViewerLabel] = useState('');
+
+    const [addOpen, setAddOpen] = useState(false);
+    const [addData, setAddData] = useState({
+        name: '', owner: persona === 'Admin' ? '' : username ?? '',
+        persona: persona !== 'Admin' ? persona ?? '' : '',
+        date_modified: today, expiration_date: '', content_type: '', status: ''
+    });
+    const [addFile, setAddFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [editOpen, setEditOpen] = useState(false);
+    const [editId, setEditId] = useState<number | null>(null);
+    const [editData, setEditData] = useState({
+        name: '', owner: '', persona: '',
+        date_modified: today, expiration_date: '', content_type: '', status: ''
+    });
+
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+
+    function loadDocuments() {
+        fetch('http://localhost:3000/contentforms')
+            .then(res => res.json())
+            .then(data => {
+                const flat: ContentForm[] = Array.isArray(data) ? data :
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? [])];
+                setDocuments(flat);
+                setFiltered(flat);
+            });
+    }
+
+    function toggleSort(field: keyof ContentForm) {
+        if (sortField === field) {
+            if (sortDir === 'asc') setSortDir('desc'); else { setSortField(null); setSortDir('asc'); }
+        } else { setSortField(field); setSortDir('asc'); }
+    }
+
+    function toggleFavSort(field: keyof ContentForm) {
+        if (favSortField === field) {
+            if (favSortDir === 'asc') setFavSortDir('desc'); else { setFavSortField(null); setFavSortDir('asc'); }
+        } else { setFavSortField(field); setFavSortDir('asc'); }
+    }
+
+    useEffect(() => {
+        loadDocuments();
+        fetch('http://localhost:3000/employees')
+            .then(res => res.json())
+            .then((data: Employee[]) => setEmployees(data));
+    }, []);
+
+    useEffect(() => {
+        let result = [...documents];
+        if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
+        if (filterPersona.length > 0) result = result.filter(d => filterPersona.includes(d.persona));
+        if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
+        if (filterType.length > 0) result = result.filter(d => filterType.map(t => t.toLowerCase()).includes(getExt(d.url)));
+        if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
+
+        if (sortField) {
+            result.sort((a, b) => {
+                const cmp = String(a[sortField] ?? '').localeCompare(String(b[sortField] ?? ''));
+                return sortDir === 'asc' ? cmp : -cmp;
+            });
+        } else {
+            result.sort((a, b) => {
+                const aMatch = a.persona === persona ? 0 : 1;
+                const bMatch = b.persona === persona ? 0 : 1;
+                if (aMatch !== bMatch) return aMatch - bMatch;
+                if (a.persona !== b.persona) return a.persona.localeCompare(b.persona);
+                return a.name.localeCompare(b.name);
+            });
+        }
+        setFiltered(result);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, documents, sortField, sortDir, persona]);
+
+    const sortedFavorites = (() => {
+        const favs = filtered.filter(d => d.is_favorite);
+        if (!favSortField) return favs;
+        return [...favs].sort((a, b) => {
+            const cmp = String(a[favSortField] ?? '').localeCompare(String(b[favSortField] ?? ''));
+            return favSortDir === 'asc' ? cmp : -cmp;
+        });
+    })();
+
+    const nonFavorites = filtered.filter(d => !d.is_favorite);
+    const allSelected = selectedIds.length === nonFavorites.length && nonFavorites.length > 0;
+    const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
+    const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
+    const selectedCount = selectedIds.length + selectedFavIds.length;
+    const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id)?.is_favorite);
+
+    async function handleAdd() {
+        if (!addFile) { alert('Please upload a file.'); return; }
+        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.content_type || !addData.status) {
+            alert('Please fill in all fields.'); return;
+        }
+        const formPayload = new FormData();
+        formPayload.append('filename', addData.name);
+        formPayload.append('ownerUsername', addData.owner);
+        formPayload.append('date_modified', addData.date_modified);
+        formPayload.append('expiration_date', addData.expiration_date);
+        formPayload.append('content_type', addData.content_type);
+        formPayload.append('status', addData.status);
+        formPayload.append('file', addFile);
+        await fetch('http://localhost:3000/contentforms', { method: 'POST', body: formPayload });
+        setAddOpen(false); setAddFile(null);
+        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? persona ?? '' : '', date_modified: today, expiration_date: '', content_type: '', status: '' });
+        loadDocuments();
+    }
+
+    function openEdit(doc: ContentForm) {
+        fetch(`http://localhost:3000/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
+            .then(res => {
+                if (res.status === 423) { res.json().then(data => alert(data.error)); return; }
+                setEditId(doc.id);
+                setEditData({ name: doc.name, owner: doc.owner, persona: doc.persona, date_modified: today, expiration_date: doc.expiration_date?.split('T')[0] ?? '', content_type: doc.content_type, status: doc.status });
+                setEditOpen(true);
+            });
+    }
+
+    async function handleEdit() {
+        if (!editId) return;
+        await fetch(`http://localhost:3000/contentforms/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData) });
+        await fetch(`http://localhost:3000/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+        setConfirmSaveOpen(false); setEditOpen(false); loadDocuments();
+    }
+
+    function closeEdit() {
+        if (editId) fetch(`http://localhost:3000/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+        setEditOpen(false);
+    }
+
+    async function handleDelete() {
+        if (!deleteId) return;
+        await fetch(`http://localhost:3000/deleteContentForm/${deleteId}`, { method: 'DELETE' });
+        setDeleteOpen(false);
+        setSelectedIds(prev => prev.filter(id => id !== deleteId));
+        setSelectedFavIds(prev => prev.filter(id => id !== deleteId));
+        loadDocuments();
+    }
+
+    async function toggleFavorite(doc: ContentForm) {
+        await fetch(`http://localhost:3000/contentforms/${doc.id}/favorite`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: !doc.is_favorite }) });
+        loadDocuments();
+    }
+
+    async function unfavoriteSelected() {
+        const ids = [...selectedFavIds, ...selectedIds];
+        await Promise.all(ids.map(id => {
+            const doc = documents.find(d => d.id === id && d.is_favorite);
+            if (!doc) return Promise.resolve();
+            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: false }) });
+        }));
+        setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
+    }
+
+    function toggleSelect(id: number) { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
+    function toggleFavSelect(id: number) { setSelectedFavIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
+    function downloadFile(url: string, name: string) { const a = document.createElement('a'); a.href = url; a.download = name; a.target = '_blank'; a.click(); }
+    function openViewer(url: string, label: string) { setViewerUrl(url); setViewerLabel(label); }
+
+    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    if (!allowedAccess) return <AccessDenied />;
+
+    const rowCallbacks: RowCallbacks = {
+        persona,
+        onView: openViewer,
+        onFavorite: toggleFavorite,
+        onDownload: downloadFile,
+        onEdit: openEdit,
+        onDelete: (id: number) => { setDeleteId(id); setDeleteOpen(true); },
+    };
+
+    return (
+        <>
+            <Header />
+            <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
+
+            <Box p="md">
+                <Text fw={700} size="xl" mb="md" style={{ color: 'var(--color-yale-blue)' }}>
+                    {persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : 'Business Analyst Resources'}
+                </Text>
+
+                <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
+                    <Group gap="sm">
+                        <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} style={{ background: 'var(--color-fresh-sky)' }}>Add New Document</Button>
+                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'} color={activeFilterCount > 0 ? 'blue' : undefined} leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)}>
+                            Filter by{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                        </Button>
+                    </Group>
+                    <Group gap="sm">
+                        <TextInput placeholder="Search for document..." leftSection={<IconSearch size={16} />} value={search} onChange={e => setSearch(e.target.value)} w={250} />
+                        <SegmentedControl value={viewMode} onChange={val => setViewMode(val as 'grid' | 'list')}
+                                          data={[
+                                              { label: <Group gap={4}><IconLayoutGrid size={16} /><span>Grid</span></Group>, value: 'grid' },
+                                              { label: <Group gap={4}><IconList size={16} /><span>List</span></Group>, value: 'list' },
+                                          ]}
+                        />
+                    </Group>
+                </Group>
+
+                {activeFilterCount > 0 && (
+                    <Group mb="sm" gap="xs">
+                        {filterPersona.map(v => <Badge key={v} variant="filled" color="blue" style={{ cursor: 'pointer' }} onClick={() => setFilterPersona(p => p.filter(x => x !== v))}>Persona: {v} ×</Badge>)}
+                        {filterStatus.map(v => <Badge key={v} variant="filled" color={statusColors[v] ?? 'gray'} style={{ cursor: 'pointer' }} onClick={() => setFilterStatus(p => p.filter(x => x !== v))}>Status: {v} ×</Badge>)}
+                        {filterType.map(v => <Badge key={v} variant="filled" color="violet" style={{ cursor: 'pointer' }} onClick={() => setFilterType(p => p.filter(x => x !== v))}>Type: {v} ×</Badge>)}
+                        {filterOwner.map(v => <Badge key={v} variant="filled" color="teal" style={{ cursor: 'pointer' }} onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                        <Badge variant="outline" style={{ cursor: 'pointer' }} onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear all</Badge>
+                    </Group>
+                )}
+
+                {/* ══ LIST VIEW ══════════════════════════════════════════════ */}
+                {viewMode === 'list' && (
+                    <Stack gap="lg">
+                        {sortedFavorites.length > 0 && (
+                            <Box>
+                                <Text fw={700} size="sm" c="yellow" mb="xs">⭐ Favorites</Text>
+                                <Table highlightOnHover withTableBorder withColumnBorders>
+                                    <TableHead onSort={toggleFavSort} currentField={favSortField} currentDir={favSortDir}
+                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                               allChecked={allFavSelected} indeterminate={selectedFavIds.length > 0 && !allFavSelected} />
+                                    <Table.Tbody>
+                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc} isSelected={selectedFavIds.includes(doc.id)} onSelect={toggleFavSelect} {...rowCallbacks} />)}
+                                    </Table.Tbody>
+                                </Table>
+                            </Box>
+                        )}
+                        <Box>
+                            <Text fw={700} size="sm" c="dimmed" mb="xs">All Documents</Text>
+                            <Table highlightOnHover withTableBorder withColumnBorders>
+                                <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                                           allChecked={allSelected} indeterminate={selectedIds.length > 0 && !allSelected} />
+                                <Table.Tbody>
+                                    {nonFavorites.map(doc => <DocRow key={doc.id} doc={doc} isSelected={selectedIds.includes(doc.id)} onSelect={toggleSelect} {...rowCallbacks} />)}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    </Stack>
+                )}
+
+                {/* ══ GRID VIEW ══════════════════════════════════════════════ */}
+                {viewMode === 'grid' && (
+                    <Stack gap="lg">
+                        {sortedFavorites.length > 0 && (
+                            <Box>
+                                <Group justify="space-between" mb="sm">
+                                    <Text fw={700} c="yellow">⭐ Favorites</Text>
+                                    <Checkbox label="Select all" checked={allFavSelected} indeterminate={selectedFavIds.length > 0 && !allFavSelected}
+                                              onChange={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))} />
+                                </Group>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 16 }}>
+                                    {sortedFavorites.map(doc => <DocCard key={doc.id} doc={doc} isSelected={selectedFavIds.includes(doc.id)} onSelect={toggleFavSelect} {...rowCallbacks} />)}
+                                </div>
+                            </Box>
+                        )}
+                        <Box>
+                            <Group justify="space-between" mb="sm">
+                                <Text fw={700} c="dimmed">All Documents</Text>
+                                <Checkbox label="Select all" checked={allSelected} indeterminate={selectedIds.length > 0 && !allSelected}
+                                          onChange={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))} />
+                            </Group>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 16 }}>
+                                {nonFavorites.map(doc => <DocCard key={doc.id} doc={doc} isSelected={selectedIds.includes(doc.id)} onSelect={toggleSelect} {...rowCallbacks} />)}
+                            </div>
+                        </Box>
+                    </Stack>
+                )}
+
+                {/* Bulk action bar */}
+                {anySelected && (
+                    <Box style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--color-yale-blue)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text c="white">{selectedCount} selected</Text>
+                        <Group gap="sm">
+                            <Button variant="white" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
+                            <Button variant="white" onClick={() => { [...selectedIds, ...selectedFavIds].forEach(id => { const doc = documents.find(d => d.id === id); if (doc) downloadFile(doc.url, doc.name); }); }}>Download Selected</Button>
+                            {selectedHasFavorites && <Button variant="white" onClick={unfavoriteSelected}>★ Unfavorite All</Button>}
+                            <Button color="red" onClick={async () => {
+                                const ids = [...selectedIds, ...selectedFavIds];
+                                if (!window.confirm(`Delete ${ids.length} documents?`)) return;
+                                await Promise.all(ids.map(id => fetch(`http://localhost:3000/deleteContentForm/${id}`, { method: 'DELETE' })));
+                                setSelectedIds([]); setSelectedFavIds([]); loadDocuments();
+                            }}>Delete Selected</Button>
+                        </Group>
+                    </Box>
+                )}
+            </Box>
+
+            {/* Document viewer */}
+            {viewerUrl && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setViewerUrl(null)}>
+                    <div className="bg-white rounded-xl shadow-xl w-4/5 flex flex-col overflow-hidden" style={{ height: '80vh' }} onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center px-4 py-2 border-b">
+                            <h2 className="text-lg font-bold" style={{ color: 'var(--color-yale-blue)' }}>{viewerLabel}</h2>
+                            <button onClick={() => setViewerUrl(null)} className="text-gray-500 hover:text-gray-800 text-xl font-bold">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-auto">
+                            <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Filter modal */}
+            <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
+                <Stack>
+                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
+                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv']} clearable />
+                    <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
+                    <Group justify="flex-end">
+                        <Button variant="default" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
+                        <Button onClick={() => setFilterOpen(false)}>Apply</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* Add modal */}
+            <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
+                <Stack>
+                    <Text fw={600}>Document Details</Text>
+                    <TextInput label="Name of Document" value={addData.name} onChange={e => setAddData({...addData, name: e.target.value})} />
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Upload File</Text>
+                        <input ref={fileInputRef} type="file" onChange={e => setAddFile(e.target.files?.[0] ?? null)} />
+                    </Box>
+                    {persona === 'Admin'
+                        ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
+                        : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
+                    <Select label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val ?? ''})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
+                    <Group grow>
+                        <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
+                        <Select label="Document Status" value={addData.status} onChange={val => setAddData({...addData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} />
+                    </Group>
+                    <Group grow>
+                        <TextInput label="Last Modified Date" type="date" value={addData.date_modified} onChange={e => setAddData({...addData, date_modified: e.target.value})} />
+                        <TextInput label="Expiration Date" type="date" value={addData.expiration_date} onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
+                    </Group>
+                    <Group justify="flex-end" mt="md">
+                        <Button variant="default" onClick={() => setAddOpen(false)}>✕ Cancel Changes</Button>
+                        <Button onClick={handleAdd} style={{ background: 'var(--color-fresh-sky)' }}>+ Submit Document</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* Edit modal */}
+            <Modal opened={editOpen} onClose={closeEdit} title="Edit Document Details" size="lg">
+                <Stack>
+                    <Text fw={600}>Document Details</Text>
+                    <TextInput label="Name of Document" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
+                    {persona === 'Admin'
+                        ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
+                        : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
+                    <Select label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val ?? ''})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
+                    <Group grow>
+                        <Select label="Content Type" value={editData.content_type} onChange={val => setEditData({...editData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
+                        <Select label="Document Status" value={editData.status} onChange={val => setEditData({...editData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} />
+                    </Group>
+                    <Group grow>
+                        <TextInput label="Last Modified Date" type="date" value={editData.date_modified} onChange={e => setEditData({...editData, date_modified: e.target.value})} />
+                        <TextInput label="Expiration Date" type="date" value={editData.expiration_date} onChange={e => setEditData({...editData, expiration_date: e.target.value})} />
+                    </Group>
+                    <Group justify="flex-end" mt="md">
+                        <Button variant="default" onClick={closeEdit}>✕ Cancel Changes</Button>
+                        <Button onClick={() => setConfirmSaveOpen(true)} style={{ background: 'var(--color-fresh-sky)' }}>✓ Save Changes</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            <Modal opened={confirmSaveOpen} onClose={() => setConfirmSaveOpen(false)} title="Confirm Changes" centered>
+                <Text size="sm" mb="md">Are you sure you want to save these changes?</Text>
+                <Group justify="flex-end">
+                    <Button variant="outline" onClick={() => setConfirmSaveOpen(false)}>Cancel</Button>
+                    <Button onClick={handleEdit} style={{ background: 'var(--color-fresh-sky)' }}>Confirm</Button>
+                </Group>
+            </Modal>
+
+            <Modal opened={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete form?" centered>
+                <Text size="sm" mb="md">Changes you made <strong>cannot be undone.</strong></Text>
+                <Group justify="flex-end">
+                    <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                    <Button color="blue" onClick={handleDelete}>Confirm</Button>
+                </Group>
+            </Modal>
+        </>
+    );
+}
