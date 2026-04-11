@@ -587,7 +587,7 @@ export function Documents() {
                         {sortedFavorites.length > 0 && (
                             <Box>
                                 <Group justify="space-between" mb="sm">
-                                    <Text fw={700} c="yellow">⭐ Favorites</Text>
+                                    <Text fw={700} c="yellow">Favorites</Text>
                                     <Checkbox label="Select all" checked={allFavSelected} indeterminate={selectedFavIds.length > 0 && !allFavSelected}
                                               onChange={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))} />
                                 </Group>
