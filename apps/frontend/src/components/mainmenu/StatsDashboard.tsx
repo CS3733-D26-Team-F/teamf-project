@@ -34,6 +34,8 @@ export function StatsDashboard() {
     const [numFiles, setNumFiles] = useState(0);
     //Of those files # updated last month
     const [updatedFiles, setUpdatedFiles] = useState(0);
+    console.log(numFiles);
+    console.log(updatedFiles);
 
     useEffect(() => {
         //current date
