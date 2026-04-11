@@ -19,6 +19,7 @@ model contentform {
   content_type    String    @db.VarChar(50)
   status          String    @db.VarChar(50)
   empid           Int?
+  is_favorite     Boolean   @default(false)
   employee        employee? @relation(fields: [empid], references: [empid])
 }
 

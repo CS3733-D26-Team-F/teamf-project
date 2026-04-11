@@ -670,6 +670,20 @@ app.get('/contentforms/employee/:empid', async (req, res) => {
     }
 });
 
+app.post('/contentforms/:id/favorite', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const {is_favorite} = req.body;
+    try {
+        const updated = await prisma.contentform.update({
+            where: {id},
+            data: {is_favorite}
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
