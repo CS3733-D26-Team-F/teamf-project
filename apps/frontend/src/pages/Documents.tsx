@@ -21,6 +21,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 type ContentForm = {
     id: number;
     name: string;
+    file_name: string;
     url: string;
     owner: string;
     persona: string;
@@ -196,7 +197,7 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
             <Table.Tr>
                 <Table.Th w={40}><Checkbox checked={allChecked} indeterminate={indeterminate} onChange={onSelectAll} /></Table.Th>
                 <SortTh field="name" label="Document Name" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <Table.Th>File Type</Table.Th>
+                <SortTh field="file_name" label="Document Type" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="persona" label="Persona" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="owner" label="Owner" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="content_type" label="Content Type" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
@@ -357,6 +358,7 @@ export function Documents() {
         name: '', owner: '', persona: '',
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
+    const [editFile, setEditFile] = useState<File | null>(null);
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -382,6 +384,7 @@ export function Documents() {
     }
 
     async function restoreDoc(id: number) {
+        if (!window.confirm('Are you sure you want to restore?')) return;
         await fetch(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH' });
         loadTrash();
         loadDocuments();
@@ -433,7 +436,15 @@ export function Documents() {
 
         if (sortField) {
             result.sort((a, b) => {
-                const cmp = String(a[sortField] ?? '').localeCompare(String(b[sortField] ?? ''));
+                let aVal = String(a[sortField] ?? '');
+                let bVal = String(b[sortField] ?? '');
+
+                if (sortField === 'file_name') {
+                    aVal = getFileType(a.url);
+                    bVal = getFileType(b.url);
+                }
+
+                const cmp = aVal.localeCompare(bVal);
                 return sortDir === 'asc' ? cmp : -cmp;
             });
         } else {
@@ -452,7 +463,15 @@ export function Documents() {
         const favs = filtered.filter(d => d.is_favorite);
         if (!favSortField) return favs;
         return [...favs].sort((a, b) => {
-            const cmp = String(a[favSortField] ?? '').localeCompare(String(b[favSortField] ?? ''));
+            let aVal = String(a[favSortField] ?? '');
+            let bVal = String(b[favSortField] ?? '');
+
+            if (favSortField === 'file_name') {
+                aVal = getFileType(a.url);
+                bVal = getFileType(b.url);
+            }
+
+            const cmp = aVal.localeCompare(bVal);
             return favSortDir === 'asc' ? cmp : -cmp;
         });
     })();
@@ -463,6 +482,7 @@ export function Documents() {
     const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
     const selectedCount = selectedIds.length + selectedFavIds.length;
     const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id)?.is_favorite);
+    const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
     async function handleAdd() {
         if (!addFile) { alert('Please upload a file.'); return; }
@@ -495,9 +515,38 @@ export function Documents() {
 
     async function handleEdit() {
         if (!editId) return;
-        await fetch(`http://localhost:3000/contentforms/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData) });
-        await fetch(`http://localhost:3000/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-        setConfirmSaveOpen(false); setEditOpen(false); loadDocuments();
+        if (editFile) {
+            const formPayload = new FormData();
+            formPayload.append('filename', editData.name);
+            formPayload.append('ownerUsername', editData.owner);
+            formPayload.append('persona', editData.persona);
+            formPayload.append('date_modified', editData.date_modified);
+            formPayload.append('expiration_date', editData.expiration_date);
+            formPayload.append('content_type', editData.content_type);
+            formPayload.append('status', editData.status);
+            formPayload.append('file', editFile); // Attach the new file
+
+            await fetch(`http://localhost:3000/contentforms/${editId}`, {
+                method: 'PUT',
+                body: formPayload
+            });
+        } else {
+            await fetch(`http://localhost:3000/contentforms/${editId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editData)
+            });
+        }
+
+        await fetch(`http://localhost:3000/contentforms/${editId}/checkin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        setEditFile(null);
+        setConfirmSaveOpen(false);
+        setEditOpen(false);
+        loadDocuments();
     }
 
     function closeEdit() {
@@ -515,7 +564,10 @@ export function Documents() {
     }
 
     async function toggleFavorite(doc: ContentForm) {
-        await fetch(`http://localhost:3000/contentforms/${doc.id}/favorite`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: !doc.is_favorite }) });
+        await fetch(`http://localhost:3000/contentforms/${doc.id}/favorite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_favorite: !doc.is_favorite }) });
         loadDocuments();
     }
 
@@ -524,15 +576,65 @@ export function Documents() {
         await Promise.all(ids.map(id => {
             const doc = documents.find(d => d.id === id && d.is_favorite);
             if (!doc) return Promise.resolve();
-            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: false }) });
+            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_favorite: false }) });
         }));
-        setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
+        setSelectedFavIds([]);
+        setSelectedIds([]); loadDocuments();
     }
 
-    function toggleSelect(id: number) { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
-    function toggleFavSelect(id: number) { setSelectedFavIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
-    function downloadFile(url: string, name: string) { const a = document.createElement('a'); a.href = url; a.download = name; a.target = '_blank'; a.click(); }
-    function openViewer(url: string, label: string) { setViewerUrl(url); setViewerLabel(label); }
+    async function favoriteSelected() {
+        const ids = [...selectedFavIds, ...selectedIds];
+        await Promise.all(ids.map(id => {
+            const doc = documents.find(d => d.id === id && !d.is_favorite);
+            if (!doc) return Promise.resolve();
+            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_favorite: true })
+            });
+        }));
+        setSelectedFavIds([]);
+        setSelectedIds([]);
+        loadDocuments();
+    }
+
+    function toggleSelect(id: number) {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    }
+    function toggleFavSelect(id: number) {
+        setSelectedFavIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    }
+    async function downloadFile(url: string, name: string) {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Failed to download file as blob. Falling back to default method.", error);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    }
+    function openViewer(url: string, label: string) {
+        setViewerUrl(url); setViewerLabel(label);
+    }
 
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
     if (!allowedAccess) return <AccessDenied />;
@@ -653,8 +755,23 @@ export function Documents() {
                         <Text c="white">{selectedCount} selected</Text>
                         <Group gap="sm">
                             <Button variant="white" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
-                            <Button variant="white" onClick={() => { [...selectedIds, ...selectedFavIds].forEach(id => { const doc = documents.find(d => d.id === id); if (doc) downloadFile(doc.url, doc.name); }); }}>Download Selected</Button>
-                            {selectedHasFavorites && <Button variant="white" onClick={unfavoriteSelected}>★ Unfavorite All</Button>}
+                            <Button
+                                variant="white"
+                                onClick={async () => {
+                                    const ids = [...selectedIds, ...selectedFavIds];
+                                    for (const id of ids) {
+                                        const doc = documents.find(d => d.id === id);
+                                        if (doc) {
+                                            await downloadFile(doc.url, doc.name);
+                                            await new Promise(resolve => setTimeout(resolve, 500));
+                                        }
+                                    }
+                                }}
+                            >
+                                Download Selected
+                            </Button>
+                            {selectedHasNonFavorites && <Button variant="white" onClick={favoriteSelected}>★ Favorite All</Button>}
+                            {selectedHasFavorites && <Button variant="white" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
                             <Button color="red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
@@ -828,6 +945,14 @@ export function Documents() {
                 <Stack>
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Update File (Optional)</Text>
+                        <input
+                            type="file"
+                            onChange={e => setEditFile(e.target.files?.[0] ?? null)}
+                        />
+                        <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document details.</Text>
+                    </Box>
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
