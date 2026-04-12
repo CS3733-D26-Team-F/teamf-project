@@ -47,7 +47,7 @@ export function EmployeeListView() {
     const today = new Date().toISOString().split('T')[0];
 
     function loadEmployees() {
-        fetch("http://localhost:3000/employees")
+        fetch(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then(data => setEmployees(data));
     }
@@ -63,7 +63,7 @@ export function EmployeeListView() {
     }
 
     async function handleAdd() {
-        await fetch('http://localhost:3000/addEmployee', {
+        await fetch(`${DOMAIN}/addEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -86,7 +86,7 @@ export function EmployeeListView() {
 
     async function handleEdit() {
         if (!editTarget) return;
-        await fetch(`http://localhost:3000/updateEmployee`, {
+        await fetch(`${DOMAIN}/updateEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
