@@ -150,9 +150,7 @@ export function EmployeeListView() {
                                 size="sm"
                                 leftSection={<IconPlus size={14} />}
                                 onClick={() => openAdd(persona)}
-                                style={{
-                                    backgroundColor: "var(--yale-blue)",
-                                    color: "var(--color-white)",}}
+                                className="invert-hover"
                             >
                                 Add Employee
                             </Button>
@@ -188,17 +186,13 @@ export function EmployeeListView() {
                                             size="xs"
                                             leftSection={<IconEdit size={14} />}
                                             onClick={() => openEdit(emp)}
-                                            style={{
-                                                backgroundColor: "var(--yale-blue)",
-                                                color: "var(--color-white)",}}
+                                            className="invert-hover"
                                         >
                                             Edit
                                         </Button>
                                         <Button
                                             size="xs"
-                                            style={{
-                                                backgroundColor: "var(--color-neutral-red)",
-                                                color: "var(--color-white)",}}
+                                            className="invert-hover-red"
                                             leftSection={<IconTrash size={14} />}
                                             onClick={() => openDelete(emp)}
                                         >
@@ -258,10 +252,10 @@ export function EmployeeListView() {
                         readOnly
                     />
                     <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={() => setAddOpen(false)}>Cancel</Button>
+                        <Button variant="default" onClick={() => setAddOpen(false)} className="invert-hover-outline">Cancel</Button>
                         <Button
                             onClick={handleAdd}
-                            style={{ background: 'var(--color-yale-blue)' }}
+                            className="invert-hover"
                         >
                             + Save Account
                         </Button>
@@ -307,18 +301,15 @@ export function EmployeeListView() {
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>Account History</Text>
                             <Group>
-                                <Badge color="teal" variant="light" size="lg">
-                                    {editTarget.first_name?.[0] ?? ''}{editTarget.last_name?.[0] ?? ''}
-                                </Badge>
                                 <Text size="sm">{editTarget.first_name} {editTarget.last_name}</Text>
                                 <Text size="sm" c="dimmed">Creation Date: {new Date(editTarget.created_at).toISOString().split('T')[0]}</Text>
                             </Group>
                         </Box>
                         <Group justify="flex-end" mt="md">
-                            <Button variant="default" onClick={() => setEditOpen(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline">Cancel</Button>
                             <Button
                                 onClick={handleEdit}
-                                style={{ background: 'var(--color-fresh-sky)' }}
+                                className="invert-hover"
                             >
                                 + Save Account
                             </Button>
@@ -338,8 +329,8 @@ export function EmployeeListView() {
                     Changes you made <strong>cannot be undone.</strong>
                 </Text>
                 <Group justify="flex-end">
-                    <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                    <Button color="var(--color-yale-blue)" onClick={handleDelete}>Confirm</Button>
+                    <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">Cancel</Button>
+                    <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
                 </Group>
             </Modal>
         </Box>

@@ -22,7 +22,7 @@
     --yale-blue: #1B4965;
     --pale-sky: #CAE9FF;
     --fresh-sky: #5FA8D3;
-    --sapphire: #0F52BA;
+    --sapphire: #3A6FBF;
 }
 
 [data-theme="high-visibility"] {
@@ -395,4 +395,40 @@ input[type="file"] {
 /*Remove iamjariwala's in-built header*/
 #header-bar, .rdv-header-bar {
     display: none !important;
+}
+
+.invert-hover {
+    background-color: var(--yale-blue);
+    color: var(--color-white);
+    border: 1px solid var(--yale-blue);
+    transition: 0.2s ease;
+}
+
+.invert-hover:hover {
+    background-color: var(--color-white);
+    color: var(--yale-blue);
+}
+
+.invert-hover-outline {
+    background-color: var(--white);
+    border: 1px solid var(--yale-blue);
+    color: var(--yale-blue);
+    transition: 0.2s ease;
+}
+
+.invert-hover-outline:hover {
+    background-color: var(--yale-blue);
+    color: var(--white);
+}
+
+.invert-hover-red {
+    background-color: var(--neutral-red);
+    color: var(--color-white);
+    border: 1px solid var(--neutral-red);
+    transition: 0.2s ease;
+}
+
+.invert-hover-red:hover {
+    background-color: var(--color-white);
+    color: var(--neutral-red);
 }
