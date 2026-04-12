@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoginModal from '../login/LoginModal';
 
 const modules = import.meta.glob<{ default : string}>(
     "../../../public/carousel/*.png",
@@ -35,8 +36,10 @@ export function Hero() {
             </div>
 
             <div className="content">
-                <h1>Welcome to the Hanover Insurance Group!</h1>
+                <h1>Welcome to iBank!</h1>
                 <p>We are committed to providing our customers with the best insurance products and services.</p>
+                <LoginModal />
+
             </div>
         </main>
     );

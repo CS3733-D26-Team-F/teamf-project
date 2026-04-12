@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant hover (&:hover);
@@ -236,17 +237,21 @@ form {
             color: white;
         }
 
-        button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
+        button[type="submit"]:hover {
+            background-color: var(--color-fresh-sky);
+        }
 
 
-    button[type="reset"] {
-        background-color: var(--color-yale-blue);
-        color: white;
-    }
+        button[type="reset"] {
+            background-color: var(--color-yale-blue);
+            color: white;
+        }
 
-    button[type="reset"]:hover { background-color: var(--color-fresh-sky); }
+        button[type="reset"]:hover {
+            background-color: var(--color-fresh-sky);
+        }
 
-        label, label[htmlFor="employeeSelect"]{
+        label, label[htmlFor="employeeSelect"] {
             color: var(--color-yale-blue);
             font-size: 1.5rem;
             text-align: left;
@@ -269,7 +274,7 @@ form {
 
         input[type="text"] {
             background-color: var(--color-pale-sky); /* Light blue background */
-            color: #333;               /* Dark grey text */
+            color: #333; /* Dark grey text */
             border: 2px solid var(--color-dark-beige); /* Blue border */
         }
 
@@ -288,38 +293,6 @@ form {
         }
     }
 
-    &.login-form {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        margin: 4rem 10rem;
-
-        div.entry {
-            display: flex;
-            flex-direction: row;
-            margin-bottom: 6rem;
-        }
-
-        label {
-            color: var(--color-yale-blue);
-            font-size: 2.2rem;
-            text-align: left;
-            margin: 0.75rem;
-        }
-
-        input, textarea {
-            font-family: Roboto, sans-serif;
-            padding: 0px 10px;
-            font-size: 2.2rem;
-            color: var(--color-yale-blue);
-        }
-
-        input[type="text"], input[type="password"] {
-            color: #333;               /* Dark grey text */
-            border: 6px solid var(--color-yale-blue); /* Blue border */
-        }
-
         button {
             border-radius: 30px;
             font-family: Roboto, sans-serif;
@@ -334,7 +307,7 @@ form {
             }
         }
     }
-}
+
 
 div.text-yale-blue {
     font-family: Roboto, sans-serif;
