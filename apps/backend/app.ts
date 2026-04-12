@@ -401,7 +401,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         const content = await prisma.contentform.create({
             data: {
                 name: filename,
-                url: urlData.publicUrl,
+                url: `${urlData.publicUrl}?t=${Date.now()}`,
                 owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
@@ -737,7 +737,7 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
                 .from(bucket)
                 .getPublicUrl(req.file.originalname);
 
-            updateData.url = urlData.publicUrl;
+            updateData.url = `${urlData.publicUrl}?t=${Date.now()}`;
         }
 
         const updated = await prisma.contentform.update({
