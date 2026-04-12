@@ -857,7 +857,7 @@ export function Documents() {
             </Modal>
 
             <Modal opened={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete form?" centered>
-                <Text size="sm" mb="md">Changes you made <strong>cannot be undone.</strong></Text>
+                <Text size="sm" mb="md">Are you sure you want to <strong>delete</strong> this file?</Text>
                 <Group justify="flex-end">
                     <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
                     <Button color="blue" onClick={handleDelete}>Confirm</Button>
