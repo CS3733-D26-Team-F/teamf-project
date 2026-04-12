@@ -1,7 +1,5 @@
 
-import { BusinessAnalyst } from './pages/BusinessAnalyst';
-import { CoreCommercialUnderwriter} from "./pages/CoreCommercialUnderwriter.tsx";
-import { ManageContentForm} from "./pages/ManageContentForm.tsx";
+import {Documents} from './pages/Documents';
 import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { Login } from "./pages/Login";
 import { MainMenu } from './pages/MainMenu';
@@ -21,9 +19,7 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<Login/>}/>
                 <Route path="/menu" element={<MainMenu />} />
-                <Route path="/businessanalyst" element={<BusinessAnalyst />} />
-                <Route path="/corecommercialunderwriter" element={<CoreCommercialUnderwriter />} />
-                <Route path="/managecontent" element={<ManageContentForm />} />
+                <Route path="/documents" element={<Documents />} />
                 <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/settings" element={<div>Settings Page</div>} />
