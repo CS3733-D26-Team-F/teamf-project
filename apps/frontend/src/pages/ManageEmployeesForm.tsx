@@ -1,6 +1,8 @@
 import {useEffect, useState} from 'react';
 import { Header } from "../components/Header"
 import { AccessDenied } from "../components/AccessDenied.tsx"
+import { EmployeeListView } from "../components/ManageEmployees/ListView.tsx"
+import { EmployeesTitle } from "../components/ManageEmployees/Title.tsx";
 
 export function ManageEmployeesForm() {
     const [formData, setFormData] = useState({
@@ -228,6 +230,8 @@ export function ManageEmployeesForm() {
                     <button type="reset">Reset</button>
                     <button type="submit">Submit</button>
                 </form>
+                <EmployeesTitle />
+                <EmployeeListView />
             </>
         );
     } else {

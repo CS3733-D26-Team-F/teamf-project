@@ -101,6 +101,12 @@ async function setSessionTo(persona: string) {
 }
 
 async function displayAdmin(){
+    console.log(
+        document.getElementById('manage-content'),
+        document.getElementById('manage-employees'),
+        document.getElementById('business-analyst'),
+        document.getElementById('core-commercial-underwriter')
+    );
     document.getElementById('manage-content')!.style.display = ''
     document.getElementById('manage-employees')!.style.display = '';
     document.getElementById('business-analyst')!.style.display = 'block';
