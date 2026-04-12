@@ -20,6 +20,8 @@ model contentform {
   status          String    @db.VarChar(50)
   empid           Int?
   is_favorite     Boolean   @default(false)
+  deleted_at      DateTime? @db.Date
+  is_deleted      Boolean   @default(false)
   employee        employee? @relation(fields: [empid], references: [empid])
 }
 

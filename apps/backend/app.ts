@@ -24,7 +24,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors({
     origin: ["http://localhost:5173", "http://localhost:5175"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
 }));
 app.use(express.json());
@@ -48,7 +48,9 @@ app.get('/employees', async (req, res) => {
 });
 
 app.get('/contentforms', async (req, res) => {
-    const contentForms = await prisma.contentform.findMany();
+    const contentForms = await prisma.contentform.findMany({
+        where: {is_deleted: false}
+    });
     console.log('Content Form Data:', contentForms);
     res.json(contentForms);
 });
@@ -521,6 +523,57 @@ app.post('/login', async (req, res) => {
     } else {
         console.log(`failed: ${username}`);
         return res.status(401).send('Invalid username or password');
+    }
+});
+
+// Trash - get all soft deleted (admin only)
+app.get('/contentforms/trash', async (req, res) => {
+    try {
+        const trashed = await prisma.contentform.findMany({
+            where: { is_deleted: true }
+        });
+        res.json(trashed);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Soft delete - sets is_deleted flag instead of removing from DB
+app.patch('/contentforms/:id/softdelete', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { is_deleted: true, deleted_at: new Date() }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Restore from trash
+app.patch('/contentforms/:id/restore', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const restored = await prisma.contentform.update({
+            where: { id },
+            data: { is_deleted: false, deleted_at: null }
+        });
+        res.json(restored);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Permanent delete - admin only
+app.delete('/contentforms/:id/permanent', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const deleted = await prisma.contentform.delete({ where: { id } });
+        res.json(deleted);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
     }
 });
 
