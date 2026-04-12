@@ -12,6 +12,7 @@ import { UserProfile } from './components/profile/userProfile.tsx';
 
 
 export default function App() {
+    localStorage.clear(); //to force a clear
     return (
         // Each Route should be a page from src/pages
     <MantineProvider>
