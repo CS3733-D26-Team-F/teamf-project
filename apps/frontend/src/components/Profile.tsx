@@ -25,8 +25,8 @@ export function Profile() {
                     <Menu.Item component="button" >
                         <Link to="/settings" style={{ color: 'var(--color-yale-blue)' }}>Settings</Link>
                     </Menu.Item>
-                    <Menu.Item component="button" onClick={() => localStorage.setItem('persona', 'Guest')}>
-                        <Link to="/" style={{ color: 'var(--color-yale-blue)' }}>Logout</Link>
+                    <Menu.Item component="button" onClick={() => localStorage.clear()} >
+                        <Link to="/ " style={{ color: 'var(--color-yale-blue)' }}>Logout</Link>
                     </Menu.Item>
                 </Menu.Dropdown>
             </Menu>

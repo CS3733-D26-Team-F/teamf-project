@@ -48,6 +48,9 @@ export type ContentformMinAggregateOutputType = {
   content_type: string | null
   status: string | null
   empid: number | null
+  is_favorite: boolean | null
+  deleted_at: Date | null
+  is_deleted: boolean | null
 }
 
 export type ContentformMaxAggregateOutputType = {
@@ -61,6 +64,9 @@ export type ContentformMaxAggregateOutputType = {
   content_type: string | null
   status: string | null
   empid: number | null
+  is_favorite: boolean | null
+  deleted_at: Date | null
+  is_deleted: boolean | null
 }
 
 export type ContentformCountAggregateOutputType = {
@@ -74,6 +80,9 @@ export type ContentformCountAggregateOutputType = {
   content_type: number
   status: number
   empid: number
+  is_favorite: number
+  deleted_at: number
+  is_deleted: number
   _all: number
 }
 
@@ -99,6 +108,9 @@ export type ContentformMinAggregateInputType = {
   content_type?: true
   status?: true
   empid?: true
+  is_favorite?: true
+  deleted_at?: true
+  is_deleted?: true
 }
 
 export type ContentformMaxAggregateInputType = {
@@ -112,6 +124,9 @@ export type ContentformMaxAggregateInputType = {
   content_type?: true
   status?: true
   empid?: true
+  is_favorite?: true
+  deleted_at?: true
+  is_deleted?: true
 }
 
 export type ContentformCountAggregateInputType = {
@@ -125,6 +140,9 @@ export type ContentformCountAggregateInputType = {
   content_type?: true
   status?: true
   empid?: true
+  is_favorite?: true
+  deleted_at?: true
+  is_deleted?: true
   _all?: true
 }
 
@@ -225,6 +243,9 @@ export type ContentformGroupByOutputType = {
   content_type: string
   status: string
   empid: number | null
+  is_favorite: boolean
+  deleted_at: Date | null
+  is_deleted: boolean
   _count: ContentformCountAggregateOutputType | null
   _avg: ContentformAvgAggregateOutputType | null
   _sum: ContentformSumAggregateOutputType | null
@@ -261,6 +282,9 @@ export type contentformWhereInput = {
   content_type?: Prisma.StringFilter<"contentform"> | string
   status?: Prisma.StringFilter<"contentform"> | string
   empid?: Prisma.IntNullableFilter<"contentform"> | number | null
+  is_favorite?: Prisma.BoolFilter<"contentform"> | boolean
+  deleted_at?: Prisma.DateTimeNullableFilter<"contentform"> | Date | string | null
+  is_deleted?: Prisma.BoolFilter<"contentform"> | boolean
   employee?: Prisma.XOR<Prisma.EmployeeNullableScalarRelationFilter, Prisma.employeeWhereInput> | null
 }
 
@@ -275,6 +299,9 @@ export type contentformOrderByWithRelationInput = {
   content_type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   empid?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_favorite?: Prisma.SortOrder
+  deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_deleted?: Prisma.SortOrder
   employee?: Prisma.employeeOrderByWithRelationInput
 }
 
@@ -292,6 +319,9 @@ export type contentformWhereUniqueInput = Prisma.AtLeast<{
   content_type?: Prisma.StringFilter<"contentform"> | string
   status?: Prisma.StringFilter<"contentform"> | string
   empid?: Prisma.IntNullableFilter<"contentform"> | number | null
+  is_favorite?: Prisma.BoolFilter<"contentform"> | boolean
+  deleted_at?: Prisma.DateTimeNullableFilter<"contentform"> | Date | string | null
+  is_deleted?: Prisma.BoolFilter<"contentform"> | boolean
   employee?: Prisma.XOR<Prisma.EmployeeNullableScalarRelationFilter, Prisma.employeeWhereInput> | null
 }, "id" | "name" | "url">
 
@@ -306,6 +336,9 @@ export type contentformOrderByWithAggregationInput = {
   content_type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   empid?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_favorite?: Prisma.SortOrder
+  deleted_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_deleted?: Prisma.SortOrder
   _count?: Prisma.contentformCountOrderByAggregateInput
   _avg?: Prisma.contentformAvgOrderByAggregateInput
   _max?: Prisma.contentformMaxOrderByAggregateInput
@@ -327,6 +360,9 @@ export type contentformScalarWhereWithAggregatesInput = {
   content_type?: Prisma.StringWithAggregatesFilter<"contentform"> | string
   status?: Prisma.StringWithAggregatesFilter<"contentform"> | string
   empid?: Prisma.IntNullableWithAggregatesFilter<"contentform"> | number | null
+  is_favorite?: Prisma.BoolWithAggregatesFilter<"contentform"> | boolean
+  deleted_at?: Prisma.DateTimeNullableWithAggregatesFilter<"contentform"> | Date | string | null
+  is_deleted?: Prisma.BoolWithAggregatesFilter<"contentform"> | boolean
 }
 
 export type contentformCreateInput = {
@@ -338,6 +374,9 @@ export type contentformCreateInput = {
   expiration_date: Date | string
   content_type: string
   status: string
+  is_favorite?: boolean
+  deleted_at?: Date | string | null
+  is_deleted?: boolean
   employee?: Prisma.employeeCreateNestedOneWithoutContentformInput
 }
 
@@ -352,6 +391,9 @@ export type contentformUncheckedCreateInput = {
   content_type: string
   status: string
   empid?: number | null
+  is_favorite?: boolean
+  deleted_at?: Date | string | null
+  is_deleted?: boolean
 }
 
 export type contentformUpdateInput = {
@@ -363,6 +405,9 @@ export type contentformUpdateInput = {
   expiration_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   employee?: Prisma.employeeUpdateOneWithoutContentformNestedInput
 }
 
@@ -377,6 +422,9 @@ export type contentformUncheckedUpdateInput = {
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   empid?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type contentformCreateManyInput = {
@@ -390,6 +438,9 @@ export type contentformCreateManyInput = {
   content_type: string
   status: string
   empid?: number | null
+  is_favorite?: boolean
+  deleted_at?: Date | string | null
+  is_deleted?: boolean
 }
 
 export type contentformUpdateManyMutationInput = {
@@ -401,6 +452,9 @@ export type contentformUpdateManyMutationInput = {
   expiration_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type contentformUncheckedUpdateManyInput = {
@@ -414,6 +468,9 @@ export type contentformUncheckedUpdateManyInput = {
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   empid?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type contentformCountOrderByAggregateInput = {
@@ -427,6 +484,9 @@ export type contentformCountOrderByAggregateInput = {
   content_type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   empid?: Prisma.SortOrder
+  is_favorite?: Prisma.SortOrder
+  deleted_at?: Prisma.SortOrder
+  is_deleted?: Prisma.SortOrder
 }
 
 export type contentformAvgOrderByAggregateInput = {
@@ -445,6 +505,9 @@ export type contentformMaxOrderByAggregateInput = {
   content_type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   empid?: Prisma.SortOrder
+  is_favorite?: Prisma.SortOrder
+  deleted_at?: Prisma.SortOrder
+  is_deleted?: Prisma.SortOrder
 }
 
 export type contentformMinOrderByAggregateInput = {
@@ -458,6 +521,9 @@ export type contentformMinOrderByAggregateInput = {
   content_type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   empid?: Prisma.SortOrder
+  is_favorite?: Prisma.SortOrder
+  deleted_at?: Prisma.SortOrder
+  is_deleted?: Prisma.SortOrder
 }
 
 export type contentformSumOrderByAggregateInput = {
@@ -485,6 +551,14 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -554,6 +628,9 @@ export type contentformCreateWithoutEmployeeInput = {
   expiration_date: Date | string
   content_type: string
   status: string
+  is_favorite?: boolean
+  deleted_at?: Date | string | null
+  is_deleted?: boolean
 }
 
 export type contentformUncheckedCreateWithoutEmployeeInput = {
@@ -566,6 +643,9 @@ export type contentformUncheckedCreateWithoutEmployeeInput = {
   expiration_date: Date | string
   content_type: string
   status: string
+  is_favorite?: boolean
+  deleted_at?: Date | string | null
+  is_deleted?: boolean
 }
 
 export type contentformCreateOrConnectWithoutEmployeeInput = {
@@ -608,6 +688,9 @@ export type contentformScalarWhereInput = {
   content_type?: Prisma.StringFilter<"contentform"> | string
   status?: Prisma.StringFilter<"contentform"> | string
   empid?: Prisma.IntNullableFilter<"contentform"> | number | null
+  is_favorite?: Prisma.BoolFilter<"contentform"> | boolean
+  deleted_at?: Prisma.DateTimeNullableFilter<"contentform"> | Date | string | null
+  is_deleted?: Prisma.BoolFilter<"contentform"> | boolean
 }
 
 export type contentformCreateManyEmployeeInput = {
@@ -620,6 +703,9 @@ export type contentformCreateManyEmployeeInput = {
   expiration_date: Date | string
   content_type: string
   status: string
+  is_favorite?: boolean
+  deleted_at?: Date | string | null
+  is_deleted?: boolean
 }
 
 export type contentformUpdateWithoutEmployeeInput = {
@@ -631,6 +717,9 @@ export type contentformUpdateWithoutEmployeeInput = {
   expiration_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type contentformUncheckedUpdateWithoutEmployeeInput = {
@@ -643,6 +732,9 @@ export type contentformUncheckedUpdateWithoutEmployeeInput = {
   expiration_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type contentformUncheckedUpdateManyWithoutEmployeeInput = {
@@ -655,6 +747,9 @@ export type contentformUncheckedUpdateManyWithoutEmployeeInput = {
   expiration_date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content_type?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  is_favorite?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deleted_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  is_deleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -670,6 +765,9 @@ export type contentformSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   content_type?: boolean
   status?: boolean
   empid?: boolean
+  is_favorite?: boolean
+  deleted_at?: boolean
+  is_deleted?: boolean
   employee?: boolean | Prisma.contentform$employeeArgs<ExtArgs>
 }, ExtArgs["result"]["contentform"]>
 
@@ -684,6 +782,9 @@ export type contentformSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   content_type?: boolean
   status?: boolean
   empid?: boolean
+  is_favorite?: boolean
+  deleted_at?: boolean
+  is_deleted?: boolean
   employee?: boolean | Prisma.contentform$employeeArgs<ExtArgs>
 }, ExtArgs["result"]["contentform"]>
 
@@ -698,6 +799,9 @@ export type contentformSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   content_type?: boolean
   status?: boolean
   empid?: boolean
+  is_favorite?: boolean
+  deleted_at?: boolean
+  is_deleted?: boolean
   employee?: boolean | Prisma.contentform$employeeArgs<ExtArgs>
 }, ExtArgs["result"]["contentform"]>
 
@@ -712,9 +816,12 @@ export type contentformSelectScalar = {
   content_type?: boolean
   status?: boolean
   empid?: boolean
+  is_favorite?: boolean
+  deleted_at?: boolean
+  is_deleted?: boolean
 }
 
-export type contentformOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "url" | "owner" | "persona" | "date_modified" | "expiration_date" | "content_type" | "status" | "empid", ExtArgs["result"]["contentform"]>
+export type contentformOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "url" | "owner" | "persona" | "date_modified" | "expiration_date" | "content_type" | "status" | "empid" | "is_favorite" | "deleted_at" | "is_deleted", ExtArgs["result"]["contentform"]>
 export type contentformInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   employee?: boolean | Prisma.contentform$employeeArgs<ExtArgs>
 }
@@ -741,6 +848,9 @@ export type $contentformPayload<ExtArgs extends runtime.Types.Extensions.Interna
     content_type: string
     status: string
     empid: number | null
+    is_favorite: boolean
+    deleted_at: Date | null
+    is_deleted: boolean
   }, ExtArgs["result"]["contentform"]>
   composites: {}
 }
@@ -1175,6 +1285,9 @@ export interface contentformFieldRefs {
   readonly content_type: Prisma.FieldRef<"contentform", 'String'>
   readonly status: Prisma.FieldRef<"contentform", 'String'>
   readonly empid: Prisma.FieldRef<"contentform", 'Int'>
+  readonly is_favorite: Prisma.FieldRef<"contentform", 'Boolean'>
+  readonly deleted_at: Prisma.FieldRef<"contentform", 'DateTime'>
+  readonly is_deleted: Prisma.FieldRef<"contentform", 'Boolean'>
 }
     
 

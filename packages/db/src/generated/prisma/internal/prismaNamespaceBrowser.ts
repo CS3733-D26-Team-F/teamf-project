@@ -83,7 +83,10 @@ export const ContentformScalarFieldEnum = {
   expiration_date: 'expiration_date',
   content_type: 'content_type',
   status: 'status',
-  empid: 'empid'
+  empid: 'empid',
+  is_favorite: 'is_favorite',
+  deleted_at: 'deleted_at',
+  is_deleted: 'is_deleted'
 } as const
 
 export type ContentformScalarFieldEnum = (typeof ContentformScalarFieldEnum)[keyof typeof ContentformScalarFieldEnum]
