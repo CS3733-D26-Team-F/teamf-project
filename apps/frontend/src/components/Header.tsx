@@ -33,30 +33,44 @@ export function Header() {
     const isBusinessAnalyst = persona === 'Business Analyst';
     const isGuest = persona === 'Guest';
 
-    return (
-        <header className="main-header">
-            <div className="logo">
-                <Link to="/">
-                    <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
-                </Link>
-            </div>
+    if (isAdmin || isUnderwriter || isBusinessAnalyst) {
+        return (
+            <header className="main-header">
+                <div className="logo">
+                    <Link to="/">
+                        <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
+                    </Link>
+                </div>
 
-            <nav className="menu-links">
-                <Link to="/menu">Home</Link>
-                {isAdmin && <Link to="/manageemployees">Employees</Link>}
-                {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
-                    <Link to="/documents">Documents</Link>
-                    )}
-                <ThemeToggle />
-                {!isGuest && <Profile />}
+                <nav className="menu-links">
+                    <Link to="/menu">Home</Link>
+                    {isAdmin && <Link to="/manageemployees">Employees</Link>}
+                    {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
+                        <Link to="/documents">Documents</Link>
+                        )}
+                    <ThemeToggle />
+                    {!isGuest && <Profile />}
+                    
+                </nav>
+            </header>
+        );
+    }
+
+    else {
+        return (
+            <header className="main-header">
+                <div className="logo">
+                    <Link to="/">
+                        <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
+                    </Link>
+                </div>
+                <nav className="menu-links">
+                    <Link to="/menu">Home</Link>
+                </nav>
+                </header>
                 
-
-
-                
-
-            </nav>
-        </header>
-    );
+            );
+        }
 }
 
 

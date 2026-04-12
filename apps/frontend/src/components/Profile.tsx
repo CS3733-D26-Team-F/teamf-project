@@ -12,9 +12,9 @@ export function Profile() {
                 <Menu
                 transitionProps={{transition: 'pop-top-right'}}
                 position="top-end"
-                width={220}>
+                width={150}>
                     <Menu.Target>
-                        <Button rightSection={<IconChevronDown size={18} />} pr={5} variant="filled" color="primary">
+                        <Button rightSection={<IconChevronDown size={18} />} pr={20} variant="filled" color="primary">
                         <img src="https://via.placeholder.com/40" alt="Profile" />
                         <span>{localStorage.getItem('username') || 'Guest'}</span>
                         </Button>
@@ -26,7 +26,7 @@ export function Profile() {
                         <Menu.Item component="button" >
                             <Link to="/settings" style={{ color: 'var(--color-yale-blue)' }}>Settings</Link>
                         </Menu.Item>
-                        <Menu.Item component="button" onClick={() => localStorage.setItem('persona', 'Guest')} >
+                        <Menu.Item component="button" onClick={() => logOff() } >
                             <Link to="/ " style={{ color: 'var(--color-yale-blue)' }}>Logout</Link>
                         </Menu.Item>
                     </Menu.Dropdown>
@@ -34,14 +34,9 @@ export function Profile() {
             </div>
         );
     }
-    else{
-        return (
-        <>
-            <div className="profile-link" aria-label="not signed in" >
-                
-                
-            </div>
-        </>
-        );
-    }
+}
+
+function logOff() {
+    //hardcoded log off function -- clear local storage
+    localStorage.clear();
 }
