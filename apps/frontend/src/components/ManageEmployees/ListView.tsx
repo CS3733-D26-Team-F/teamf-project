@@ -1,7 +1,7 @@
 import '@mantine/core/styles.css';
 import { useEffect, useState } from "react";
 import {
-    TextInput, PasswordInput, Select, Button, Modal,
+    TextInput, PasswordInput, FileInput, Select, Button, Modal,
     Group, Text, Badge, Stack, Box
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
@@ -237,6 +237,13 @@ export function EmployeeListView() {
                         value={addData.username}
                         onChange={e => setAddData({...addData, username: e.target.value})}
                     />
+                    <FileInput
+                        label="Profile Picture (Optional)"
+                        placeholder="Upload a profile picture"
+                        accept="image/*"
+                        onChange={e => console.log(e)}
+                        //to implement: handle profile picture upload and update
+                    />
                     <PasswordInput
                         label="Password"
                         value={addData.password}
@@ -292,6 +299,13 @@ export function EmployeeListView() {
                             label="New Password (Optional)"
                             value={editData.password}
                             onChange={e => setEditData({...editData, password: e.target.value})}
+                        />
+                        <FileInput
+                            label="New Profile Picture (Optional)"
+                            placeholder="Upload a new profile picture"
+                            accept="image/*"
+                            onChange={e => console.log(e)}
+                            //to implement: handle profile picture upload and update
                         />
                         <Select
                             label="New Persona (Optional)"

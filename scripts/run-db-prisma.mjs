@@ -46,7 +46,7 @@ const sanitizedEnv = Object.fromEntries(
   )
 );
 
-const child = spawn(`npm run -w db ${prismaScript}`, {
+const child = spawn(`npm run -w backend ${prismaScript}`, {
   stdio: "inherit",
   shell: true,
   env: {
