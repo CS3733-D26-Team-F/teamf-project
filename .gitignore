@@ -1,3 +1,6 @@
+#package-lock.json should be in git ignore
+package-lock.json
+
 *node_modules/
 
 *.turbo/
