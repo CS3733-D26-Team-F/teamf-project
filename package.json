@@ -26,7 +26,8 @@
     "@types/dotenv": "^6.1.1",
     "nodemon": "^3.1.14",
     "prisma": "^7.6.0",
-    "turbo": "^2.9.1"
+    "turbo": "^2.9.1",
+    "vite-tsconfig-paths": "^6.1.1"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
