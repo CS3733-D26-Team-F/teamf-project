@@ -279,7 +279,7 @@ app.post('/updateContentForm', async (req, res) => {
         name?: string;
         url?: string;
         owner?: string;
-        persona?: string;
+        persona?: string[];
         date_modified?: string;
         expiration_date?: string;
         content_type?: string;
@@ -379,22 +379,19 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
             return res.status(404).json({error: 'Employee not found this should be the current user'});
         }
 
-        const persona = employee.persona;
+        const persona = JSON.parse(req.body.persona ?? '[]');
+        const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
 
-        const {data, error} = await supabase.storage
-            .from(persona)
-            .upload(file.originalname, file.buffer, {
-                contentType: file.mimetype,
-                upsert: true
-            });
+        const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(file.originalname, file.buffer, { contentType: file.mimetype, upsert: true });
 
         if (error) {
-            return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
+            return res.status(500).json({ error: 'Failed to upload file to bucket', details: error.message });
         }
 
-        // Get the public URL to store in the DB
-        const {data: urlData} = supabase.storage
-            .from(persona)
+        const { data: urlData } = supabase.storage
+            .from(bucket)
             .getPublicUrl(file.originalname);
 
         // Create the content form record with the supabase URL
@@ -468,7 +465,7 @@ app.get('/contentforms/persona/:persona', async (req, res) => {
     const {persona} = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
-            where: {persona: persona}
+            where: {persona: {has: persona}}
         });
         res.json(contentForms);
     } catch (error) {
@@ -479,8 +476,8 @@ app.get('/contentforms/persona/:persona', async (req, res) => {
 app.get('/contentforms/admin', async (req, res) => {
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
-            prisma.contentform.findMany({where: {persona: 'Underwriter'}}),
-            prisma.contentform.findMany({where: {persona: 'Business Analyst'}})
+            prisma.contentform.findMany({ where: { persona: { has: 'Underwriter' } } }),
+            prisma.contentform.findMany({ where: { persona: { has: 'Business Analyst' } } }),
         ]);
         res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
     } catch (error) {
@@ -493,14 +490,14 @@ app.get('/contentforms/persona/:persona/:field', async (req, res) => {
     try {
         if (persona === 'Admin') {
             const contentForm = await prisma.contentform.findMany({
-                where: {persona: {in: ['Underwriter', 'Business Analyst']}},
+                where: { persona: { hasSome: ['Underwriter', 'Business Analyst'] } },
                 select: {[field]: true}
             });
             const links = contentForm.map(item => item[field])
             res.json(links);
         } else {
             const contentForms = await prisma.contentform.findMany({
-                where: {persona: persona},
+                where: { persona: { has: persona } },
                 select: {[field]: true}
             });
             const links = contentForms.map(item => item[field])
@@ -697,23 +694,27 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
 
     try {
         const id = parseInt(req.params.id.toString());
-        const { name, ownerUsername, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const { name, ownerUsername, owner, date_modified, expiration_date, content_type, status } = req.body;
+        const resolvedOwner = ownerUsername ?? owner;
+        console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
+        const rawPersona = req.body.persona;
+        const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
         const updateData: any = {
-            name: name,
-            owner: ownerUsername,
-            persona,
+            name,
+            owner: resolvedOwner,
+            persona,  // now correctly set
             date_modified: new Date(date_modified),
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
-            employee: { connect: { username: ownerUsername } }
+            employee: { connect: { username: resolvedOwner } }
         };
 
         if (req.file) {
             // look up the employee to get their persona/bucket
             const employee = await prisma.employee.findUnique({
-                where: { username: ownerUsername }
+                where: { username: resolvedOwner }
             });
 
             if (!employee) {
