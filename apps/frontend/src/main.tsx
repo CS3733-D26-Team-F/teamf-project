@@ -4,21 +4,23 @@ import App from './App.tsx'
 import { MantineProvider } from "@mantine/core";
 import {Auth0Provider} from "@auth0/auth0-react";
 
+console.log(import.meta.env.VITE_AUTH0_DOMAIN)
+
 createRoot(document.getElementById('root')!).render(
     <Auth0Provider
-        domain= {import.meta.env.AUTH0_DOMAIN}
-        clientId= {import.meta.env.AUTH0_CLIENT_ID}
+        domain= {import.meta.env.VITE_AUTH0_DOMAIN}
+        clientId= {import.meta.env.VITE_AUTH0_CLIENT_ID}
         authorizationParams={{
             redirect_uri: window.location.origin,
-            audience: import.meta.env.AUTH0_AUDIENCE,
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
             scope: "openid profile email"
         }}
     >
-    <StrictMode>
-      <MantineProvider>
-          <App />
-      </MantineProvider>
-  </StrictMode>
+        <StrictMode>
+          <MantineProvider>
+              <App />
+          </MantineProvider>
+      </StrictMode>
     </Auth0Provider>
 )
 
