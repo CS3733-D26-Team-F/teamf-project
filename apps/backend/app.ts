@@ -691,23 +691,64 @@ app.get('/contentforms/checkout/all', async (req, res) => {
     }
 });
 
-app.put('/contentforms/:id', async (req, res) => {
+app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
+    console.log('PUT body:', req.body);
+    console.log('PUT file:', req.file?.originalname);
+
     try {
-        const id = parseInt(req.params.id);
-        const {name, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
-        const updated = await prisma.contentform.update({
-            where: {id},
-            data: {
-                name, url, owner, persona,
-                date_modified: new Date(date_modified),
-                expiration_date: new Date(expiration_date),
-                content_type, status,
-                employee: {connect: {username: owner}}
+        const id = parseInt(req.params.id.toString());
+        const { name, ownerUsername, persona, date_modified, expiration_date, content_type, status } = req.body;
+
+        const updateData: any = {
+            name: name,
+            owner: ownerUsername,
+            persona,
+            date_modified: new Date(date_modified),
+            expiration_date: expiration_date ? new Date(expiration_date) : null,
+            content_type,
+            status,
+            employee: { connect: { username: ownerUsername } }
+        };
+
+        if (req.file) {
+            // look up the employee to get their persona/bucket
+            const employee = await prisma.employee.findUnique({
+                where: { username: ownerUsername }
+            });
+
+            if (!employee) {
+                return res.status(404).json({ error: 'Employee not found' });
             }
+
+            const bucket = employee.persona;
+
+            const { error } = await supabase.storage
+                .from(bucket)
+                .upload(req.file.originalname, req.file.buffer, {
+                    contentType: req.file.mimetype,
+                    upsert: true  // overwrites existing file with same name
+                });
+
+            if (error) {
+                return res.status(500).json({ error: 'Failed to upload file to Supabase', details: error.message });
+            }
+
+            const { data: urlData } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(req.file.originalname);
+
+            updateData.url = urlData.publicUrl;
+        }
+
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: updateData
         });
+
         res.json(updated);
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        console.error('Error updating document:', error);
+        res.status(500).json({ error: 'Something went wrong' });
     }
 });
 
