@@ -6,8 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "turbo run dev --filter=frontend --filter=backend",
-    "build": "turbo run build --filter=frontend --filter=backend",
-    "start": "turbo run start --filter=frontend --filter=backend",
+    "build": "turbo run build --filter=frontend",
+    "start": "turbo run start --filter=backend",
     "db:generate": "node scripts/run-db-prisma.mjs db:generate",
     "db:pull": "node scripts/run-db-prisma.mjs db:pull",
     "db:push": "node scripts/run-db-prisma.mjs db:push",

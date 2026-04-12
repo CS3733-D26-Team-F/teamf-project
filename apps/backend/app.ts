@@ -1,5 +1,6 @@
 import express from 'express';
 import morgan from 'morgan';
+import path from 'path';
 
 const app = express();
 import dotenv from 'dotenv';
@@ -12,6 +13,8 @@ import cors from 'cors';
 import multer from 'multer';
 
 const { PrismaClient } = pkg;
+
+const distPath = path.resolve("../frontend/dist");
 
 app.use(cors());
 
@@ -36,6 +39,7 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -46,9 +50,9 @@ app.use(morgan('dev'));
  *
  */
 
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
     res.sendStatus(200);
-});
+});*/
 
 app.get('/employees', async (req, res) => {
     const employees = await prisma.employee.findMany();
@@ -67,7 +71,6 @@ app.get('/employee_manage', async (req, res) => {
     console.log('Employee Manage Data:', employeeManage);
     res.json(employeeManage);
 });
-
 
 app.post('/login', async (req, res) => {
     const {username, password} = req.body;
@@ -672,6 +675,12 @@ app.get('/contentforms/employee/:empid', async (req, res) => {
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
+});
+
+app.use(express.static(distPath));
+
+app.use((req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
 });
 
 // Start server
