@@ -40,6 +40,18 @@ type Employee = {
     persona: string;
 };
 
+type StagedFile = {
+    id: string; // Temporary ID for React mapping
+    file: File;
+    name: string;
+    owner: string;
+    persona: string;
+    content_type: string;
+    status: string;
+    date_modified: string;
+    expiration_date: string;
+};
+
 const statusColors: Record<string, string> = {
     'In Progress': 'yellow',
     'Internal Review': 'orange',
@@ -349,6 +361,32 @@ export function Documents() {
         persona: persona !== 'Admin' ? persona ?? '' : '',
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
+    const [bulkOpen, setBulkOpen] = useState(false);
+    const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    function handleBulkFileSelect(files: File[]) {
+        const newStaged: StagedFile[] = files.map(f => ({
+            id: Math.random().toString(36).substring(7), // Random temp ID
+            file: f,
+            name: f.name,
+            owner: persona === 'Admin' ? '' : username ?? '',
+            persona: persona !== 'Admin' ? persona ?? '' : '',
+            content_type: '',
+            status: '',
+            date_modified: today,
+            expiration_date: ''
+        }));
+        setStagedFiles(prev => [...prev, ...newStaged]);
+    }
+
+    function updateStagedFile(id: string, field: keyof StagedFile, value: any) {
+        setStagedFiles(prev => prev.map(item =>
+            item.id === id ? { ...item, [field]: value } : item
+        ));
+    }
+
+    function removeStagedFile(id: string) {
+        setStagedFiles(prev => prev.filter(item => item.id !== id));
+    }
     const [addFile, setAddFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -500,6 +538,40 @@ export function Documents() {
         await fetch('http://localhost:3000/contentforms', { method: 'POST', body: formPayload });
         setAddOpen(false); setAddFile(null);
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? persona ?? '' : '', date_modified: today, expiration_date: '', content_type: '', status: '' });
+        loadDocuments();
+    }
+
+    async function handleBulkAdd() {
+        if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
+
+        // 1. Validation check
+        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
+        if (missingData) {
+            alert('Please fill in all dropdowns and dates for every file.');
+            return;
+        }
+
+        // 2. Upload loop
+        for (const sf of stagedFiles) {
+            const formPayload = new FormData();
+            formPayload.append('filename', sf.name);
+            formPayload.append('ownerUsername', sf.owner);
+            formPayload.append('persona', sf.persona); // Ensure persona is included
+            formPayload.append('date_modified', sf.date_modified);
+            formPayload.append('expiration_date', sf.expiration_date);
+            formPayload.append('content_type', sf.content_type);
+            formPayload.append('status', sf.status);
+            formPayload.append('file', sf.file);
+
+            await fetch('http://localhost:3000/contentforms', {
+                method: 'POST',
+                body: formPayload
+            });
+        }
+
+        // 3. Clean up
+        setBulkOpen(false);
+        setStagedFiles([]);
         loadDocuments();
     }
 
@@ -660,7 +732,24 @@ export function Documents() {
 
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
-                        <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} style={{ background: 'var(--color-fresh-sky)' }}>Add New Document</Button>
+                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
+                            <>
+                                <Button
+                                    leftSection={<IconPlus size={16} />}
+                                    onClick={() => setAddOpen(true)}
+                                    style={{ background: 'var(--color-fresh-sky)' }}
+                                >
+                                    Add Document
+                                </Button>
+                                <Button
+                                    variant="default"
+                                    leftSection={<IconPlus size={16} />}
+                                    onClick={() => setBulkOpen(true)}
+                                >
+                                    Bulk Upload
+                                </Button>
+                            </>
+                        )}
                         <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'} color={activeFilterCount > 0 ? 'blue' : undefined} leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)}>
                             Filter by{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
                         </Button>
@@ -987,6 +1076,115 @@ export function Documents() {
                     <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
                     <Button color="blue" onClick={handleDelete}>Confirm</Button>
                 </Group>
+            </Modal>
+            {/* Bulk Upload Table Modal */}
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
+                <Stack>
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Add Files</Text>
+                        <input
+                            type="file"
+                            multiple
+                            onChange={e => {
+                                handleBulkFileSelect(Array.from(e.target.files ?? []));
+                                e.target.value = ''; // Reset input so you can add the same file twice if needed
+                            }}
+                        />
+                    </Box>
+
+                    {stagedFiles.length > 0 && (
+                        <Box style={{ overflowX: 'auto' }}>
+                            <Table highlightOnHover withTableBorder withColumnBorders>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th w={200}>File Name</Table.Th>
+                                        <Table.Th w={150}>Owner</Table.Th>
+                                        <Table.Th w={150}>Persona</Table.Th>
+                                        <Table.Th w={150}>Content Type</Table.Th>
+                                        <Table.Th w={150}>Status</Table.Th>
+                                        <Table.Th w={150}>Dates</Table.Th>
+                                        <Table.Th w={50}></Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {stagedFiles.map(staged => (
+                                        <Table.Tr key={staged.id}>
+                                            <Table.Td>
+                                                <TextInput
+                                                    value={staged.name}
+                                                    onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}
+                                                />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                {persona === 'Admin' ? (
+                                                    <Select
+                                                        data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
+                                                        value={staged.owner}
+                                                        onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}
+                                                    />
+                                                ) : (
+                                                    <TextInput value={staged.owner} readOnly />
+                                                )}
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select
+                                                    data={['Underwriter', 'Business Analyst']}
+                                                    value={staged.persona}
+                                                    onChange={val => updateStagedFile(staged.id, 'persona', val ?? '')}
+                                                    disabled={persona !== 'Admin'}
+                                                />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select
+                                                    data={['Reference', 'Workflow']}
+                                                    value={staged.content_type}
+                                                    onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}
+                                                />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select
+                                                    data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
+                                                    value={staged.status}
+                                                    onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}
+                                                />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Stack gap={4}>
+                                                    <TextInput
+                                                        type="date"
+                                                        label="Modified"
+                                                        size="xs"
+                                                        value={staged.date_modified}
+                                                        onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}
+                                                    />
+                                                    <TextInput
+                                                        type="date"
+                                                        label="Expires"
+                                                        size="xs"
+                                                        value={staged.expiration_date}
+                                                        onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}
+                                                    />
+                                                </Stack>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <ActionIcon color="red" onClick={() => removeStagedFile(staged.id)}>
+                                                    <IconTrash size={16} />
+                                                </ActionIcon>
+                                            </Table.Td>
+                                        </Table.Tr>
+                                    ))}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    )}
+
+                    <Group justify="flex-end" mt="md">
+                        <Button variant="default" onClick={() => { setBulkOpen(false); setStagedFiles([]); }}>✕ Cancel</Button>
+                        <Button onClick={handleBulkAdd} style={{ background: 'var(--color-fresh-sky)' }} disabled={stagedFiles.length === 0}>
+                            + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
+                        </Button>
+                    </Group>
+                </Stack>
             </Modal>
         </>
     );
