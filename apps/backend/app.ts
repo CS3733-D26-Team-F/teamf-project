@@ -35,7 +35,7 @@ const upload = multer({storage: multer.memoryStorage()});
 const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};
 
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5175"],
+    origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
 }));
@@ -684,7 +684,7 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);
 });
 
