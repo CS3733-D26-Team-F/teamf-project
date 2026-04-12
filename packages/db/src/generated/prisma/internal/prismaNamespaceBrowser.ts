@@ -95,7 +95,11 @@ export const EmployeeScalarFieldEnum = {
   password: 'password',
   persona: 'persona',
   theme: 'theme',
-  isLoggedIn: 'isLoggedIn'
+  isLoggedIn: 'isLoggedIn',
+  auth0Id: 'auth0Id',
+  first_name: 'first_name',
+  last_name: 'last_name',
+  created_at: 'created_at'
 } as const
 
 export type EmployeeScalarFieldEnum = (typeof EmployeeScalarFieldEnum)[keyof typeof EmployeeScalarFieldEnum]

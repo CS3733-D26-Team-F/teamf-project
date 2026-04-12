@@ -384,3 +384,10 @@ input[type="file"] {
     font-size: 1rem;
     font-family: Roboto, sans-serif;
 }
+
+/* mantine color scheme tester */
+:root[data-mantine-color-scheme="light"] {
+    --mantine-color-primary: var(--color-yale-blue);
+    --mantine-color-primary-hover: var(--color-fresh-sky);
+}
+

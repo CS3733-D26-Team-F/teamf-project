@@ -8,6 +8,7 @@ import { MainMenu } from './pages/MainMenu';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {MantineProvider} from "@mantine/core";
+import { UserProfile } from './components/profile/userProfile.tsx';
 // import { ProtectedRoute } from './components/ProtectedRoute';
 
 
@@ -24,6 +25,9 @@ export default function App() {
                 <Route path="/corecommercialunderwriter" element={<CoreCommercialUnderwriter />} />
                 <Route path="/managecontent" element={<ManageContentForm />} />
                 <Route path="/manageemployees" element={<ManageEmployeesForm />} />
+                <Route path="/profile" element={<UserProfile />} />
+                <Route path="/settings" element={<div>Settings Page</div>} />
+                
             </Routes>
         </BrowserRouter>
     </MantineProvider>

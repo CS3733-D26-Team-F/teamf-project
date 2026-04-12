@@ -31,6 +31,7 @@ export function Header() {
     const isAdmin = persona === 'Admin';
     const isUnderwriter = persona === 'Underwriter';
     const isBusinessAnalyst = persona === 'Business Analyst';
+    const isGuest = persona === 'Guest';
 
     return (
         <header className="main-header">
@@ -39,10 +40,10 @@ export function Header() {
                     <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
                 </Link>
             </div>
+
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
 
-                <Link to="/managecontent">Manage Content</Link>
                 {isAdmin && <Link to="/manageemployees">Employees</Link>}
                 {(isAdmin || isBusinessAnalyst) && (
                     <Link to="/businessanalyst">Business Analyst</Link>
@@ -51,8 +52,10 @@ export function Header() {
 
                     <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
                 )}
-                <Profile />
                 <ThemeToggle />
+                {!isGuest && <Profile />}
+                
+
 
                 
 
