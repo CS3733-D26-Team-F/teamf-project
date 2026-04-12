@@ -29,7 +29,7 @@ const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};
 
 app.use(cors({
     origin: ["http://localhost:5173", "http://localhost:5175"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
 }));
 app.use(express.json());
@@ -53,7 +53,9 @@ app.get('/employees', async (req, res) => {
 });
 
 app.get('/contentforms', async (req, res) => {
-    const contentForms = await prisma.contentform.findMany();
+    const contentForms = await prisma.contentform.findMany({
+        where: {is_deleted: false}
+    });
     console.log('Content Form Data:', contentForms);
     res.json(contentForms);
 });
@@ -399,7 +401,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         const content = await prisma.contentform.create({
             data: {
                 name: filename,
-                url: urlData.publicUrl,
+                url: `${urlData.publicUrl}?t=${Date.now()}`,
                 owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
@@ -556,6 +558,57 @@ app.post('/login', async (req, res) => {
     }
 });
 
+// Trash - get all soft deleted (admin only)
+app.get('/contentforms/trash', async (req, res) => {
+    try {
+        const trashed = await prisma.contentform.findMany({
+            where: { is_deleted: true }
+        });
+        res.json(trashed);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Soft delete - sets is_deleted flag instead of removing from DB
+app.patch('/contentforms/:id/softdelete', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { is_deleted: true, deleted_at: new Date() }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Restore from trash
+app.patch('/contentforms/:id/restore', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const restored = await prisma.contentform.update({
+            where: { id },
+            data: { is_deleted: false, deleted_at: null }
+        });
+        res.json(restored);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Permanent delete - admin only
+app.delete('/contentforms/:id/permanent', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const deleted = await prisma.contentform.delete({ where: { id } });
+        res.json(deleted);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
 app.get('/contentforms/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
@@ -638,23 +691,64 @@ app.get('/contentforms/checkout/all', async (req, res) => {
     }
 });
 
-app.put('/contentforms/:id', async (req, res) => {
+app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
+    console.log('PUT body:', req.body);
+    console.log('PUT file:', req.file?.originalname);
+
     try {
-        const id = parseInt(req.params.id);
-        const {name, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
-        const updated = await prisma.contentform.update({
-            where: {id},
-            data: {
-                name, url, owner, persona,
-                date_modified: new Date(date_modified),
-                expiration_date: new Date(expiration_date),
-                content_type, status,
-                employee: {connect: {username: owner}}
+        const id = parseInt(req.params.id.toString());
+        const { name, ownerUsername, persona, date_modified, expiration_date, content_type, status } = req.body;
+
+        const updateData: any = {
+            name: name,
+            owner: ownerUsername,
+            persona,
+            date_modified: new Date(date_modified),
+            expiration_date: expiration_date ? new Date(expiration_date) : null,
+            content_type,
+            status,
+            employee: { connect: { username: ownerUsername } }
+        };
+
+        if (req.file) {
+            // look up the employee to get their persona/bucket
+            const employee = await prisma.employee.findUnique({
+                where: { username: ownerUsername }
+            });
+
+            if (!employee) {
+                return res.status(404).json({ error: 'Employee not found' });
             }
+
+            const bucket = employee.persona;
+
+            const { error } = await supabase.storage
+                .from(bucket)
+                .upload(req.file.originalname, req.file.buffer, {
+                    contentType: req.file.mimetype,
+                    upsert: true  // overwrites existing file with same name
+                });
+
+            if (error) {
+                return res.status(500).json({ error: 'Failed to upload file to Supabase', details: error.message });
+            }
+
+            const { data: urlData } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(req.file.originalname);
+
+            updateData.url = `${urlData.publicUrl}?t=${Date.now()}`;
+        }
+
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: updateData
         });
+
         res.json(updated);
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        console.error('Error updating document:', error);
+        res.status(500).json({ error: 'Something went wrong' });
     }
 });
 
@@ -670,6 +764,19 @@ app.get('/contentforms/employee/:empid', async (req, res) => {
     }
 });
 
+app.post('/contentforms/:id/favorite', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const {is_favorite} = req.body;
+    try {
+        const updated = await prisma.contentform.update({
+            where: {id},
+            data: {is_favorite}
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
 app.get('/ba-files', async (req, res) => {
     const { data, error } = await supabase
         .from('ba_files_with_size')

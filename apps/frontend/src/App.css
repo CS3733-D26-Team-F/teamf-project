@@ -384,3 +384,8 @@ input[type="file"] {
     font-size: 1rem;
     font-family: Roboto, sans-serif;
 }
+
+/*Remove iamjariwala's in-built header*/
+#header-bar, .rdv-header-bar {
+    display: none !important;
+}
