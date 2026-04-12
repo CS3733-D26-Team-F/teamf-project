@@ -6,6 +6,7 @@ import { MainMenu } from './pages/MainMenu';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {MantineProvider} from "@mantine/core";
+import { Archive } from './pages/Archive';
 // import { ProtectedRoute } from './components/ProtectedRoute';
 
 
@@ -20,6 +21,7 @@ export default function App() {
                 <Route path="/menu" element={<MainMenu />} />
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/manageemployees" element={<ManageEmployeesForm />} />
+                <Route path="/archive" element={<Archive />}/>
             </Routes>
         </BrowserRouter>
     </MantineProvider>

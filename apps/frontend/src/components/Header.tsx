@@ -45,6 +45,9 @@ export function Header() {
                 {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
                     <Link to="/documents">Documents</Link>
                     )}
+                {(isAdmin || isUnderwriter || isBusinessAnalyst) && (
+                    <Link to="/archive">Archive</Link>
+                )}
                 <Profile />
                 <ThemeToggle />
 

@@ -555,17 +555,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Trash - get all soft deleted (admin only)
-app.get('/contentforms/trash', async (req, res) => {
-    try {
-        const trashed = await prisma.contentform.findMany({
-            where: { is_deleted: true }
-        });
-        res.json(trashed);
-    } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
-    }
-});
+
 
 // Soft delete - sets is_deleted flag instead of removing from DB
 app.patch('/contentforms/:id/softdelete', async (req, res) => {
@@ -601,6 +591,79 @@ app.delete('/contentforms/:id/permanent', async (req, res) => {
         const id = parseInt(req.params.id);
         const deleted = await prisma.contentform.delete({ where: { id } });
         res.json(deleted);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Auto-expire documents past their expiration date
+// NOTE: this must stay above GET /contentforms/:id or Express will treat "autoexpire" as an id
+app.patch('/contentforms/autoexpire', async (req, res) => {
+    try {
+        const updated = await prisma.contentform.updateMany({
+            where: {
+                expiration_date: { lt: new Date() },
+                status: { not: 'Expired' },
+                is_deleted: false
+            },
+            data: { status: 'Expired' }
+        });
+        res.json({ message: `${updated.count} documents expired` });
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Get archived documents
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/archived', async (req, res) => {
+    try {
+        const archived = await prisma.contentform.findMany({
+            where: { status: 'Archived', is_deleted: false }
+        });
+        res.json(archived);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Get expired documents
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/expired', async (req, res) => {
+    try {
+        const expired = await prisma.contentform.findMany({
+            where: { status: 'Expired', is_deleted: false }
+        });
+        res.json(expired);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Trash - get all soft deleted (admin only)
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/trash', async (req, res) => {
+    try {
+        const trashed = await prisma.contentform.findMany({
+            where: { is_deleted: true }
+        });
+        res.json(trashed);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Patch just the status field — used by Archive page restore
+app.patch('/contentforms/:id/status', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { status } = req.body;
+        if (!status) return res.status(400).json({ error: 'status is required' });
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { status }
+        });
+        res.json(updated);
     } catch (error) {
         res.status(500).json({ error: 'Something went wrong' });
     }
@@ -831,6 +894,8 @@ app.get('/ba-files/:name', async(req, res) => {
     }
     res.json(data)
 })
+
+
 
 // Start server
 app.listen(port, () => {
