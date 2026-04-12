@@ -24,7 +24,7 @@ type ContentForm = {
     file_name: string;
     url: string;
     owner: string;
-    persona: string;
+    persona: string[];
     date_modified: string;
     expiration_date: string;
     content_type: string;
@@ -45,7 +45,7 @@ type StagedFile = {
     file: File;
     name: string;
     owner: string;
-    persona: string;
+    persona: string[];
     content_type: string;
     status: string;
     date_modified: string;
@@ -238,13 +238,17 @@ interface DocRowProps extends RowCallbacks {
 }
 
 function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
-    const canModify = persona === 'Admin' || doc.persona === persona;
+    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     return (
         <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
-            <Table.Td><Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'}>{doc.persona}</Badge></Table.Td>
+            <Table.Td>
+                {doc.persona.map(p => (
+                    <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
+                ))}
+            </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
             <Table.Td><Badge color={statusColors[doc.status] ?? 'gray'} variant="light">{doc.status}</Badge></Table.Td>
@@ -283,7 +287,7 @@ interface DocCardProps extends RowCallbacks {
 }
 
 function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
-    const canModify = persona === 'Admin' || doc.persona === persona;
+    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     return (
         <div
             style={{
@@ -311,8 +315,9 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 </Text>
                 <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
                 <Group gap={4} mb={4}>
-                    <Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'} size="xs">{doc.persona}</Badge>
-                    <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
+                    {doc.persona.map(p => (
+                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
+                    ))}                    <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                 </Group>
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
@@ -358,7 +363,7 @@ export function Documents() {
     const [addOpen, setAddOpen] = useState(false);
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
-        persona: persona !== 'Admin' ? persona ?? '' : '',
+        persona: persona !== 'Admin' ? [persona ?? ''] : [],
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
     const [bulkOpen, setBulkOpen] = useState(false);
@@ -369,7 +374,7 @@ export function Documents() {
             file: f,
             name: f.name,
             owner: persona === 'Admin' ? '' : username ?? '',
-            persona: persona !== 'Admin' ? persona ?? '' : '',
+            persona: persona !== 'Admin' ? [persona ?? ''] : [],
             content_type: '',
             status: '',
             date_modified: today,
@@ -393,7 +398,7 @@ export function Documents() {
     const [editOpen, setEditOpen] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
-        name: '', owner: '', persona: '',
+        name: '', owner: '', persona: [] as string[],
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
@@ -411,7 +416,7 @@ export function Documents() {
 
     const filteredTrash = trashDocs.filter(doc => {
         const matchSearch = !trashSearch || doc.name.toLowerCase().includes(trashSearch.toLowerCase()) || doc.owner.toLowerCase().includes(trashSearch.toLowerCase());
-        const matchPersona = !trashPersonaFilter || doc.persona === trashPersonaFilter;
+        const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
 
@@ -467,7 +472,8 @@ export function Documents() {
     useEffect(() => {
         let result = [...documents];
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
-        if (filterPersona.length > 0) result = result.filter(d => filterPersona.includes(d.persona));
+        if (filterPersona.length > 0) result = result.filter(d =>
+            d.persona.some(p=>filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => filterType.map(t => t.toLowerCase()).includes(getExt(d.url)));
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
@@ -487,10 +493,10 @@ export function Documents() {
             });
         } else {
             result.sort((a, b) => {
-                const aMatch = a.persona === persona ? 0 : 1;
-                const bMatch = b.persona === persona ? 0 : 1;
+                const aMatch = a.persona.includes(persona ?? '') ? 0 : 1;
+                const bMatch = b.persona.includes(persona ?? '') ? 0 : 1;
                 if (aMatch !== bMatch) return aMatch - bMatch;
-                if (a.persona !== b.persona) return a.persona.localeCompare(b.persona);
+                if (a.persona.join() !== b.persona.join()) return a.persona.join().localeCompare(b.persona.join());
                 return a.name.localeCompare(b.name);
             });
         }
@@ -530,6 +536,7 @@ export function Documents() {
         const formPayload = new FormData();
         formPayload.append('filename', addData.name);
         formPayload.append('ownerUsername', addData.owner);
+        formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
         formPayload.append('content_type', addData.content_type);
@@ -537,7 +544,8 @@ export function Documents() {
         formPayload.append('file', addFile);
         await fetch('http://localhost:3000/contentforms', { method: 'POST', body: formPayload });
         setAddOpen(false); setAddFile(null);
-        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? persona ?? '' : '', date_modified: today, expiration_date: '', content_type: '', status: '' });
+        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : []
+            , date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
     }
 
@@ -556,7 +564,7 @@ export function Documents() {
             const formPayload = new FormData();
             formPayload.append('filename', sf.name);
             formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', sf.persona); // Ensure persona is included
+            formPayload.append('persona', JSON.stringify(sf.persona));
             formPayload.append('date_modified', sf.date_modified);
             formPayload.append('expiration_date', sf.expiration_date);
             formPayload.append('content_type', sf.content_type);
@@ -576,11 +584,21 @@ export function Documents() {
     }
 
     function openEdit(doc: ContentForm) {
-        fetch(`http://localhost:3000/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
+        fetch(`http://localhost:3000/contentforms/${doc.id}/checkout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username }) })
             .then(res => {
-                if (res.status === 423) { res.json().then(data => alert(data.error)); return; }
-                setEditId(doc.id);
-                setEditData({ name: doc.name, owner: doc.owner, persona: doc.persona, date_modified: today, expiration_date: doc.expiration_date?.split('T')[0] ?? '', content_type: doc.content_type, status: doc.status });
+                if (res.status === 423) { res.json().then((data: any) => alert(data.error)); return; }                setEditId(doc.id);
+                setEditData({
+                    name: doc.name,
+                    owner: doc.owner,
+                    persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],  // handle both
+                    date_modified: today,
+                    expiration_date: doc.expiration_date?.split('T')[0] ?? '',
+                    content_type: doc.content_type,
+                    status: doc.status
+                });
                 setEditOpen(true);
             });
     }
@@ -591,7 +609,7 @@ export function Documents() {
             const formPayload = new FormData();
             formPayload.append('filename', editData.name);
             formPayload.append('ownerUsername', editData.owner);
-            formPayload.append('persona', editData.persona);
+            formPayload.append('persona', JSON.stringify(editData.persona));
             formPayload.append('date_modified', editData.date_modified);
             formPayload.append('expiration_date', editData.expiration_date);
             formPayload.append('content_type', editData.content_type);
@@ -977,7 +995,9 @@ export function Documents() {
                                                     Owner: {doc.owner} · Persona: {doc.persona} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
                                                 </Text>
                                                 <Group gap={4} mt={4}>
-                                                    <Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'} size="xs">{doc.persona}</Badge>
+                                                    {doc.persona.map(p=> (
+                                                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
+                                                    ))}
                                                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                                                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                                                 </Group>
@@ -1009,10 +1029,22 @@ export function Documents() {
                         <Text size="sm" fw={500} mb={4}>Upload File</Text>
                         <input ref={fileInputRef} type="file" onChange={e => setAddFile(e.target.files?.[0] ?? null)} />
                     </Box>
-                    {persona === 'Admin'
-                        ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
-                        : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
-                    <Select label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val ?? ''})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    {persona === 'Admin' ?
+                        <Select
+                            label="Name of Content Owner"
+                            value={addData.owner}
+                            onChange={val => setAddData({...addData, owner: val ?? ''})}
+                            data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
+                        : <TextInput label="Name of Content Owner" value={addData.owner} readOnly
+                        />
+                    }
+                    <MultiSelect
+                        label="Job Position"
+                        value={addData.persona}
+                        onChange={val => setAddData({...addData, persona: val})}
+                        data={['Underwriter', 'Business Analyst']}
+                        disabled={persona !== 'Admin'}
+                    />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -1045,7 +1077,12 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
-                    <Select label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val ?? ''})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect
+                        label="Job Position"
+                        value={editData.persona} onChange={val => setEditData({...editData, persona: val})}
+                        data={['Underwriter', 'Business Analyst']}
+                        disabled={persona !== 'Admin'}
+                    />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type} onChange={val => setEditData({...editData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -1127,10 +1164,10 @@ export function Documents() {
                                                 )}
                                             </Table.Td>
                                             <Table.Td>
-                                                <Select
+                                                <MultiSelect
                                                     data={['Underwriter', 'Business Analyst']}
                                                     value={staged.persona}
-                                                    onChange={val => updateStagedFile(staged.id, 'persona', val ?? '')}
+                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                     disabled={persona !== 'Admin'}
                                                 />
                                             </Table.Td>
