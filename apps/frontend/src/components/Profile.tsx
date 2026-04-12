@@ -5,7 +5,7 @@ import { Button, Menu } from '@mantine/core';
 
 export function Profile() {
 
-    if (localStorage.getItem('persona') !== 'Guest') {
+    if (localStorage.getItem('persona') !== 'Guest' || localStorage.getItem('username') !== null) {
         return (
             <div className="profile-link" aria-label="Signed in user" >
                 
@@ -26,7 +26,7 @@ export function Profile() {
                         <Menu.Item component="button" >
                             <Link to="/settings" style={{ color: 'var(--color-yale-blue)' }}>Settings</Link>
                         </Menu.Item>
-                        <Menu.Item component="button" onClick={() => localStorage.clear()} >
+                        <Menu.Item component="button" onClick={() => localStorage.setItem('persona', 'Guest')} >
                             <Link to="/ " style={{ color: 'var(--color-yale-blue)' }}>Logout</Link>
                         </Menu.Item>
                     </Menu.Dropdown>
@@ -34,12 +34,12 @@ export function Profile() {
             </div>
         );
     }
-    else if (localStorage.getItem('persona') === 'Guest') {
+    else{
         return (
         <>
-            <div className="profile-link" aria-label="Signed in user" >
-                <img src="https://via.placeholder.com/40" alt="Profile" />
-                <span>{localStorage.getItem('username') || 'Guest'}</span>
+            <div className="profile-link" aria-label="not signed in" >
+                
+                
             </div>
         </>
         );
