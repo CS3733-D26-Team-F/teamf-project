@@ -29,6 +29,8 @@ type ContentForm = {
     content_type: string;
     status: string;
     is_favorite: boolean;
+    is_deleted: boolean;
+    deleted_at: string | null;
 };
 
 type Employee = {
@@ -360,6 +362,37 @@ export function Documents() {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
 
+
+    const [trashOpen, setTrashOpen] = useState(false);
+    const [trashDocs, setTrashDocs] = useState<ContentForm[]>([]);
+    const [trashSearch, setTrashSearch] = useState('');
+    const [trashPersonaFilter, setTrashPersonaFilter] = useState('');
+    const [trashSelected, setTrashSelected] = useState<number[]>([]);
+
+    const filteredTrash = trashDocs.filter(doc => {
+        const matchSearch = !trashSearch || doc.name.toLowerCase().includes(trashSearch.toLowerCase()) || doc.owner.toLowerCase().includes(trashSearch.toLowerCase());
+        const matchPersona = !trashPersonaFilter || doc.persona === trashPersonaFilter;
+        return matchSearch && matchPersona;
+    });
+
+    async function loadTrash() {
+        const res = await fetch('http://localhost:3000/contentforms/trash');
+        const data = await res.json();
+        setTrashDocs(data);
+    }
+
+    async function restoreDoc(id: number) {
+        await fetch(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH' });
+        loadTrash();
+        loadDocuments();
+    }
+
+    async function permanentDelete(id: number) {
+        if (!window.confirm('Permanently delete this document? This cannot be undone.')) return;
+        await fetch(`http://localhost:3000/contentforms/${id}/permanent`, { method: 'DELETE' });
+        loadTrash();
+    }
+
     function loadDocuments() {
         fetch('http://localhost:3000/contentforms')
             .then(res => res.json())
@@ -474,7 +507,7 @@ export function Documents() {
 
     async function handleDelete() {
         if (!deleteId) return;
-        await fetch(`http://localhost:3000/deleteContentForm/${deleteId}`, { method: 'DELETE' });
+        await fetch(`http://localhost:3000/contentforms/${deleteId}/softdelete`, { method: 'PATCH' });
         setDeleteOpen(false);
         setSelectedIds(prev => prev.filter(id => id !== deleteId));
         setSelectedFavIds(prev => prev.filter(id => id !== deleteId));
@@ -529,6 +562,11 @@ export function Documents() {
                         <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'} color={activeFilterCount > 0 ? 'blue' : undefined} leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)}>
                             Filter by{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
                         </Button>
+                        {persona === 'Admin' && (
+                            <Button leftSection={<IconTrash size={16} />} color="red" variant="outline" onClick={() => { loadTrash(); setTrashOpen(true); }}>
+                                Trash
+                            </Button>
+                        )}
                     </Group>
                     <Group gap="sm">
                         <TextInput placeholder="Search for document..." leftSection={<IconSearch size={16} />} value={search} onChange={e => setSearch(e.target.value)} w={250} />
@@ -556,7 +594,7 @@ export function Documents() {
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && (
                             <Box>
-                                <Text fw={700} size="sm" c="yellow" mb="xs">⭐ Favorites</Text>
+                                <Text fw={700} size="sm" c="yellow" mb="xs">Favorites</Text>
                                 <Table highlightOnHover withTableBorder withColumnBorders>
                                     <TableHead onSort={toggleFavSort} currentField={favSortField} currentDir={favSortDir}
                                                onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
@@ -620,7 +658,7 @@ export function Documents() {
                             <Button color="red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => fetch(`http://localhost:3000/deleteContentForm/${id}`, { method: 'DELETE' })));
+                                await Promise.all(ids.map(id => fetch(`http://localhost:3000/contentforms/${id}/softdelete`, { method: 'PATCH' })));
                                 setSelectedIds([]); setSelectedFavIds([]); loadDocuments();
                             }}>Delete Selected</Button>
                         </Group>
@@ -630,7 +668,7 @@ export function Documents() {
 
             {/*doc viewer*/}
             {viewerUrl && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setViewerUrl(null)}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1000 }} onClick={() => setViewerUrl(null)}>
                     <div className="bg-white rounded-xl shadow-xl w-4/5 flex flex-col overflow-hidden" style={{ height: '80vh' }} onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center px-4 py-2 border-b">
                             <h2 className="text-lg font-bold" style={{ color: 'var(--color-yale-blue)' }}>{viewerLabel}</h2>
@@ -654,6 +692,105 @@ export function Documents() {
                         <Button variant="default" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
                         <Button onClick={() => setFilterOpen(false)}>Apply</Button>
                     </Group>
+                </Stack>
+            </Modal>
+
+            {/* trash modal */}
+            <Modal opened={trashOpen} onClose={() => { setTrashOpen(false); setTrashSearch(''); setTrashSelected([]); }} title="Trash — Deleted Documents" size="xl">
+                <Stack gap="sm">
+                    {/* search + filter bar */}
+                    <Group gap="sm">
+                        <TextInput
+                            placeholder="Search by name or owner..."
+                            leftSection={<IconSearch size={16} />}
+                            value={trashSearch}
+                            onChange={e => setTrashSearch(e.target.value)}
+                            style={{ flex: 1 }}
+                        />
+                        <Select
+                            placeholder="Filter by persona"
+                            clearable
+                            value={trashPersonaFilter}
+                            onChange={val => setTrashPersonaFilter(val ?? '')}
+                            data={['Underwriter', 'Business Analyst']}
+                            w={180}
+                        />
+                    </Group>
+
+                    {/* select all + bulk actions */}
+                    {filteredTrash.length > 0 && (
+                        <Group justify="space-between">
+                            <Checkbox
+                                label={`Select all (${filteredTrash.length})`}
+                                checked={trashSelected.length === filteredTrash.length && filteredTrash.length > 0}
+                                indeterminate={trashSelected.length > 0 && trashSelected.length < filteredTrash.length}
+                                onChange={() => trashSelected.length === filteredTrash.length
+                                    ? setTrashSelected([])
+                                    : setTrashSelected(filteredTrash.map(d => d.id))
+                                }
+                            />
+                            {trashSelected.length > 0 && (
+                                <Group gap="xs">
+                                    <Text size="sm" c="dimmed">{trashSelected.length} selected</Text>
+                                    <Button size="xs" variant="outline" color="green" onClick={async () => {
+                                        await Promise.all(trashSelected.map(id => fetch(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH' })));
+                                        setTrashSelected([]); loadTrash(); loadDocuments();
+                                    }}>Restore Selected</Button>
+                                    <Button size="xs" color="red" onClick={async () => {
+                                        if (!window.confirm(`Permanently delete ${trashSelected.length} documents?`)) return;
+                                        await Promise.all(trashSelected.map(id => fetch(`http://localhost:3000/contentforms/${id}/permanent`, { method: 'DELETE' })));
+                                        setTrashSelected([]); loadTrash();
+                                    }}>Delete Selected</Button>
+                                </Group>
+                            )}
+                        </Group>
+                    )}
+
+                    {/* doc list */}
+                    {filteredTrash.length === 0 ? (
+                        <Text c="dimmed" ta="center" py="xl">No deleted documents.</Text>
+                    ) : (
+                        <Stack gap="xs">
+                            {filteredTrash.map(doc => (
+                                <Box key={doc.id} p="sm" style={{
+                                    border: trashSelected.includes(doc.id) ? '1.5px solid var(--color-fresh-sky, #3b82f6)' : '1px solid #eee',
+                                    borderRadius: 8, background: trashSelected.includes(doc.id) ? '#f0f7ff' : 'white'
+                                }}>
+                                    <Group justify="space-between" align="flex-start">
+                                        <Group gap="sm" align="flex-start">
+                                            <Checkbox
+                                                mt={2}
+                                                checked={trashSelected.includes(doc.id)}
+                                                onChange={() => setTrashSelected(prev =>
+                                                    prev.includes(doc.id) ? prev.filter(i => i !== doc.id) : [...prev, doc.id]
+                                                )}
+                                            />
+                                            <div>
+                                                <Text fw={600}>{doc.name}</Text>
+                                                <Text size="xs" c="dimmed">
+                                                    Owner: {doc.owner} · Persona: {doc.persona} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
+                                                </Text>
+                                                <Group gap={4} mt={4}>
+                                                    <Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'} size="xs">{doc.persona}</Badge>
+                                                    <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
+                                                    <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
+                                                </Group>
+                                            </div>
+                                        </Group>
+                                        <Group gap="xs">
+                                            <Tooltip label="Preview document">
+                                                <ActionIcon variant="subtle" onClick={() => { setViewerUrl(doc.url); setViewerLabel(doc.name); }}>
+                                                    <IconSearch size={16} />
+                                                </ActionIcon>
+                                            </Tooltip>
+                                            <Button size="xs" variant="outline" color="green" onClick={() => restoreDoc(doc.id)}>Restore</Button>
+                                            <Button size="xs" color="red" onClick={() => permanentDelete(doc.id)}>Delete Permanently</Button>
+                                        </Group>
+                                    </Group>
+                                </Box>
+                            ))}
+                        </Stack>
+                    )}
                 </Stack>
             </Modal>
 
