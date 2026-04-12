@@ -3,19 +3,26 @@
 @custom-variant hover (&:hover);
 
 @theme {
-    --color-papaya-whip: var(--papaya-whip);
+    --color-white: var(--white);
+    --color-light-gray: var(--light-gray);
+    --color-neutral-red: var(--neutral-red);
     --color-dark-beige: var(--dark-beige);
     --color-yale-blue: var(--yale-blue);
     --color-pale-sky: var(--pale-sky);
     --color-fresh-sky: var(--fresh-sky);
+    --color-sapphire: var(--sapphire);
 }
 
 :root {
+    --white: #FFFFFF;
+    --light-gray: #D3D3D3;
+    --neutral-red: #951528;
     --papaya-whip: #FFEFD5;
     --dark-beige: #D0C0A7;
     --yale-blue: #1B4965;
     --pale-sky: #CAE9FF;
     --fresh-sky: #5FA8D3;
+    --sapphire: #0F52BA;
 }
 
 [data-theme="high-visibility"] {

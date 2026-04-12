@@ -19,9 +19,9 @@ type Employee = {
 const personas = ["Admin", "Underwriter", "Business Analyst"];
 
 const personaColors: Record<string, string> = {
-    "Admin": "blue",
-    "Underwriter": "teal",
-    "Business Analyst": "cyan",
+    "Admin": "var(--color-yale-blue)",
+    "Underwriter": "var(--color-sapphire)",
+    "Business Analyst": "var(--color-fresh-sky)",
 };
 
 export function EmployeeListView() {
@@ -150,7 +150,9 @@ export function EmployeeListView() {
                                 size="sm"
                                 leftSection={<IconPlus size={14} />}
                                 onClick={() => openAdd(persona)}
-                                style={{ background: 'var(--color-fresh-sky)' }}
+                                style={{
+                                    backgroundColor: "var(--yale-blue)",
+                                    color: "var(--color-white)",}}
                             >
                                 Add Employee
                             </Button>
@@ -178,7 +180,7 @@ export function EmployeeListView() {
                                         </Badge>
                                         <Text>{emp.last_name}, {emp.first_name} ({emp.username})</Text>
                                         {emp.username === authorUsername && (
-                                            <Badge color="green" variant="light" size="sm">You</Badge>
+                                            <Badge color="var(--color-yale-blue)" variant="light" size="sm">You</Badge>
                                         )}
                                     </Group>
                                     <Group gap="xs">
@@ -186,13 +188,17 @@ export function EmployeeListView() {
                                             size="xs"
                                             leftSection={<IconEdit size={14} />}
                                             onClick={() => openEdit(emp)}
-                                            style={{ background: 'var(--color-fresh-sky)' }}
+                                            style={{
+                                                backgroundColor: "var(--yale-blue)",
+                                                color: "var(--color-white)",}}
                                         >
                                             Edit
                                         </Button>
                                         <Button
                                             size="xs"
-                                            color="red"
+                                            style={{
+                                                backgroundColor: "var(--color-neutral-red)",
+                                                color: "var(--color-white)",}}
                                             leftSection={<IconTrash size={14} />}
                                             onClick={() => openDelete(emp)}
                                         >
@@ -255,7 +261,7 @@ export function EmployeeListView() {
                         <Button variant="default" onClick={() => setAddOpen(false)}>Cancel</Button>
                         <Button
                             onClick={handleAdd}
-                            style={{ background: 'var(--color-fresh-sky)' }}
+                            style={{ background: 'var(--color-yale-blue)' }}
                         >
                             + Save Account
                         </Button>
@@ -333,7 +339,7 @@ export function EmployeeListView() {
                 </Text>
                 <Group justify="flex-end">
                     <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                    <Button color="blue" onClick={handleDelete}>Confirm</Button>
+                    <Button color="var(--color-yale-blue)" onClick={handleDelete}>Confirm</Button>
                 </Group>
             </Modal>
         </Box>
