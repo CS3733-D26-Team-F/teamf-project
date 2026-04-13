@@ -710,6 +710,9 @@ export function Documents() {
 
     return (
         <>
+            <title>
+                Documents - Hanover Insurance
+            </title>
             <Header />
             <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
 

@@ -5,6 +5,9 @@ export function Login() {
 
     return (
         <>
+            <title>
+                Login - Hanover Insurance
+            </title>
             <LoginHeader />
             <LoginForm />
         </>
