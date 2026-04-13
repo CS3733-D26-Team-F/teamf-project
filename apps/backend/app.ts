@@ -564,28 +564,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
-
-app.get('/contentforms/checkout/all', async (req, res) => {
-    try {
-        const forms = await prisma.contentform.findMany({
-            where: {checkout_username: {not: null}},
-            select: {id: true, checkout_username: true, checkout_date: true}
-        });
-
-        const result = forms.map(form => ({
-            id: form.id,
-            checkedOutBy: form.checkout_username,
-            checkedOutAt: form.checkout_date
-        }));
-
-        return res.status(200).json(result);
-
-    } catch (error) {
-        res.status(500).json({error: 'Something is Wrong'});
-    }
-});
-
 // Soft delete - sets is_deleted flag instead of removing from DB
 app.patch('/contentforms/:id/softdelete', async (req, res) => {
     try {
@@ -714,6 +692,7 @@ app.get('/contentforms/:id', async (req, res) => {
 app.post('/contentforms/:id/checkout', async (req, res) => {
     const id = parseInt(req.params.id);
     const {username} = req.body;
+    console.log('checkout hit', { id, username });
     if (!username) {
         return res.status(400).send('Requires username');
     }
@@ -807,6 +786,26 @@ app.get('/contentforms/:id/checkout_status', async (req, res) => {
         });
     }catch (error) {
         res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+app.get('/contentforms/checkout/all', async (req, res) => {
+    try {
+        const forms = await prisma.contentform.findMany({
+            where: {checkout_username: {not: null}},
+            select: {id: true, checkout_username: true, checkout_date: true}
+        });
+
+        const result = forms.map(form => ({
+            id: form.id,
+            checkedOutBy: form.checkout_username,
+            checkedOutAt: form.checkout_date
+        }));
+
+        return res.status(200).json(result);
+
+    } catch (error) {
+        res.status(500).json({error: 'Something is Wrong'});
     }
 });
 
