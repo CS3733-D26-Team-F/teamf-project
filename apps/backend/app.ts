@@ -25,10 +25,10 @@ const port = process.env.PORT || 3000;
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
 const upload = multer({ storage: multer.memoryStorage() });
 
-const checkJwt = auth({
-    audience: process.env.AUTHO_AUDIENCE,
-    issuerBaseURL: `https://${process.env.AUTHO_DOMAIN}/`,
-    audience: process.env.AUTH0_AUDIENCE,
+const checkJWT = auth({
+    audience: process.env.VITE_AUTH0_AUDIENCE,
+    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+    audience: process.env.VITE_AUTH0_AUDIENCE,
     issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
     tokenSigningAlg: 'RS256'
 });
@@ -66,7 +66,7 @@ app.use(morgan('dev'));
  *
  */
 // Used for login
-app.post('/api/auth/login', checkJwt, async (req, res) => {
+app.post('/api/auth/login', checkJWT, async (req, res) => {
     try {
         const auth0Id  = req.auth!.payload.sub as string;
         const username = req.auth!.payload['nickname'] as string;
@@ -86,7 +86,7 @@ app.post('/api/auth/login', checkJwt, async (req, res) => {
     }
 });
 
-app.get('/api/auth/me', checkJwt, async (req, res) => {
+app.get('/api/auth/me', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const employee = await prisma.employee.findUnique({ where: { auth0Id } });
     if (!employee) return res.status(404).json({ error: 'Employee not found' });
@@ -95,7 +95,7 @@ app.get('/api/auth/me', checkJwt, async (req, res) => {
 });
 
 // Possible for additional logout options
-app.post('/api/auth/logout', checkJwt, async (_req, res) => {
+app.post('/api/auth/logout', checkJWT, async (_req, res) => {
     res.json({ message: 'Logged out' });
 });
 
@@ -148,7 +148,7 @@ app.post('/getEmployee', async (req, res) => {
 });
 
 //update employee takes the current username and then optionally any data that want to be changed
-app.patch('/updateEmployee', checkJwt, async (req, res) => {
+app.patch('/updateEmployee', checkJWT, async (req, res) => {
     const token = await getManagementToken();
     const {username,newUsername,newPassword,persona, first_name, last_name} = req.body;
 
