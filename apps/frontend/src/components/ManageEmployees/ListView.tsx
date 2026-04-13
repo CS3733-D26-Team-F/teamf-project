@@ -5,6 +5,7 @@ import {
     Group, Text, Badge, Stack, Box
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
+import { DOMAIN } from '../../const';
 
 type Employee = {
     empid: number;
@@ -46,7 +47,7 @@ export function EmployeeListView() {
     const today = new Date().toISOString().split('T')[0];
 
     function loadEmployees() {
-        fetch("http://localhost:3000/employees")
+        fetch(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then(data => setEmployees(data));
     }
@@ -62,7 +63,7 @@ export function EmployeeListView() {
     }
 
     async function handleAdd() {
-        await fetch('http://localhost:3000/addEmployee', {
+        await fetch(`${DOMAIN}/addEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -85,7 +86,7 @@ export function EmployeeListView() {
 
     async function handleEdit() {
         if (!editTarget) return;
-        await fetch('http://localhost:3000/updateEmployee', {
+        await fetch(`${DOMAIN}/updateEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -106,7 +107,7 @@ export function EmployeeListView() {
 
     async function handleDelete() {
         if (!deleteTarget) return;
-        await fetch(`http://localhost:3000/deleteEmployee/${deleteTarget.username}`, {
+        await fetch(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
             method: 'DELETE'
         });
         setDeleteOpen(false);
