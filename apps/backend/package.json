@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "ts-node --esm app.ts",
     "start": "ts-node app.ts",
-    "build": "DATABASE_URL='postgresql://dummy:dummy@localhost/dummy' prisma generate",
+    "build": "prisma generate",
     "db:pull": "prisma db pull --schema prisma/schema.prisma",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:push": "prisma db push --schema prisma/schema.prisma",
