@@ -715,15 +715,15 @@ app.post('/contentforms/:id/checkout', async (req, res) => {
         try {
             const updated = await prisma.contentform.update({
                 where: {id},
-                data: {checkout_username: username, checkout_date: Date.now()}
+                data: {checkout_username: username, checkout_date: new Date()}
             });
             return res.status(200).json({message: 'Document checked out'});
         } catch (error) {
-            res.status(500).json({error: 'Something went wrong'});
+            res.status(500).json({error: 'Something went wrong 1'});
         }
 
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        res.status(500).json({error: 'Something went wrong 2'});
     }
 
 });

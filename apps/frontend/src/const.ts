@@ -1,1 +1,1 @@
-export const DOMAIN = "https://cs3733.lunarflame.dev";
+export const DOMAIN = "http://localhost:3000";
