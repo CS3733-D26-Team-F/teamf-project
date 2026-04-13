@@ -1,13 +1,20 @@
 import express from 'express';
 import morgan from 'morgan';
+import path from 'path';
 
 const app = express();
 import dotenv from 'dotenv';
-import {PrismaClient} from '@prisma/client';
+
+import pkg from '@prisma/client';
+
 import {PrismaPg} from "@prisma/adapter-pg";
 import {createClient} from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
+
+const { PrismaClient } = pkg;
+
+const distPath = path.resolve("../frontend/dist");
 
 app.use(cors());
 
@@ -27,11 +34,14 @@ const upload = multer({storage: multer.memoryStorage()});
 // setting up constent for checkin/checkout document stuff
 const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};
 
+app.use(express.static(distPath));
+
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5175"],
+    origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -42,9 +52,9 @@ app.use(morgan('dev'));
  *
  */
 
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
     res.sendStatus(200);
-});
+});*/
 
 app.get('/employees', async (req, res) => {
     const employees = await prisma.employee.findMany();
@@ -65,7 +75,6 @@ app.get('/employee_manage', async (req, res) => {
     console.log('Employee Manage Data:', employeeManage);
     res.json(employeeManage);
 });
-
 
 app.post('/login', async (req, res) => {
     const {username, password} = req.body;
@@ -841,6 +850,7 @@ app.post('/contentforms/:id/favorite', async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
+
 app.get('/ba-files', async (req, res) => {
     const { data, error } = await supabase
         .from('ba_files_with_size')
@@ -895,10 +905,12 @@ app.get('/ba-files/:name', async(req, res) => {
     res.json(data)
 })
 
-
+app.use((req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+});
 
 // Start server
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);
 });
 

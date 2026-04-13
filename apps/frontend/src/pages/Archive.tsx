@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { AccessDenied } from "../components/AccessDenied.tsx";
 import {
-    Box, Text, Table, Badge, Group, Tabs,
+    Box, Text, Table, Group, Tabs,
     ActionIcon, Tooltip, Stack
 } from '@mantine/core';
 import { IconArchive, IconClock, IconRestore, IconTrash } from '@tabler/icons-react';
+import { DOMAIN } from '../const.ts';
+import {PersonaBadges} from "../components/PersonaBadge.tsx";
 
 type ContentForm = {
     id: number;
@@ -50,13 +52,7 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
                     <Table.Tr key={doc.id}>
                         <Table.Td fw={500}>{doc.name}</Table.Td>
                         <Table.Td>
-                            <Group gap={4}>
-                                {doc.persona.map(p => (
-                                    <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="sm">
-                                        {p}
-                                    </Badge>
-                                ))}
-                            </Group>
+                            <PersonaBadges personas={doc.persona} />
                         </Table.Td>
                         <Table.Td>{doc.owner}</Table.Td>
                         <Table.Td>{doc.content_type}</Table.Td>
@@ -91,19 +87,19 @@ export function Archive() {
     const [archived, setArchived] = useState<ContentForm[]>([]);
 
     function loadExpired() {
-        fetch('http://localhost:3000/contentforms/expired')
+        fetch(`${DOMAIN}/contentforms/expired`)
             .then(res => res.json())
             .then(data => setExpired(data));
     }
 
     function loadArchived() {
-        fetch('http://localhost:3000/contentforms/archived')
+        fetch(`${DOMAIN}/contentforms/archived`)
             .then(res => res.json())
             .then(data => setArchived(data));
     }
 
     useEffect(() => {
-        fetch('http://localhost:3000/contentforms/autoexpire', { method: 'PATCH' });
+        fetch(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' });
         loadExpired();
         loadArchived();
     }, []);
@@ -111,7 +107,7 @@ export function Archive() {
     // Uses PATCH /contentforms/:id/status — a simple status-only update.
     // Do NOT use PUT /:id here; that handler expects multipart/form-data for file uploads.
     async function restoreDoc(id: number) {
-        await fetch(`http://localhost:3000/contentforms/${id}/status`, {
+        await fetch(`${DOMAIN}/contentforms/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'In Progress' })
@@ -121,7 +117,7 @@ export function Archive() {
     }
 
     async function trashDoc(id: number) {
-        await fetch(`http://localhost:3000/contentforms/${id}/softdelete`, {
+        await fetch(`${DOMAIN}/contentforms/${id}/softdelete`, {
             method: 'PATCH'
         });
         loadExpired();

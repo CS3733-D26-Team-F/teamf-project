@@ -7,9 +7,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {MantineProvider} from "@mantine/core";
 import { Archive } from './pages/Archive';
-// import { ProtectedRoute } from './components/ProtectedRoute';
-
-
 
 export default function App() {
     return (

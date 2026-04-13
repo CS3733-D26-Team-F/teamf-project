@@ -6,15 +6,19 @@ import { AccessDenied } from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip, SegmentedControl
+    Tooltip
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconEdit, IconTrash,
-    IconDownload, IconFilter, IconLayoutGrid, IconList, IconStar, IconStarFilled,
-    IconClock
+    IconDownload, IconFilter, IconStar, IconStarFilled,
+    IconClock, IconArrowsSort
 } from '@tabler/icons-react';
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
+import { DOMAIN } from '../const.ts';
+import {ViewToggle } from "../components/content/ViewToggle.tsx"
+import { PageTitle } from "../components/Title.tsx"
+import {PersonaBadges} from "../components/PersonaBadge.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -54,11 +58,11 @@ type StagedFile = {
 };
 
 const statusColors: Record<string, string> = {
-    'In Progress': 'yellow',
-    'Internal Review': 'orange',
+    'In Progress': 'var(--color-sapphire',
+    'Internal Review': 'var(--color-yale-blue)',
     'Client Review': 'blue',
-    'Approved': 'green',
-    'Expired': 'red',
+    'Approved': 'var(--color-fresh-sky)',
+    'Expired': 'var(--color-neutral-red)',
     'Archived': 'gray',
 };
 
@@ -66,15 +70,18 @@ const THUMBNAIL_H = 140;
 const imageExts = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
 
 const officeMeta: Record<string, { bg: string; color: string; label: string }> = {
-    pdf:  { bg: '#fde8e8', color: '#e53e3e', label: 'PDF'  },
-    docx: { bg: '#e8f0fe', color: '#1a73e8', label: 'DOCX' },
-    doc:  { bg: '#e8f0fe', color: '#1a73e8', label: 'DOC'  },
-    xlsx: { bg: '#e6f4ea', color: '#1e8e3e', label: 'XLSX' },
-    xls:  { bg: '#e6f4ea', color: '#1e8e3e', label: 'XLS'  },
-    csv:  { bg: '#e6f4ea', color: '#1e8e3e', label: 'CSV'  },
-    pptx: { bg: '#fff3e0', color: '#f09300', label: 'PPTX' },
-    ppt:  { bg: '#fff3e0', color: '#f09300', label: 'PPT'  },
+    pdf:  { bg: '#e3f0ff', color: 'var(--color-sapphire)', label: 'PDF'  },
+    docx: { bg: '#d8e9ff', color: 'var(--color-yale-blue)', label: 'DOCX' },
+    doc:  { bg: '#d8e9ff', color: 'var(--color-yale-blue)', label: 'DOC'  },
+    xlsx: { bg: '#e0f7ff', color: 'var(--color-fresh-sky)', label: 'XLSX' },
+    xls:  { bg: '#e0f7ff', color: 'var(--color-fresh-sky)', label: 'XLS'  },
+    csv:  { bg: '#e6faff', color: 'var(--color-fresh-sky-light)', label: 'CSV'  },
+    pptx: { bg: '#f0f6ff', color: 'var(--color-sapphire-light)', label: 'PPTX' },
+    ppt:  { bg: '#f0f6ff', color: 'var(--color-sapphire-light)', label: 'PPT'  },
 };
+
+const persona = localStorage.getItem('persona');
+const titleProp = persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : 'Business Analyst Resources'
 
 function getExt(url: string) {
     return url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
@@ -182,15 +189,19 @@ function DocThumbnail({ url }: { url: string }) {
 interface SortThProps {
     field: keyof ContentForm;
     label: string;
+    icon: React.ReactNode;
     onToggle: (f: keyof ContentForm) => void;
     currentField: keyof ContentForm | null;
     currentDir: 'asc' | 'desc';
 }
 
-function SortTh({ field, label, onToggle, currentField, currentDir }: SortThProps) {
+function SortTh({ field, label, icon, onToggle, currentField, currentDir }: SortThProps) {
     return (
         <Table.Th onClick={() => onToggle(field)} style={{ cursor: 'pointer' }}>
-            {label}{currentField === field ? (currentDir === 'asc' ? ' ↑' : ' ↓') : ''}
+            <Group gap={4} wrap="nowrap" align="center" style={{ flexDirection: 'row' }}>
+                <span>{label}</span>
+                <span>{currentField === field ? (currentDir === 'asc' ? '↑' : '↓') : icon}</span>
+            </Group>
         </Table.Th>
     );
 }
@@ -209,14 +220,14 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
         <Table.Thead>
             <Table.Tr>
                 <Table.Th w={40}><Checkbox checked={allChecked} indeterminate={indeterminate} onChange={onSelectAll} /></Table.Th>
-                <SortTh field="name" label="Document Name" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="file_name" label="Document Type" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="persona" label="Persona" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="owner" label="Owner" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="content_type" label="Content Type" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="status" label="Status" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="date_modified" label="Date Modified" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="expiration_date" label="Expiration" onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="name" label="Document Name" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="file_name" label="Document Type" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="persona" label="Persona" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="owner" label="Owner" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="content_type" label="Content Type" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="status" label="Status" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="date_modified" label="Date Modified" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="expiration_date" label="Expiration" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <Table.Th>Actions</Table.Th>
             </Table.Tr>
         </Table.Thead>
@@ -246,9 +257,7 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
             <Table.Td>
-                {doc.persona.map(p => (
-                    <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
-                ))}
+                <PersonaBadges personas={doc.persona} />
             </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
@@ -316,9 +325,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 </Text>
                 <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
                 <Group gap={4} mb={4}>
-                    {doc.persona.map(p => (
-                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
-                    ))}
+                    <PersonaBadges personas={doc.persona} />
                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                 </Group>
@@ -438,26 +445,26 @@ export function Documents() {
     });
 
     async function loadTrash() {
-        const res = await fetch('http://localhost:3000/contentforms/trash');
+        const res = await fetch(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
         setTrashDocs(data);
     }
 
     async function restoreDoc(id: number) {
         if (!window.confirm('Are you sure you want to restore?')) return;
-        await fetch(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH' });
+        await fetch(`${DOMAIN}/contentforms/${id}/restore`, { method: 'PATCH' });
         loadTrash();
         loadDocuments();
     }
 
     async function permanentDelete(id: number) {
         if (!window.confirm('Permanently delete this document? This cannot be undone.')) return;
-        await fetch(`http://localhost:3000/contentforms/${id}/permanent`, { method: 'DELETE' });
+        await fetch(`${DOMAIN}/contentforms/${id}/permanent`, { method: 'DELETE' });
         loadTrash();
     }
 
     function loadDocuments() {
-        fetch('http://localhost:3000/contentforms')
+        fetch(`${DOMAIN}/contentforms`)
             .then(res => res.json())
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
@@ -480,10 +487,10 @@ export function Documents() {
 
     useEffect(() => {
         // Auto-expire documents on page load
-        fetch('http://localhost:3000/contentforms/autoexpire', { method: 'PATCH' })
+        fetch(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' })
             .catch(() => {}); // silently ignore if endpoint doesn't exist yet
         loadDocuments();
-        fetch('http://localhost:3000/employees')
+        fetch(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then((data: Employee[]) => setEmployees(data));
     }, []);
@@ -551,7 +558,7 @@ export function Documents() {
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
         formPayload.append('file', addFile);
-        await fetch('http://localhost:3000/contentforms', { method: 'POST', body: formPayload });
+        await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         setAddOpen(false); setAddFile(null);
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
@@ -571,14 +578,13 @@ export function Documents() {
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
             formPayload.append('file', sf.file);
-            await fetch('http://localhost:3000/contentforms', { method: 'POST', body: formPayload });
+            await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         }
         setBulkOpen(false); setStagedFiles([]); loadDocuments();
     }
 
     function openEdit(doc: ContentForm) {
-        fetch(`http://localhost:3000/contentforms/${doc.id}/checkout`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
+        fetch(`${DOMAIN}/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
             .then(res => {
                 if (res.status === 423) { res.json().then((data: {error: string}) => alert(data.error)); return; }
                 setEditId(doc.id);
@@ -604,26 +610,26 @@ export function Documents() {
             formPayload.append('content_type', editData.content_type);
             formPayload.append('status', editData.status);
             formPayload.append('file', editFile);
-            await fetch(`http://localhost:3000/contentforms/${editId}`, { method: 'PUT', body: formPayload });
+            await fetch(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
         } else {
-            await fetch(`http://localhost:3000/contentforms/${editId}`, {
+            await fetch(`${DOMAIN}/contentforms/${editId}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData)
             });
         }
-        await fetch(`http://localhost:3000/contentforms/${editId}/checkin`, {
+        await fetch(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
         setEditFile(null); setConfirmSaveOpen(false); setEditOpen(false); loadDocuments();
     }
 
     function closeEdit() {
-        if (editId) fetch(`http://localhost:3000/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+        if (editId) fetch(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
         setEditOpen(false);
     }
 
     async function handleDelete() {
         if (!deleteId) return;
-        await fetch(`http://localhost:3000/contentforms/${deleteId}/softdelete`, { method: 'PATCH' });
+        await fetch(`${DOMAIN}/contentforms/${deleteId}/softdelete`, { method: 'PATCH' });
         setDeleteOpen(false);
         setSelectedIds(prev => prev.filter(id => id !== deleteId));
         setSelectedFavIds(prev => prev.filter(id => id !== deleteId));
@@ -631,7 +637,7 @@ export function Documents() {
     }
 
     async function toggleFavorite(doc: ContentForm) {
-        await fetch(`http://localhost:3000/contentforms/${doc.id}/favorite`, {
+        await fetch(`${DOMAIN}/contentforms/${doc.id}/favorite`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ is_favorite: !doc.is_favorite }) });
         loadDocuments();
@@ -642,7 +648,7 @@ export function Documents() {
         await Promise.all(ids.map(id => {
             const doc = documents.find(d => d.id === id && d.is_favorite);
             if (!doc) return Promise.resolve();
-            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, {
+            return fetch(`${DOMAIN}/contentforms/${id}/favorite`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: false }) });
         }));
         setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
@@ -653,8 +659,9 @@ export function Documents() {
         await Promise.all(ids.map(id => {
             const doc = documents.find(d => d.id === id && !d.is_favorite);
             if (!doc) return Promise.resolve();
-            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: true }) });
+            return fetch(`${DOMAIN}/contentforms/${id}/favorite`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: true }) 
+            });
         }));
         setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
     }
@@ -707,39 +714,34 @@ export function Documents() {
             <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
 
             <Box p="md">
-                <Text fw={700} size="xl" mb="md" style={{ color: 'var(--color-yale-blue)' }}>
-                    {persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : 'Business Analyst Resources'}
-                </Text>
+                <Group justify="space-between" align="center" w="100%">
+                    <PageTitle title={titleProp} />
+                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+                </Group>
 
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
                         {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
                             <>
-                                <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} style={{ background: 'var(--color-fresh-sky)' }}>
+                                <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} className="invert-hover">
                                     Add Document
                                 </Button>
-                                <Button variant="default" leftSection={<IconPlus size={16} />} onClick={() => setBulkOpen(true)}>
+                                <Button variant="default" leftSection={<IconPlus size={16} />} onClick={() => setBulkOpen(true)} className="invert-hover">
                                     Bulk Upload
                                 </Button>
                             </>
                         )}
-                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'} color={activeFilterCount > 0 ? 'blue' : undefined} leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)}>
+                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'} color={activeFilterCount > 0 ? 'blue' : undefined} leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)} className="invert-hover">
                             Filter by{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
                         </Button>
                         {persona === 'Admin' && (
-                            <Button leftSection={<IconTrash size={16} />} color="red" variant="outline" onClick={() => { loadTrash(); setTrashOpen(true); }}>
+                            <Button leftSection={<IconTrash size={16} />} className="invert-hover-red" variant="outline" onClick={() => { loadTrash(); setTrashOpen(true); }}>
                                 Trash
                             </Button>
                         )}
                     </Group>
                     <Group gap="sm">
                         <TextInput placeholder="Search for document..." leftSection={<IconSearch size={16} />} value={search} onChange={e => setSearch(e.target.value)} w={250} />
-                        <SegmentedControl value={viewMode} onChange={val => setViewMode(val as 'grid' | 'list')}
-                                          data={[
-                                              { label: <Group gap={4}><IconLayoutGrid size={16} /><span>Grid</span></Group>, value: 'grid' },
-                                              { label: <Group gap={4}><IconList size={16} /><span>List</span></Group>, value: 'list' },
-                                          ]}
-                        />
                     </Group>
                 </Group>
 
@@ -775,11 +777,7 @@ export function Documents() {
                                         {doc.name}
                                     </Text>
                                     <Text size="xs" c="dimmed">{getFileType(doc.url)}</Text>
-                                    <Group gap={4} mt={4}>
-                                        {doc.persona.slice(0, 1).map(p => (
-                                            <Badge key={p} size="xs" variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'}>{p}</Badge>
-                                        ))}
-                                    </Group>
+                                    <PersonaBadges personas={doc.persona} />
                                 </div>
                             ))}
                         </div>
@@ -850,20 +848,20 @@ export function Documents() {
                     <Box style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--color-yale-blue)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text c="white">{selectedCount} selected</Text>
                         <Group gap="sm">
-                            <Button variant="white" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
-                            <Button variant="white" onClick={async () => {
+                            <Button className="invert-hover" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
+                            <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
                                     const doc = documents.find(d => d.id === id);
                                     if (doc) { await downloadFile(doc.url, doc.name); await new Promise(resolve => setTimeout(resolve, 500)); }
                                 }
                             }}>Download Selected</Button>
-                            {selectedHasNonFavorites && <Button variant="white" onClick={favoriteSelected}>★ Favorite All</Button>}
-                            {selectedHasFavorites && <Button variant="white" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
-                            <Button color="red" onClick={async () => {
+                            {selectedHasNonFavorites && <Button className="invert-hover" onClick={favoriteSelected}>★ Favorite All</Button>}
+                            {selectedHasFavorites && <Button className="invert-hover" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
+                            <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => fetch(`http://localhost:3000/contentforms/${id}/softdelete`, { method: 'PATCH' })));
+                                await Promise.all(ids.map(id => fetch(`${DOMAIN}/contentforms/${id}/softdelete`, { method: 'PATCH' })));
                                 setSelectedIds([]); setSelectedFavIds([]); loadDocuments();
                             }}>Delete Selected</Button>
                         </Group>
@@ -894,8 +892,8 @@ export function Documents() {
                     <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv']} clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
-                        <Button variant="default" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
-                        <Button onClick={() => setFilterOpen(false)}>Apply</Button>
+                        <Button className="invert-hover-outline" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
+                        <Button className="invert-hover" onClick={() => setFilterOpen(false)}>Apply</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -919,12 +917,12 @@ export function Documents() {
                                 <Group gap="xs">
                                     <Text size="sm" c="dimmed">{trashSelected.length} selected</Text>
                                     <Button size="xs" variant="outline" color="green" onClick={async () => {
-                                        await Promise.all(trashSelected.map(id => fetch(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH' })));
+                                        await Promise.all(trashSelected.map(id => fetch(`${DOMAIN}/contentforms/${id}/restore`, { method: 'PATCH' })));
                                         setTrashSelected([]); loadTrash(); loadDocuments();
                                     }}>Restore Selected</Button>
                                     <Button size="xs" color="red" onClick={async () => {
                                         if (!window.confirm(`Permanently delete ${trashSelected.length} documents?`)) return;
-                                        await Promise.all(trashSelected.map(id => fetch(`http://localhost:3000/contentforms/${id}/permanent`, { method: 'DELETE' })));
+                                        await Promise.all(trashSelected.map(id => fetch(`${DOMAIN}/contentforms/${id}/permanent`, { method: 'DELETE' })));
                                         setTrashSelected([]); loadTrash();
                                     }}>Delete Selected</Button>
                                 </Group>
@@ -950,9 +948,7 @@ export function Documents() {
                                                     Owner: {doc.owner} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
                                                 </Text>
                                                 <Group gap={4} mt={4}>
-                                                    {doc.persona.map(p => (
-                                                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
-                                                    ))}
+                                                    <PersonaBadges personas={doc.persona} />
                                                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                                                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                                                 </Group>
@@ -998,8 +994,8 @@ export function Documents() {
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date} onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={() => setAddOpen(false)}>✕ Cancel Changes</Button>
-                        <Button onClick={handleAdd} style={{ background: 'var(--color-fresh-sky)' }}>+ Submit Document</Button>
+                        <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel Changes</Button>
+                        <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1028,8 +1024,8 @@ export function Documents() {
                         <TextInput label="Expiration Date" type="date" value={editData.expiration_date} onChange={e => setEditData({...editData, expiration_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={closeEdit}>✕ Cancel Changes</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)} style={{ background: 'var(--color-fresh-sky)' }}>✓ Save Changes</Button>
+                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
+                        <Button onClick={() => setConfirmSaveOpen(true)} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1037,16 +1033,16 @@ export function Documents() {
             <Modal opened={confirmSaveOpen} onClose={() => setConfirmSaveOpen(false)} title="Confirm Changes" centered>
                 <Text size="sm" mb="md">Are you sure you want to save these changes?</Text>
                 <Group justify="flex-end">
-                    <Button variant="outline" onClick={() => setConfirmSaveOpen(false)}>Cancel</Button>
-                    <Button onClick={handleEdit} style={{ background: 'var(--color-fresh-sky)' }}>Confirm</Button>
+                    <Button className="invert-hover-outline" onClick={() => setConfirmSaveOpen(false)}>Cancel</Button>
+                    <Button onClick={handleEdit} className="invert-hover">Confirm</Button>
                 </Group>
             </Modal>
 
             <Modal opened={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete form?" centered>
                 <Text size="sm" mb="md">Are you sure you want to <strong>delete</strong> this file?</Text>
                 <Group justify="flex-end">
-                    <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                    <Button color="blue" onClick={handleDelete}>Confirm</Button>
+                    <Button className="invert-hover-outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+                    <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
                 </Group>
             </Modal>
 
@@ -1097,8 +1093,8 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={() => { setBulkOpen(false); setStagedFiles([]); }}>✕ Cancel</Button>
-                        <Button onClick={handleBulkAdd} style={{ background: 'var(--color-fresh-sky)' }} disabled={stagedFiles.length === 0}>
+                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); }}>✕ Cancel</Button>
+                        <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
                             + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
                         </Button>
                     </Group>
