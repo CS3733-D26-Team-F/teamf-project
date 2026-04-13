@@ -97,7 +97,8 @@ app.post('/login', async (req, res) => {
             employee: {
                 empid: employee.empid,
                 username: employee.username,
-                persona: employee.persona
+                persona: employee.persona,
+                pfp_URL: employee.pfp_URL
             }
         });
     } else {
@@ -274,12 +275,12 @@ app.post('/employees/:empid/profile-picture', upload.single('file'), async (req,
     const path = `employee-profiles/${empid}/avatar-${Date.now()}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('employee-media')
+      .from('Employee Media') //direct to Employee Media bucket
       .upload(path, file.buffer, { contentType: file.mimetype, upsert: true });
 
     if (uploadError) return res.status(500).json({ error: 'Upload failed', details: uploadError.message });
 
-    const { data: urlData } = supabase.storage.from('employee-media').getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from('Employee Media').getPublicUrl(path);
 
     const updated = await prisma.employee.update({
       where: { empid },
@@ -403,6 +404,7 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
         return res.status(500).json({error: 'Something went wrong with the upload'});
     }
 });
+
 
 
 app.post('/contentforms', upload.single('file'), async (req, res) => {

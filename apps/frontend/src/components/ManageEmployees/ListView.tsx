@@ -74,6 +74,7 @@ export function EmployeeListView() {
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
+                pfp_URL: addData.pfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
             })
         });
 
@@ -117,7 +118,8 @@ export function EmployeeListView() {
                 username: editTarget.username,
                 newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
                 password: editData.password || undefined,
-                persona: editData.persona !== editTarget.persona ? editData.persona : undefined
+                persona: editData.persona !== editTarget.persona ? editData.persona : undefined,
+                pfp_URL: editData.pfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
             })
         });
 

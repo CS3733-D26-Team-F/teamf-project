@@ -36,6 +36,11 @@ export function LoginForm() {
             localStorage.setItem('persona', data.employee.persona);
             localStorage.setItem('username', data.employee.username);
             localStorage.setItem('empid', String(data.employee.empid));
+            if (data.employee.pfp_URL) {
+                localStorage.setItem('profilePicture', data.employee.pfp_URL);
+            } else {
+                localStorage.removeItem('profilePicture');
+            }
             setSessionTo(data.employee.persona);
 
             navigate("/menu");
