@@ -5,6 +5,7 @@ import {
     Group, Text, Badge, Stack, Box
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
+import { DOMAIN } from '../../const';
 
 type Employee = {
     empid: number;
@@ -19,9 +20,9 @@ type Employee = {
 const personas = ["Admin", "Underwriter", "Business Analyst"];
 
 const personaColors: Record<string, string> = {
-    "Admin": "blue",
-    "Underwriter": "teal",
-    "Business Analyst": "cyan",
+    "Admin": "var(--color-yale-blue)",
+    "Underwriter": "var(--color-sapphire)",
+    "Business Analyst": "var(--color-fresh-sky)",
 };
 
 export function EmployeeListView() {
@@ -46,7 +47,7 @@ export function EmployeeListView() {
     const today = new Date().toISOString().split('T')[0];
 
     function loadEmployees() {
-        fetch("http://localhost:3000/employees")
+        fetch(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then(data => setEmployees(data));
     }
@@ -62,7 +63,7 @@ export function EmployeeListView() {
     }
 
     async function handleAdd() {
-        await fetch('http://localhost:3000/addEmployee', {
+        await fetch(`${DOMAIN}/addEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -85,7 +86,7 @@ export function EmployeeListView() {
 
     async function handleEdit() {
         if (!editTarget) return;
-        await fetch('http://localhost:3000/updateEmployee', {
+        await fetch(`${DOMAIN}/updateEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -106,7 +107,7 @@ export function EmployeeListView() {
 
     async function handleDelete() {
         if (!deleteTarget) return;
-        await fetch(`http://localhost:3000/deleteEmployee/${deleteTarget.username}`, {
+        await fetch(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
             method: 'DELETE'
         });
         setDeleteOpen(false);
@@ -150,7 +151,7 @@ export function EmployeeListView() {
                                 size="sm"
                                 leftSection={<IconPlus size={14} />}
                                 onClick={() => openAdd(persona)}
-                                style={{ background: 'var(--color-fresh-sky)' }}
+                                className="invert-hover"
                             >
                                 Add Employee
                             </Button>
@@ -178,7 +179,7 @@ export function EmployeeListView() {
                                         </Badge>
                                         <Text>{emp.last_name}, {emp.first_name} ({emp.username})</Text>
                                         {emp.username === authorUsername && (
-                                            <Badge color="green" variant="light" size="sm">You</Badge>
+                                            <Badge color="var(--color-yale-blue)" variant="light" size="sm">You</Badge>
                                         )}
                                     </Group>
                                     <Group gap="xs">
@@ -186,13 +187,13 @@ export function EmployeeListView() {
                                             size="xs"
                                             leftSection={<IconEdit size={14} />}
                                             onClick={() => openEdit(emp)}
-                                            style={{ background: 'var(--color-fresh-sky)' }}
+                                            className="invert-hover"
                                         >
                                             Edit
                                         </Button>
                                         <Button
                                             size="xs"
-                                            color="red"
+                                            className="invert-hover-red"
                                             leftSection={<IconTrash size={14} />}
                                             onClick={() => openDelete(emp)}
                                         >
@@ -252,10 +253,10 @@ export function EmployeeListView() {
                         readOnly
                     />
                     <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={() => setAddOpen(false)}>Cancel</Button>
+                        <Button variant="default" onClick={() => setAddOpen(false)} className="invert-hover-outline">Cancel</Button>
                         <Button
                             onClick={handleAdd}
-                            style={{ background: 'var(--color-fresh-sky)' }}
+                            className="invert-hover"
                         >
                             + Save Account
                         </Button>
@@ -301,18 +302,15 @@ export function EmployeeListView() {
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>Account History</Text>
                             <Group>
-                                <Badge color="teal" variant="light" size="lg">
-                                    {editTarget.first_name?.[0] ?? ''}{editTarget.last_name?.[0] ?? ''}
-                                </Badge>
                                 <Text size="sm">{editTarget.first_name} {editTarget.last_name}</Text>
                                 <Text size="sm" c="dimmed">Creation Date: {new Date(editTarget.created_at).toISOString().split('T')[0]}</Text>
                             </Group>
                         </Box>
                         <Group justify="flex-end" mt="md">
-                            <Button variant="default" onClick={() => setEditOpen(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline">Cancel</Button>
                             <Button
                                 onClick={handleEdit}
-                                style={{ background: 'var(--color-fresh-sky)' }}
+                                className="invert-hover"
                             >
                                 + Save Account
                             </Button>
@@ -332,8 +330,8 @@ export function EmployeeListView() {
                     Changes you made <strong>cannot be undone.</strong>
                 </Text>
                 <Group justify="flex-end">
-                    <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                    <Button color="blue" onClick={handleDelete}>Confirm</Button>
+                    <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">Cancel</Button>
+                    <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
                 </Group>
             </Modal>
         </Box>

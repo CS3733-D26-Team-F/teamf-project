@@ -3,19 +3,32 @@
 @custom-variant hover (&:hover);
 
 @theme {
-    --color-papaya-whip: var(--papaya-whip);
+    --color-white: var(--white);
+    --color-light-gray: var(--light-gray);
+    --color-neutral-red: var(--neutral-red);
     --color-dark-beige: var(--dark-beige);
     --color-yale-blue: var(--yale-blue);
     --color-pale-sky: var(--pale-sky);
     --color-fresh-sky: var(--fresh-sky);
+    --color-fresh-sky-light: var(--fresh-sky-light);
+    --color-sapphire: var(--sapphire);
+    --color-sapphire-light: var(--sapphire-light);
+    --color-pacific-blue: var(--pacific-blue);
 }
 
 :root {
+    --white: #FFFFFF;
+    --light-gray: #D3D3D3;
+    --neutral-red: #951528;
     --papaya-whip: #FFEFD5;
     --dark-beige: #D0C0A7;
     --yale-blue: #1B4965;
     --pale-sky: #CAE9FF;
     --fresh-sky: #5FA8D3;
+    --fresh-sky-light: #A7D2EA;
+    --sapphire: #3A6FBF;
+    --sapphire-light: #7FA4BF;
+    --pacific-blue: #62B6CB;
 }
 
 [data-theme="high-visibility"] {
@@ -97,7 +110,7 @@ header {
                 }
             }
         }
-        
+
     }
 
     &.login-header {
@@ -239,12 +252,12 @@ form {
         button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
 
 
-    button[type="reset"] {
-        background-color: var(--color-yale-blue);
-        color: white;
-    }
+        button[type="reset"] {
+            background-color: var(--color-yale-blue);
+            color: white;
+        }
 
-    button[type="reset"]:hover { background-color: var(--color-fresh-sky); }
+        button[type="reset"]:hover { background-color: var(--color-fresh-sky); }
 
         label, label[htmlFor="employeeSelect"]{
             color: var(--color-yale-blue);
@@ -388,4 +401,90 @@ input[type="file"] {
 /*Remove iamjariwala's in-built header*/
 #header-bar, .rdv-header-bar {
     display: none !important;
+}
+
+.invert-hover {
+    background-color: var(--yale-blue);
+    color: var(--color-white);
+    border: 1px solid var(--white);
+    transition: 0.2s ease;
+}
+
+.invert-hover:hover {
+    background-color: var(--color-white);
+    color: var(--yale-blue);
+    border: 1px solid var(--yale-blue);
+}
+
+.invert-hover-outline {
+    background-color: var(--white);
+    border: 1px solid var(--yale-blue);
+    color: var(--yale-blue);
+    transition: 0.2s ease;
+}
+
+.invert-hover-outline:hover {
+    background-color: var(--yale-blue);
+    color: var(--white);
+}
+
+.invert-hover-sapphire {
+    background-color: var(--sapphire);
+    border: 1px solid var(--white);
+    color: var(--white);
+    transition: 0.2s ease;
+}
+
+.invert-hover-sapphire:hover {
+    background-color: var(--white);
+    color: var(--sapphire);
+    border: 1px solid var(--sapphire);
+}
+
+.invert-hover-outline-sapphire {
+    background-color: var(--white);
+    border: 1px solid var(--sapphire);
+    color: var(--sapphire);
+    transition: 0.2s ease;
+}
+
+.invert-hover-outline-sapphire:hover {
+    background-color: var(--sapphire);
+    color: var(--white);
+}
+
+.invert-hover-outline-fresh-sky {
+    background-color: var(--white);
+    border: 1px solid var(--fresh-sky);
+    color: var(--fresh-sky);
+    transition: 0.2s ease;
+}
+
+.invert-hover-outline-fresh-sky:hover {
+    background-color: var(--fresh-sky);
+    color: var(--white);
+}
+
+.invert-hover-red {
+    background-color: var(--neutral-red);
+    color: var(--color-white);
+    border: 1px solid var(--neutral-red);
+    transition: 0.2s ease;
+}
+
+.invert-hover-red:hover {
+    background-color: var(--color-white);
+    color: var(--neutral-red);
+}
+
+.invert-hover-outline-red {
+    background-color: var(--white);
+    color: var(--neutral-red);
+    border: 1px solid var(--neutral-red);
+    transition: 0.2s ease;
+}
+
+.invert-hover-outline-red:hover {
+    background-color: var(--neutral-red);
+    color: var(--white);
 }
