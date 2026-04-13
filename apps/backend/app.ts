@@ -130,7 +130,7 @@ app.post('/getEmployee', async (req, res) => {
 
 //update employee takes the current username and then optionally any data that want to be changed
 app.post('/updateEmployee', async (req, res) => {
-    const {username, newUsername, password, persona, profile_picture} = req.body;
+    const {username, newUsername, password, persona, pfp_URL} = req.body;
 
     if (!username) {
         return res.status(400).send('Current username is required');
@@ -140,13 +140,13 @@ app.post('/updateEmployee', async (req, res) => {
         username?: string;
         password?: string;
         persona?: string;
-        profile_picture?: string;
+        pfp_URL?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
     if (password) updateData.password = password;
     if (persona) updateData.persona = persona;
-    if (profile_picture) updateData.profile_picture = profile_picture;
+    if (pfp_URL) updateData.pfp_URL = pfp_URL;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
@@ -183,13 +183,13 @@ app.post('/updateEmployee', async (req, res) => {
 });
 
 app.post('/addEmployee', async (req, res) => {
-    const {username, password, persona, first_name, last_name, profile_picture} = req.body;
+    const {username, password, persona, first_name, last_name, pfp_URL} = req.body;
 
     if (!username || !password || !first_name || !last_name) {
         return res.status(400).send('Missing field required');
     }
 
-    console.log('Adding employee:', { username, password, persona, first_name, last_name, profile_picture });
+    console.log('Adding employee:', { username, password, persona, first_name, last_name, pfp_URL });
     try {
         if (persona.trim() == 'Admin') {
 
@@ -221,7 +221,7 @@ app.post('/addEmployee', async (req, res) => {
                     first_name,
                     last_name,
                     created_at: new Date(),
-                    profile_picture: profile_picture || null
+                    pfp_URL: pfp_URL || null
                 },
             });
             return res.status(200).json({

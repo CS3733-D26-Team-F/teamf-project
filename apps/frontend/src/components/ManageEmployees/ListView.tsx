@@ -35,6 +35,7 @@ export function EmployeeListView() {
     const [addPersona, setAddPersona] = useState('');
     const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', profile_picture: null as File | null });
 
+
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
@@ -307,8 +308,8 @@ export function EmployeeListView() {
                             <FileInput
                                 placeholder="Upload a new profile picture"
                                 accept="image/*"
-                                onChange={file => setEditData({...editData, profile_picture: file})}
-                                />
+                                onChange={() => handleProfilePictureUpload()}/>
+
                         </Box>
                         <PasswordInput
                             label="New Password (Optional)"
@@ -319,7 +320,8 @@ export function EmployeeListView() {
                             label="New Profile Picture (Optional)"
                             placeholder="Upload a new profile picture"
                             accept="image/*"
-                            onChange={e => console.log(e)}
+                            onChange={() => handleProfilePictureUpload()}
+
                             //to implement: handle profile picture upload and update
                         />
                         <Select
@@ -366,3 +368,11 @@ export function EmployeeListView() {
         </Box>
     );
 }
+
+export function handleProfilePictureUpload() {
+    // upload photo into bucket
+
+    
+}
+
+
