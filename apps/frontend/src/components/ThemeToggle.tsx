@@ -36,7 +36,7 @@ export default function ThemeToggle() {
     }
 
     return (
-        <div className={"outline outline-white outline-offset-4" }><label className={"text-white"}>Theme: </label><ThemeSwitch
+        <div className={"outline outline-white outline-offset-4" }><label className={"text-black"}>Red-Green Colorblind Theme: </label><ThemeSwitch
                                            checked={checked}
                                            onChange={handleChange}
                                            slotProps={{input: {'aria-label': 'controlled'}}}/>
