@@ -15,6 +15,8 @@ function LoginModal() {
             await loginWithPopup({
                 authorizationParams: {
                     login_hint: username,
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                    scope: "read:profile read:data"
                 }
             });
             close();
