@@ -288,7 +288,7 @@ app.post('/updateContentForm', async (req, res) => {
         name?: string;
         url?: string;
         owner?: string;
-        persona?: string;
+        persona?: string[];
         date_modified?: string;
         expiration_date?: string;
         content_type?: string;
@@ -388,22 +388,19 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
             return res.status(404).json({error: 'Employee not found this should be the current user'});
         }
 
-        const persona = employee.persona;
+        const persona = JSON.parse(req.body.persona ?? '[]');
+        const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
 
-        const {data, error} = await supabase.storage
-            .from(persona)
-            .upload(file.originalname, file.buffer, {
-                contentType: file.mimetype,
-                upsert: true
-            });
+        const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(file.originalname, file.buffer, { contentType: file.mimetype, upsert: true });
 
         if (error) {
-            return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
+            return res.status(500).json({ error: 'Failed to upload file to bucket', details: error.message });
         }
 
-        // Get the public URL to store in the DB
-        const {data: urlData} = supabase.storage
-            .from(persona)
+        const { data: urlData } = supabase.storage
+            .from(bucket)
             .getPublicUrl(file.originalname);
 
         // Create the content form record with the supabase URL
@@ -477,7 +474,7 @@ app.get('/contentforms/persona/:persona', async (req, res) => {
     const {persona} = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
-            where: {persona: persona}
+            where: {persona: {has: persona}}
         });
         res.json(contentForms);
     } catch (error) {
@@ -488,8 +485,8 @@ app.get('/contentforms/persona/:persona', async (req, res) => {
 app.get('/contentforms/admin', async (req, res) => {
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
-            prisma.contentform.findMany({where: {persona: 'Underwriter'}}),
-            prisma.contentform.findMany({where: {persona: 'Business Analyst'}})
+            prisma.contentform.findMany({ where: { persona: { has: 'Underwriter' } } }),
+            prisma.contentform.findMany({ where: { persona: { has: 'Business Analyst' } } }),
         ]);
         res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
     } catch (error) {
@@ -502,14 +499,14 @@ app.get('/contentforms/persona/:persona/:field', async (req, res) => {
     try {
         if (persona === 'Admin') {
             const contentForm = await prisma.contentform.findMany({
-                where: {persona: {in: ['Underwriter', 'Business Analyst']}},
+                where: { persona: { hasSome: ['Underwriter', 'Business Analyst'] } },
                 select: {[field]: true}
             });
             const links = contentForm.map(item => item[field])
             res.json(links);
         } else {
             const contentForms = await prisma.contentform.findMany({
-                where: {persona: persona},
+                where: { persona: { has: persona } },
                 select: {[field]: true}
             });
             const links = contentForms.map(item => item[field])
@@ -567,17 +564,7 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// Trash - get all soft deleted (admin only)
-app.get('/contentforms/trash', async (req, res) => {
-    try {
-        const trashed = await prisma.contentform.findMany({
-            where: { is_deleted: true }
-        });
-        res.json(trashed);
-    } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
-    }
-});
+
 
 // Soft delete - sets is_deleted flag instead of removing from DB
 app.patch('/contentforms/:id/softdelete', async (req, res) => {
@@ -613,6 +600,79 @@ app.delete('/contentforms/:id/permanent', async (req, res) => {
         const id = parseInt(req.params.id);
         const deleted = await prisma.contentform.delete({ where: { id } });
         res.json(deleted);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Auto-expire documents past their expiration date
+// NOTE: this must stay above GET /contentforms/:id or Express will treat "autoexpire" as an id
+app.patch('/contentforms/autoexpire', async (req, res) => {
+    try {
+        const updated = await prisma.contentform.updateMany({
+            where: {
+                expiration_date: { lt: new Date() },
+                status: { not: 'Expired' },
+                is_deleted: false
+            },
+            data: { status: 'Expired' }
+        });
+        res.json({ message: `${updated.count} documents expired` });
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Get archived documents
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/archived', async (req, res) => {
+    try {
+        const archived = await prisma.contentform.findMany({
+            where: { status: 'Archived', is_deleted: false }
+        });
+        res.json(archived);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Get expired documents
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/expired', async (req, res) => {
+    try {
+        const expired = await prisma.contentform.findMany({
+            where: { status: 'Expired', is_deleted: false }
+        });
+        res.json(expired);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Trash - get all soft deleted (admin only)
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/trash', async (req, res) => {
+    try {
+        const trashed = await prisma.contentform.findMany({
+            where: { is_deleted: true }
+        });
+        res.json(trashed);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Patch just the status field — used by Archive page restore
+app.patch('/contentforms/:id/status', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { status } = req.body;
+        if (!status) return res.status(400).json({ error: 'status is required' });
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { status }
+        });
+        res.json(updated);
     } catch (error) {
         res.status(500).json({ error: 'Something went wrong' });
     }
@@ -706,23 +766,27 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
 
     try {
         const id = parseInt(req.params.id.toString());
-        const { name, ownerUsername, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const { name, ownerUsername, owner, date_modified, expiration_date, content_type, status } = req.body;
+        const resolvedOwner = ownerUsername ?? owner;
+        console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
+        const rawPersona = req.body.persona;
+        const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
         const updateData: any = {
-            name: name,
-            owner: ownerUsername,
-            persona,
+            name,
+            owner: resolvedOwner,
+            persona,  // now correctly set
             date_modified: new Date(date_modified),
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
-            employee: { connect: { username: ownerUsername } }
+            employee: { connect: { username: resolvedOwner } }
         };
 
         if (req.file) {
             // look up the employee to get their persona/bucket
             const employee = await prisma.employee.findUnique({
-                where: { username: ownerUsername }
+                where: { username: resolvedOwner }
             });
 
             if (!employee) {

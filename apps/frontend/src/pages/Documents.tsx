@@ -1,5 +1,5 @@
 import '@mantine/core/styles.css';
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import * as pdfjs from 'pdfjs-dist';
 import { Header } from "../components/Header";
 import { AccessDenied } from "../components/AccessDenied.tsx";
@@ -10,7 +10,8 @@ import {
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconEdit, IconTrash,
-    IconDownload, IconFilter, IconLayoutGrid, IconList, IconStar, IconStarFilled
+    IconDownload, IconFilter, IconLayoutGrid, IconList, IconStar, IconStarFilled,
+    IconClock
 } from '@tabler/icons-react';
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -25,7 +26,7 @@ type ContentForm = {
     file_name: string;
     url: string;
     owner: string;
-    persona: string;
+    persona: string[];
     date_modified: string;
     expiration_date: string;
     content_type: string;
@@ -42,11 +43,11 @@ type Employee = {
 };
 
 type StagedFile = {
-    id: string; // Temporary ID for React mapping
+    id: string;
     file: File;
     name: string;
     owner: string;
-    persona: string;
+    persona: string[];
     content_type: string;
     status: string;
     date_modified: string;
@@ -225,7 +226,7 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
 
 interface RowCallbacks {
     persona: string | null;
-    onView: (url: string, label: string) => void;
+    onView: (url: string, label: string, id: number) => void;
     onFavorite: (doc: ContentForm) => void;
     onDownload: (url: string, name: string) => void;
     onEdit: (doc: ContentForm) => void;
@@ -239,13 +240,17 @@ interface DocRowProps extends RowCallbacks {
 }
 
 function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
-    const canModify = persona === 'Admin' || doc.persona === persona;
+    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     return (
-        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name)}>
+        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
-            <Table.Td><Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'}>{doc.persona}</Badge></Table.Td>
+            <Table.Td>
+                {doc.persona.map(p => (
+                    <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
+                ))}
+            </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
             <Table.Td><Badge color={statusColors[doc.status] ?? 'gray'} variant="light">{doc.status}</Badge></Table.Td>
@@ -284,7 +289,7 @@ interface DocCardProps extends RowCallbacks {
 }
 
 function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
-    const canModify = persona === 'Admin' || doc.persona === persona;
+    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     return (
         <div
             style={{
@@ -293,7 +298,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 transition: 'box-shadow 0.15s', overflow: 'hidden',
                 border: isSelected ? '2px solid var(--color-fresh-sky, #3b82f6)' : '2px solid transparent',
             }}
-            onClick={() => onView(doc.url, doc.name)}
+            onClick={() => onView(doc.url, doc.name, doc.id)}
         >
             <DocThumbnail url={doc.url} />
 
@@ -312,7 +317,9 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 </Text>
                 <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
                 <Group gap={4} mb={4}>
-                    <Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'} size="xs">{doc.persona}</Badge>
+                    {doc.persona.map(p => (
+                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
+                    ))}
                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                 </Group>
@@ -332,7 +339,6 @@ export function Documents() {
     const today = new Date().toISOString().split('T')[0];
 
     const [documents, setDocuments] = useState<ContentForm[]>([]);
-    const [filtered, setFiltered] = useState<ContentForm[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -356,21 +362,37 @@ export function Documents() {
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
 
+    // ── Recently viewed ──────────────────────────────────────────────────────
+    const [recentIds, setRecentIds] = useState<number[]>(() => {
+        try { return JSON.parse(localStorage.getItem('recentlyViewed') ?? '[]'); }
+        catch { return []; }
+    });
+
+    function recordView(id: number) {
+        setRecentIds(prev => {
+            const updated = [id, ...prev.filter(i => i !== id)].slice(0, 8);
+            localStorage.setItem('recentlyViewed', JSON.stringify(updated));
+            return updated;
+        });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const [addOpen, setAddOpen] = useState(false);
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
-        persona: persona !== 'Admin' ? persona ?? '' : '',
+        persona: persona !== 'Admin' ? [persona ?? ''] : [],
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
-            id: Math.random().toString(36).substring(7), // Random temp ID
+            id: Math.random().toString(36).substring(7),
             file: f,
             name: f.name,
             owner: persona === 'Admin' ? '' : username ?? '',
-            persona: persona !== 'Admin' ? persona ?? '' : '',
+            persona: persona !== 'Admin' ? [persona ?? ''] : [],
             content_type: '',
             status: '',
             date_modified: today,
@@ -379,7 +401,7 @@ export function Documents() {
         setStagedFiles(prev => [...prev, ...newStaged]);
     }
 
-    function updateStagedFile(id: string, field: keyof StagedFile, value: any) {
+    function updateStagedFile<K extends keyof StagedFile>(id: string, field: K, value: StagedFile[K]) {
         setStagedFiles(prev => prev.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         ));
@@ -388,13 +410,14 @@ export function Documents() {
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
     }
+
     const [addFile, setAddFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [editOpen, setEditOpen] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
-        name: '', owner: '', persona: '',
+        name: '', owner: '', persona: [] as string[],
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
@@ -402,7 +425,6 @@ export function Documents() {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
-
 
     const [trashOpen, setTrashOpen] = useState(false);
     const [trashDocs, setTrashDocs] = useState<ContentForm[]>([]);
@@ -412,7 +434,7 @@ export function Documents() {
 
     const filteredTrash = trashDocs.filter(doc => {
         const matchSearch = !trashSearch || doc.name.toLowerCase().includes(trashSearch.toLowerCase()) || doc.owner.toLowerCase().includes(trashSearch.toLowerCase());
-        const matchPersona = !trashPersonaFilter || doc.persona === trashPersonaFilter;
+        const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
 
@@ -442,7 +464,6 @@ export function Documents() {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? [])];
                 setDocuments(flat);
-                setFiltered(flat);
             });
     }
 
@@ -459,16 +480,19 @@ export function Documents() {
     }
 
     useEffect(() => {
+        // Auto-expire documents on page load
+        fetch(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' })
+            .catch(() => {}); // silently ignore if endpoint doesn't exist yet
         loadDocuments();
         fetch(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then((data: Employee[]) => setEmployees(data));
     }, []);
 
-    useEffect(() => {
+    const filtered = useMemo(() => {
         let result = [...documents];
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
-        if (filterPersona.length > 0) result = result.filter(d => filterPersona.includes(d.persona));
+        if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => filterType.map(t => t.toLowerCase()).includes(getExt(d.url)));
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
@@ -477,26 +501,21 @@ export function Documents() {
             result.sort((a, b) => {
                 let aVal = String(a[sortField] ?? '');
                 let bVal = String(b[sortField] ?? '');
-
-                if (sortField === 'file_name') {
-                    aVal = getFileType(a.url);
-                    bVal = getFileType(b.url);
-                }
-
-                const cmp = aVal.toString().localeCompare(bVal.toString() ?? "");
+                if (sortField === 'file_name') { aVal = getFileType(a.url); bVal = getFileType(b.url); }
+                const cmp = aVal.localeCompare(bVal);
                 return sortDir === 'asc' ? cmp : -cmp;
             });
         } else {
             result.sort((a, b) => {
-                const aMatch = a.persona === persona ? 0 : 1;
-                const bMatch = b.persona === persona ? 0 : 1;
+                const aMatch = a.persona.includes(persona ?? '') ? 0 : 1;
+                const bMatch = b.persona.includes(persona ?? '') ? 0 : 1;
                 if (aMatch !== bMatch) return aMatch - bMatch;
-                //a.name is a string but a.persona is an object, to be safe when using localeCompare just turn it into a string
-                if (a.persona !== b.persona) return a.persona.toString().localeCompare(b.persona.toString() ?? "");
-                return a.name.toString().localeCompare(b.name.toString() ?? "");
+                if (a.persona.join() !== b.persona.join()) return a.persona.join().localeCompare(b.persona.join());
+                return a.name.localeCompare(b.name);
             });
         }
-        setFiltered(result);
+
+        return result; // We return the result instead of calling setFiltered
     }, [search, filterPersona, filterStatus, filterType, filterOwner, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
@@ -505,13 +524,8 @@ export function Documents() {
         return [...favs].sort((a, b) => {
             let aVal = String(a[favSortField] ?? '');
             let bVal = String(b[favSortField] ?? '');
-
-            if (favSortField === 'file_name') {
-                aVal = getFileType(a.url);
-                bVal = getFileType(b.url);
-            }
-
-            const cmp = aVal.toString().localeCompare(bVal.toString() ?? "");
+            if (favSortField === 'file_name') { aVal = getFileType(a.url); bVal = getFileType(b.url); }
+            const cmp = aVal.localeCompare(bVal);
             return favSortDir === 'asc' ? cmp : -cmp;
         });
     })();
@@ -532,6 +546,7 @@ export function Documents() {
         const formPayload = new FormData();
         formPayload.append('filename', addData.name);
         formPayload.append('ownerUsername', addData.owner);
+        formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
         formPayload.append('content_type', addData.content_type);
@@ -539,50 +554,40 @@ export function Documents() {
         formPayload.append('file', addFile);
         await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         setAddOpen(false); setAddFile(null);
-        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? persona ?? '' : '', date_modified: today, expiration_date: '', content_type: '', status: '' });
+        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
     }
 
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
-
-        // 1. Validation check
         const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) {
-            alert('Please fill in all dropdowns and dates for every file.');
-            return;
-        }
-
-        // 2. Upload loop
+        if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
         for (const sf of stagedFiles) {
             const formPayload = new FormData();
             formPayload.append('filename', sf.name);
             formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', sf.persona); // Ensure persona is included
+            formPayload.append('persona', JSON.stringify(sf.persona));
             formPayload.append('date_modified', sf.date_modified);
             formPayload.append('expiration_date', sf.expiration_date);
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
             formPayload.append('file', sf.file);
-
-            await fetch(`${DOMAIN}/contentforms`, {
-                method: 'POST',
-                body: formPayload
-            });
+            await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         }
-
-        // 3. Clean up
-        setBulkOpen(false);
-        setStagedFiles([]);
-        loadDocuments();
+        setBulkOpen(false); setStagedFiles([]); loadDocuments();
     }
 
     function openEdit(doc: ContentForm) {
         fetch(`${DOMAIN}/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
             .then(res => {
-                if (res.status === 423) { res.json().then(data => alert(data.error)); return; }
+                if (res.status === 423) { res.json().then((data: {error: string}) => alert(data.error)); return; }
                 setEditId(doc.id);
-                setEditData({ name: doc.name, owner: doc.owner, persona: doc.persona, date_modified: today, expiration_date: doc.expiration_date?.split('T')[0] ?? '', content_type: doc.content_type, status: doc.status });
+                setEditData({
+                    name: doc.name, owner: doc.owner,
+                    persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],
+                    date_modified: today, expiration_date: doc.expiration_date?.split('T')[0] ?? '',
+                    content_type: doc.content_type, status: doc.status
+                });
                 setEditOpen(true);
             });
     }
@@ -593,34 +598,22 @@ export function Documents() {
             const formPayload = new FormData();
             formPayload.append('filename', editData.name);
             formPayload.append('ownerUsername', editData.owner);
-            formPayload.append('persona', editData.persona);
+            formPayload.append('persona', JSON.stringify(editData.persona));
             formPayload.append('date_modified', editData.date_modified);
             formPayload.append('expiration_date', editData.expiration_date);
             formPayload.append('content_type', editData.content_type);
             formPayload.append('status', editData.status);
-            formPayload.append('file', editFile); // Attach the new file
-
-            await fetch(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT',
-                body: formPayload
-            });
+            formPayload.append('file', editFile);
+            await fetch(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
         } else {
             await fetch(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editData)
+                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData)
             });
         }
-
         await fetch(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username })
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
-        setEditFile(null);
-        setConfirmSaveOpen(false);
-        setEditOpen(false);
-        loadDocuments();
+        setEditFile(null); setConfirmSaveOpen(false); setEditOpen(false); loadDocuments();
     }
 
     function closeEdit() {
@@ -639,8 +632,7 @@ export function Documents() {
 
     async function toggleFavorite(doc: ContentForm) {
         await fetch(`${DOMAIN}/contentforms/${doc.id}/favorite`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ is_favorite: !doc.is_favorite }) });
         loadDocuments();
     }
@@ -651,12 +643,9 @@ export function Documents() {
             const doc = documents.find(d => d.id === id && d.is_favorite);
             if (!doc) return Promise.resolve();
             return fetch(`${DOMAIN}/contentforms/${id}/favorite`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_favorite: false }) });
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: false }) });
         }));
-        setSelectedFavIds([]);
-        setSelectedIds([]); loadDocuments();
+        setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
     }
 
     async function favoriteSelected() {
@@ -665,49 +654,35 @@ export function Documents() {
             const doc = documents.find(d => d.id === id && !d.is_favorite);
             if (!doc) return Promise.resolve();
             return fetch(`${DOMAIN}/contentforms/${id}/favorite`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_favorite: true })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_favorite: true }) 
             });
         }));
-        setSelectedFavIds([]);
-        setSelectedIds([]);
-        loadDocuments();
+        setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
     }
 
-    function toggleSelect(id: number) {
-        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-    }
-    function toggleFavSelect(id: number) {
-        setSelectedFavIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-    }
+    function toggleSelect(id: number) { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
+    function toggleFavSelect(id: number) { setSelectedFavIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
+
     async function downloadFile(url: string, name: string) {
         try {
             const response = await fetch(url);
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);
-
             const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = name;
-            document.body.appendChild(a);
-            a.click();
-
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(blobUrl);
-        } catch (error) {
-            console.error("Failed to download file as blob. Falling back to default method.", error);
+            a.href = blobUrl; a.download = name;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); window.URL.revokeObjectURL(blobUrl);
+        } catch {
             const a = document.createElement('a');
-            a.href = url;
-            a.download = name;
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            a.href = url; a.download = name; a.target = '_blank';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
     }
-    function openViewer(url: string, label: string) {
-        setViewerUrl(url); setViewerLabel(label);
+
+    function openViewer(url: string, label: string, id: number) {
+        recordView(id);
+        setViewerUrl(url);
+        setViewerLabel(label);
     }
 
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
@@ -721,6 +696,11 @@ export function Documents() {
         onEdit: openEdit,
         onDelete: (id: number) => { setDeleteId(id); setDeleteOpen(true); },
     };
+
+    // Recently viewed docs resolved from current document list
+    const recentDocs = recentIds
+        .map(id => documents.find(d => d.id === id))
+        .filter(Boolean) as ContentForm[];
 
     return (
         <>
@@ -736,18 +716,10 @@ export function Documents() {
                     <Group gap="sm">
                         {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
                             <>
-                                <Button
-                                    leftSection={<IconPlus size={16} />}
-                                    onClick={() => setAddOpen(true)}
-                                    style={{ background: 'var(--color-fresh-sky)' }}
-                                >
+                                <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} style={{ background: 'var(--color-fresh-sky)' }}>
                                     Add Document
                                 </Button>
-                                <Button
-                                    variant="default"
-                                    leftSection={<IconPlus size={16} />}
-                                    onClick={() => setBulkOpen(true)}
-                                >
+                                <Button variant="default" leftSection={<IconPlus size={16} />} onClick={() => setBulkOpen(true)}>
                                     Bulk Upload
                                 </Button>
                             </>
@@ -782,7 +754,41 @@ export function Documents() {
                     </Group>
                 )}
 
-                {/*list view*/}
+                {/* ── Recently Viewed ─────────────────────────────────────── */}
+                {recentDocs.length > 0 && (
+                    <Box mb="lg">
+                        <Group gap={6} mb="xs">
+                            <IconClock size={14} color="gray" />
+                            <Text fw={700} size="sm" c="dimmed">Recently Viewed</Text>
+                        </Group>
+                        <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+                            {recentDocs.map(doc => (
+                                <div
+                                    key={doc.id}
+                                    onClick={() => openViewer(doc.url, doc.name, doc.id)}
+                                    style={{
+                                        minWidth: 160, maxWidth: 160, background: 'white', borderRadius: 8,
+                                        padding: '10px 12px', cursor: 'pointer', flexShrink: 0,
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.1)', border: '1px solid #eee'
+                                    }}
+                                >
+                                    <Text fw={600} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-yale-blue)' }}>
+                                        {doc.name}
+                                    </Text>
+                                    <Text size="xs" c="dimmed">{getFileType(doc.url)}</Text>
+                                    <Group gap={4} mt={4}>
+                                        {doc.persona.slice(0, 1).map(p => (
+                                            <Badge key={p} size="xs" variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'}>{p}</Badge>
+                                        ))}
+                                    </Group>
+                                </div>
+                            ))}
+                        </div>
+                    </Box>
+                )}
+                {/* ─────────────────────────────────────────────────────────── */}
+
+                {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && (
@@ -812,7 +818,7 @@ export function Documents() {
                     </Stack>
                 )}
 
-                {/*grid view*/}
+                {/* grid view */}
                 {viewMode === 'grid' && (
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && (
@@ -840,27 +846,19 @@ export function Documents() {
                     </Stack>
                 )}
 
-                {/*bulk action bar*/}
+                {/* bulk action bar */}
                 {anySelected && (
                     <Box style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--color-yale-blue)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text c="white">{selectedCount} selected</Text>
                         <Group gap="sm">
                             <Button variant="white" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
-                            <Button
-                                variant="white"
-                                onClick={async () => {
-                                    const ids = [...selectedIds, ...selectedFavIds];
-                                    for (const id of ids) {
-                                        const doc = documents.find(d => d.id === id);
-                                        if (doc) {
-                                            await downloadFile(doc.url, doc.name);
-                                            await new Promise(resolve => setTimeout(resolve, 500));
-                                        }
-                                    }
-                                }}
-                            >
-                                Download Selected
-                            </Button>
+                            <Button variant="white" onClick={async () => {
+                                const ids = [...selectedIds, ...selectedFavIds];
+                                for (const id of ids) {
+                                    const doc = documents.find(d => d.id === id);
+                                    if (doc) { await downloadFile(doc.url, doc.name); await new Promise(resolve => setTimeout(resolve, 500)); }
+                                }
+                            }}>Download Selected</Button>
                             {selectedHasNonFavorites && <Button variant="white" onClick={favoriteSelected}>★ Favorite All</Button>}
                             {selectedHasFavorites && <Button variant="white" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
                             <Button color="red" onClick={async () => {
@@ -874,7 +872,7 @@ export function Documents() {
                 )}
             </Box>
 
-            {/*doc viewer*/}
+            {/* doc viewer */}
             {viewerUrl && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1000 }} onClick={() => setViewerUrl(null)}>
                     <div className="bg-white rounded-xl shadow-xl w-4/5 flex flex-col overflow-hidden" style={{ height: '80vh' }} onClick={e => e.stopPropagation()}>
@@ -889,7 +887,7 @@ export function Documents() {
                 </div>
             )}
 
-            {/*filter modal*/}
+            {/* filter modal */}
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
@@ -906,36 +904,17 @@ export function Documents() {
             {/* trash modal */}
             <Modal opened={trashOpen} onClose={() => { setTrashOpen(false); setTrashSearch(''); setTrashSelected([]); }} title="Trash — Deleted Documents" size="xl">
                 <Stack gap="sm">
-                    {/* search + filter bar */}
                     <Group gap="sm">
-                        <TextInput
-                            placeholder="Search by name or owner..."
-                            leftSection={<IconSearch size={16} />}
-                            value={trashSearch}
-                            onChange={e => setTrashSearch(e.target.value)}
-                            style={{ flex: 1 }}
-                        />
-                        <Select
-                            placeholder="Filter by persona"
-                            clearable
-                            value={trashPersonaFilter}
-                            onChange={val => setTrashPersonaFilter(val ?? '')}
-                            data={['Underwriter', 'Business Analyst']}
-                            w={180}
-                        />
+                        <TextInput placeholder="Search by name or owner..." leftSection={<IconSearch size={16} />} value={trashSearch} onChange={e => setTrashSearch(e.target.value)} style={{ flex: 1 }} />
+                        <Select placeholder="Filter by persona" clearable value={trashPersonaFilter} onChange={val => setTrashPersonaFilter(val ?? '')} data={['Underwriter', 'Business Analyst']} w={180} />
                     </Group>
-
-                    {/* select all + bulk actions */}
                     {filteredTrash.length > 0 && (
                         <Group justify="space-between">
                             <Checkbox
                                 label={`Select all (${filteredTrash.length})`}
                                 checked={trashSelected.length === filteredTrash.length && filteredTrash.length > 0}
                                 indeterminate={trashSelected.length > 0 && trashSelected.length < filteredTrash.length}
-                                onChange={() => trashSelected.length === filteredTrash.length
-                                    ? setTrashSelected([])
-                                    : setTrashSelected(filteredTrash.map(d => d.id))
-                                }
+                                onChange={() => trashSelected.length === filteredTrash.length ? setTrashSelected([]) : setTrashSelected(filteredTrash.map(d => d.id))}
                             />
                             {trashSelected.length > 0 && (
                                 <Group gap="xs">
@@ -953,8 +932,6 @@ export function Documents() {
                             )}
                         </Group>
                     )}
-
-                    {/* doc list */}
                     {filteredTrash.length === 0 ? (
                         <Text c="dimmed" ta="center" py="xl">No deleted documents.</Text>
                     ) : (
@@ -966,20 +943,17 @@ export function Documents() {
                                 }}>
                                     <Group justify="space-between" align="flex-start">
                                         <Group gap="sm" align="flex-start">
-                                            <Checkbox
-                                                mt={2}
-                                                checked={trashSelected.includes(doc.id)}
-                                                onChange={() => setTrashSelected(prev =>
-                                                    prev.includes(doc.id) ? prev.filter(i => i !== doc.id) : [...prev, doc.id]
-                                                )}
-                                            />
+                                            <Checkbox mt={2} checked={trashSelected.includes(doc.id)}
+                                                      onChange={() => setTrashSelected(prev => prev.includes(doc.id) ? prev.filter(i => i !== doc.id) : [...prev, doc.id])} />
                                             <div>
                                                 <Text fw={600}>{doc.name}</Text>
                                                 <Text size="xs" c="dimmed">
-                                                    Owner: {doc.owner} · Persona: {doc.persona} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
+                                                    Owner: {doc.owner} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
                                                 </Text>
                                                 <Group gap={4} mt={4}>
-                                                    <Badge variant="light" color={doc.persona === 'Underwriter' ? 'teal' : 'blue'} size="xs">{doc.persona}</Badge>
+                                                    {doc.persona.map(p => (
+                                                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
+                                                    ))}
                                                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                                                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                                                 </Group>
@@ -1002,7 +976,7 @@ export function Documents() {
                 </Stack>
             </Modal>
 
-            {/*add modal */}
+            {/* add modal */}
             <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
@@ -1014,7 +988,7 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
-                    <Select label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val ?? ''})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -1031,23 +1005,20 @@ export function Documents() {
                 </Stack>
             </Modal>
 
-            {/*edit modal*/}
+            {/* edit modal */}
             <Modal opened={editOpen} onClose={closeEdit} title="Edit Document Details" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
                     <Box>
                         <Text size="sm" fw={500} mb={4}>Update File (Optional)</Text>
-                        <input
-                            type="file"
-                            onChange={e => setEditFile(e.target.files?.[0] ?? null)}
-                        />
+                        <input type="file" onChange={e => setEditFile(e.target.files?.[0] ?? null)} />
                         <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document details.</Text>
                     </Box>
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
-                    <Select label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val ?? ''})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type} onChange={val => setEditData({...editData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -1079,21 +1050,14 @@ export function Documents() {
                     <Button color="blue" onClick={handleDelete}>Confirm</Button>
                 </Group>
             </Modal>
-            {/* Bulk Upload Table Modal */}
+
+            {/* bulk upload modal */}
             <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
                         <Text size="sm" fw={500} mb={4}>Add Files</Text>
-                        <input
-                            type="file"
-                            multiple
-                            onChange={e => {
-                                handleBulkFileSelect(Array.from(e.target.files ?? []));
-                                e.target.value = ''; // Reset input so you can add the same file twice if needed
-                            }}
-                        />
+                        <input type="file" multiple onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
                     </Box>
-
                     {stagedFiles.length > 0 && (
                         <Box style={{ overflowX: 'auto' }}>
                             <Table highlightOnHover withTableBorder withColumnBorders>
@@ -1111,75 +1075,28 @@ export function Documents() {
                                 <Table.Tbody>
                                     {stagedFiles.map(staged => (
                                         <Table.Tr key={staged.id}>
+                                            <Table.Td><TextInput value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} /></Table.Td>
                                             <Table.Td>
-                                                <TextInput
-                                                    value={staged.name}
-                                                    onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}
-                                                />
+                                                {persona === 'Admin'
+                                                    ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
+                                                    : <TextInput value={staged.owner} readOnly />}
                                             </Table.Td>
-                                            <Table.Td>
-                                                {persona === 'Admin' ? (
-                                                    <Select
-                                                        data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
-                                                        value={staged.owner}
-                                                        onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}
-                                                    />
-                                                ) : (
-                                                    <TextInput value={staged.owner} readOnly />
-                                                )}
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <Select
-                                                    data={['Underwriter', 'Business Analyst']}
-                                                    value={staged.persona}
-                                                    onChange={val => updateStagedFile(staged.id, 'persona', val ?? '')}
-                                                    disabled={persona !== 'Admin'}
-                                                />
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <Select
-                                                    data={['Reference', 'Workflow']}
-                                                    value={staged.content_type}
-                                                    onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}
-                                                />
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <Select
-                                                    data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
-                                                    value={staged.status}
-                                                    onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}
-                                                />
-                                            </Table.Td>
+                                            <Table.Td><MultiSelect data={['Underwriter', 'Business Analyst']} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
+                                            <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
+                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
-                                                    <TextInput
-                                                        type="date"
-                                                        label="Modified"
-                                                        size="xs"
-                                                        value={staged.date_modified}
-                                                        onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}
-                                                    />
-                                                    <TextInput
-                                                        type="date"
-                                                        label="Expires"
-                                                        size="xs"
-                                                        value={staged.expiration_date}
-                                                        onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}
-                                                    />
+                                                    <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
+                                                    <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
                                                 </Stack>
                                             </Table.Td>
-                                            <Table.Td>
-                                                <ActionIcon color="red" onClick={() => removeStagedFile(staged.id)}>
-                                                    <IconTrash size={16} />
-                                                </ActionIcon>
-                                            </Table.Td>
+                                            <Table.Td><ActionIcon color="red" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>
                             </Table>
                         </Box>
                     )}
-
                     <Group justify="flex-end" mt="md">
                         <Button variant="default" onClick={() => { setBulkOpen(false); setStagedFiles([]); }}>✕ Cancel</Button>
                         <Button onClick={handleBulkAdd} style={{ background: 'var(--color-fresh-sky)' }} disabled={stagedFiles.length === 0}>
