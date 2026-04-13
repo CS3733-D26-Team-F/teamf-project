@@ -26,9 +26,7 @@ const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_AN
 const upload = multer({ storage: multer.memoryStorage() });
 
 const checkJWT = auth({
-    audience: process.env.VITE_AUTH0_AUDIENCE,
-    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
-    audience: process.env.VITE_AUTH0_AUDIENCE,
+    audience: process.env.AUTH0_AUDIENCE,
     issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
     tokenSigningAlg: 'RS256'
 });
@@ -68,11 +66,14 @@ app.use(morgan('dev'));
 // Used for login
 app.post('/api/auth/login', checkJWT, async (req, res) => {
     try {
-        const auth0Id  = req.auth!.payload.sub as string;
-        const username = req.auth!.payload['nickname'] as string;
+        const auth0Id  = req.auth.payload.sub;
+        const username = req.auth!.payload['name'] as string;
 
         const employee = await prisma.employee.upsert({
             where:  { auth0Id },
+            update: {
+               username
+            },
             create: {
                 auth0Id,
                 username
@@ -80,7 +81,6 @@ app.post('/api/auth/login', checkJWT, async (req, res) => {
         });
         res.json({ employee });
     } catch (err) {
-        res.status(500).json({ error: "Sync failed", detail: err.message });
         console.error(err);
         res.status(500).json({ error: 'Login sync failed' });
     }
