@@ -14,7 +14,12 @@ export function SettingsModal() {
                 <ThemeToggle />
             </Modal>
 
-            <Button variant="default" onClick={open} className="invert-hover">
+            <Button
+                variant="default"
+                onClick={open}
+                className="invert-hover"
+                bd="none"
+            >
                 <IconSettings color="var(--color-white)"/>
             </Button>
         </>
