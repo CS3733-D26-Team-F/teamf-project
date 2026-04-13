@@ -43,6 +43,10 @@ export function EmployeeListView() {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
 
+    // Employee Details modal
+    const [employeeOpen, setEmployeeOpen] = useState(false);
+    const [employeeTarget, setEmployeeTarget] = useState<Employee | null>(null);
+
     const authorUsername = localStorage.getItem('username') ?? '';
     const today = new Date().toISOString().split('T')[0];
 
@@ -114,6 +118,11 @@ export function EmployeeListView() {
         loadEmployees();
     }
 
+    function openEmployee(emp: Employee) {
+        setEmployeeTarget(emp);
+        setEmployeeOpen(true);
+    }
+
     const filtered = employees.filter(e =>
         e.username?.toLowerCase().includes(search.toLowerCase()) ||
         e.first_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -171,6 +180,9 @@ export function EmployeeListView() {
                                 >
                                     <Group>
                                         <Badge
+                                            component="button"
+                                            onClick={() => openEmployee(emp)}
+                                            className="invert-hover"
                                             color={personaColors[emp.persona] ?? 'gray'}
                                             variant="light"
                                             size="lg"
@@ -333,6 +345,41 @@ export function EmployeeListView() {
                     <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">Cancel</Button>
                     <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
                 </Group>
+            </Modal>
+
+            {/* Employee Details */}
+            <Modal
+                opened={employeeOpen}
+                onClose={() => setEmployeeOpen(false)}
+                title={
+                    <Group>
+                        <IconUser size={20} />
+                        <Text fw={600}>Employee Account Details</Text>
+                    </Group>
+                }
+            >
+                {employeeTarget && (
+                    <>
+                        <Badge
+                            color={personaColors[employeeTarget.persona] ?? 'gray'}
+                            variant="light"
+                            size="xl"
+                        >
+                            {employeeTarget.first_name?.[0] ?? ''}{employeeTarget.last_name?.[0] ?? ''}
+                        </Badge>
+                        <Stack>
+                            <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
+                                <Text fw={600} mb={4}>{employeeTarget.first_name} {employeeTarget.last_name}</Text>
+                                <Text>Username: {employeeTarget.username}</Text>
+                                <Text>Role: {employeeTarget.persona}</Text>
+                                <Text>Date Joined: {Date(employeeTarget.created_at)}</Text>
+                            </Box>
+                            <Group justify="flex-end" mt="md">
+                                <Button variant="outline" onClick={() => setEmployeeOpen(false)} className="invert-hover-outline">Close</Button>
+                            </Group>
+                        </Stack>
+                    </>
+                )}
             </Modal>
         </Box>
     );
