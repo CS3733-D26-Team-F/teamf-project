@@ -3,9 +3,10 @@ import {Modal, Button, TextInput, PasswordInput} from '@mantine/core';
 import * as React from "react";
 import { useAuth0 } from '@auth0/auth0-react';
 
+
 function LoginModal() {
     const [opened, { open, close }] = useDisclosure(false);
-    const { isLoading, error, loginWithPopup } = useAuth0();
+    const { isLoading, error, loginWithPopup, getAccessTokenSilently } = useAuth0();
     const [username, setUsername] = React.useState('');
     const [password, setPassword] = React.useState('');
 
@@ -15,10 +16,24 @@ function LoginModal() {
             await loginWithPopup({
                 authorizationParams: {
                     login_hint: username,
+                    password_hint: password,
                     audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                    scope: "read:profile read:data read:api"
+                    scope: "openid profile email read:profile read:data read:api"
                 }
             });
+            const token = await getAccessTokenSilently({
+                audience: import.meta.env.VITE_AUTH0_AUDIENCE
+            });
+
+            await fetch(`http://localhost:3000/api/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+
             close();
         }
         catch (err) {

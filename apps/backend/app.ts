@@ -72,7 +72,8 @@ app.post('/api/auth/login', checkJWT, async (req, res) => {
         const employee = await prisma.employee.upsert({
             where:  { auth0Id },
             update: {
-               username
+               username,
+                isLoggedIn: true
             },
             create: {
                 auth0Id,
@@ -110,7 +111,7 @@ app.get('/employees', async (req, res) => {
     res.json(employees);
 });
 
-app.get('/contentforms', async (req, res) => {
+app.get('/contentforms', checkJWT, async (req, res) => {
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false}
     });
