@@ -1,7 +1,7 @@
 import '@mantine/core/styles.css';
 import { useEffect, useState } from "react";
 import {
-    TextInput, PasswordInput, Select, Button, Modal,
+    TextInput, PasswordInput, FileInput, Select, Button, Modal,
     Group, Text, Badge, Stack, Box
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
@@ -15,6 +15,7 @@ type Employee = {
     persona: string;
     password: string;
     created_at: string;
+    pfp_URL?: string | null;
 }
 
 const personas = ["Admin", "Underwriter", "Business Analyst"];
@@ -32,12 +33,12 @@ export function EmployeeListView() {
     // Add modal
     const [addOpen, setAddOpen] = useState(false);
     const [addPersona, setAddPersona] = useState('');
-    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: ''});
+    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', profile_picture: null as File | null });
 
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
-    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '' });
+    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', profile_picture: null as File | null });
 
     // Delete modal
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -58,7 +59,7 @@ export function EmployeeListView() {
 
     function openAdd(persona: string) {
         setAddPersona(persona);
-        setAddData({ username: '', password: '', first_name: '', last_name: '' });
+        setAddData({ username: '', password: '', first_name: '', last_name: '', profile_picture: null });
         setAddOpen(true);
     }
 
@@ -72,6 +73,7 @@ export function EmployeeListView() {
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
+                profile_picture: addData.profile_picture
             })
         });
         setAddOpen(false);
@@ -80,7 +82,7 @@ export function EmployeeListView() {
 
     function openEdit(emp: Employee) {
         setEditTarget(emp);
-        setEditData({ newUsername: emp.username, password: '', persona: emp.persona });
+        setEditData({ newUsername: emp.username, password: '', persona: emp.persona, profile_picture: null });
         setEditOpen(true);
     }
 
@@ -94,6 +96,7 @@ export function EmployeeListView() {
                 newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
                 password: editData.password || undefined,
                 persona: editData.persona !== editTarget.persona ? editData.persona : undefined,
+                profile_picture: editData.profile_picture || undefined
             })
         });
         setEditOpen(false);
@@ -237,6 +240,17 @@ export function EmployeeListView() {
                         value={addData.username}
                         onChange={e => setAddData({...addData, username: e.target.value})}
                     />
+                    
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Profile Picture (Optional)</Text>
+                        <FileInput
+                            placeholder="Upload a profile picture"
+                            accept="image/*"
+                            value={addData.profile_picture}
+                            onChange={file => setAddData({...addData, profile_picture: file})}
+                        />
+                    </Box>
+
                     <PasswordInput
                         label="Password"
                         value={addData.password}
@@ -288,10 +302,25 @@ export function EmployeeListView() {
                             value={editData.newUsername}
                             onChange={e => setEditData({...editData, newUsername: e.target.value})}
                         />
+                        <Box>
+                            <Text size="sm" fw={500} mb={4}>New Profile Picture (Optional)</Text>
+                            <FileInput
+                                placeholder="Upload a new profile picture"
+                                accept="image/*"
+                                onChange={file => setEditData({...editData, profile_picture: file})}
+                                />
+                        </Box>
                         <PasswordInput
                             label="New Password (Optional)"
                             value={editData.password}
                             onChange={e => setEditData({...editData, password: e.target.value})}
+                        />
+                        <FileInput
+                            label="New Profile Picture (Optional)"
+                            placeholder="Upload a new profile picture"
+                            accept="image/*"
+                            onChange={e => console.log(e)}
+                            //to implement: handle profile picture upload and update
                         />
                         <Select
                             label="New Persona (Optional)"

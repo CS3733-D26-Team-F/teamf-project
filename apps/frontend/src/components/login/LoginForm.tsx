@@ -86,13 +86,11 @@ async function setSessionTo(persona: string) {
         displayAdmin();
         console.log('Admin access');
     }
-
-    if (persona === 'Underwriter'){
+    else if (persona === 'Underwriter'){
         displayUnderwriter();
         console.log('Underwriter access');
     }
-
-    if (persona === 'Business Analyst'){
+    else if (persona === 'Business Analyst'){
         displayBusinessAnalyst();
         console.log('Business Analyst access');
     }
@@ -101,30 +99,31 @@ async function setSessionTo(persona: string) {
     }
 }
 
+function setElementDisplay(id: string, value: string) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.style.display = value;
+    }
+}
+
 async function displayAdmin(){
-    console.log(
-        document.getElementById('manage-content'),
-        document.getElementById('manage-employees'),
-        document.getElementById('business-analyst'),
-        document.getElementById('core-commercial-underwriter')
-    );
-    document.getElementById('manage-content')!.style.display = ''
-    document.getElementById('manage-employees')!.style.display = '';
-    document.getElementById('business-analyst')!.style.display = 'block';
-    document.getElementById('core-commercial-underwriter')!.style.display = 'block';
+    setElementDisplay('manage-content', '');
+    setElementDisplay('manage-employees', '');
+    setElementDisplay('business-analyst', 'block');
+    setElementDisplay('core-commercial-underwriter', 'block');
 }
 
 async function displayUnderwriter(){
-    document.getElementById('manage-content')!.style.display = '';
-    document.getElementById('manage-employees')!.style.display = 'block';
-    document.getElementById('business-analyst')!.style.display = 'block';
-    document.getElementById('core-commercial-underwriter')!.style.display = '';
+    setElementDisplay('manage-content', '');
+    setElementDisplay('manage-employees', 'block');
+    setElementDisplay('business-analyst', 'block');
+    setElementDisplay('core-commercial-underwriter', '');
 }
 
 async function displayBusinessAnalyst(){
-    document.getElementById('manage-content')!.style.display = 'block';
-    document.getElementById('manage-employees')!.style.display = 'block';
-    document.getElementById('business-analyst')!.style.display = '';
-    document.getElementById('core-commercial-underwriter')!.style.display = 'block';
+    setElementDisplay('manage-content', 'block');
+    setElementDisplay('manage-employees', 'block');
+    setElementDisplay('business-analyst', '');
+    setElementDisplay('core-commercial-underwriter', 'block');
 }
 
