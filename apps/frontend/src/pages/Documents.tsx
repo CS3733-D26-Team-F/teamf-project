@@ -18,6 +18,7 @@ import "@iamjariwala/react-doc-viewer/dist/index.css";
 import { DOMAIN } from '../const.ts';
 import {ViewToggle } from "../components/content/ViewToggle.tsx"
 import { PageTitle } from "../components/Title.tsx"
+import {PersonaBadges} from "../components/PersonaBadge.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -256,9 +257,7 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
             <Table.Td>
-                {doc.persona.map(p => (
-                    <Badge key={p} variant="light" color={p === 'Underwriter' ? 'var(--color-sapphire)' : 'var(--color-fresh-sky)'} size="xs">{p}</Badge>
-                ))}
+                <PersonaBadges personas={doc.persona} />
             </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
@@ -326,9 +325,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 </Text>
                 <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
                 <Group gap={4} mb={4}>
-                    {doc.persona.map(p => (
-                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'var(--color-sapphire)' : 'var(--color-fresh-sky)'} size="xs">{p}</Badge>
-                    ))}
+                    <PersonaBadges personas={doc.persona} />
                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                 </Group>
@@ -780,11 +777,7 @@ export function Documents() {
                                         {doc.name}
                                     </Text>
                                     <Text size="xs" c="dimmed">{getFileType(doc.url)}</Text>
-                                    <Group gap={4} mt={4}>
-                                        {doc.persona.slice(0, 1).map(p => (
-                                            <Badge key={p} size="xs" variant="light" color={p === 'Underwriter' ? 'var(--color-sapphire)' : 'var(--color-fresh-sky)'}>{p}</Badge>
-                                        ))}
-                                    </Group>
+                                    <PersonaBadges personas={doc.persona} />
                                 </div>
                             ))}
                         </div>
@@ -855,17 +848,17 @@ export function Documents() {
                     <Box style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: 'var(--color-yale-blue)', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text c="white">{selectedCount} selected</Text>
                         <Group gap="sm">
-                            <Button variant="white" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
-                            <Button variant="white" onClick={async () => {
+                            <Button className="invert-hover" onClick={() => { setSelectedIds([]); setSelectedFavIds([]); }}>Deselect All</Button>
+                            <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
                                     const doc = documents.find(d => d.id === id);
                                     if (doc) { await downloadFile(doc.url, doc.name); await new Promise(resolve => setTimeout(resolve, 500)); }
                                 }
                             }}>Download Selected</Button>
-                            {selectedHasNonFavorites && <Button variant="white" onClick={favoriteSelected}>★ Favorite All</Button>}
-                            {selectedHasFavorites && <Button variant="white" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
-                            <Button color="red" onClick={async () => {
+                            {selectedHasNonFavorites && <Button className="invert-hover" onClick={favoriteSelected}>★ Favorite All</Button>}
+                            {selectedHasFavorites && <Button className="invert-hover" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
+                            <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
                                 await Promise.all(ids.map(id => fetch(`${DOMAIN}/contentforms/${id}/softdelete`, { method: 'PATCH' })));
@@ -955,9 +948,7 @@ export function Documents() {
                                                     Owner: {doc.owner} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
                                                 </Text>
                                                 <Group gap={4} mt={4}>
-                                                    {doc.persona.map(p => (
-                                                        <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="xs">{p}</Badge>
-                                                    ))}
+                                                    <PersonaBadges personas={doc.persona} />
                                                     <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
                                                     <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
                                                 </Group>

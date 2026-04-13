@@ -3,11 +3,12 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { AccessDenied } from "../components/AccessDenied.tsx";
 import {
-    Box, Text, Table, Badge, Group, Tabs,
+    Box, Text, Table, Group, Tabs,
     ActionIcon, Tooltip, Stack
 } from '@mantine/core';
 import { IconArchive, IconClock, IconRestore, IconTrash } from '@tabler/icons-react';
 import { DOMAIN } from '../const.ts';
+import {PersonaBadges} from "../components/PersonaBadge.tsx";
 
 type ContentForm = {
     id: number;
@@ -51,13 +52,7 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
                     <Table.Tr key={doc.id}>
                         <Table.Td fw={500}>{doc.name}</Table.Td>
                         <Table.Td>
-                            <Group gap={4}>
-                                {doc.persona.map(p => (
-                                    <Badge key={p} variant="light" color={p === 'Underwriter' ? 'teal' : 'blue'} size="sm">
-                                        {p}
-                                    </Badge>
-                                ))}
-                            </Group>
+                            <PersonaBadges personas={doc.persona} />
                         </Table.Td>
                         <Table.Td>{doc.owner}</Table.Td>
                         <Table.Td>{doc.content_type}</Table.Td>

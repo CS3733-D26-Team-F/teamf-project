@@ -406,13 +406,14 @@ input[type="file"] {
 .invert-hover {
     background-color: var(--yale-blue);
     color: var(--color-white);
-    border: 1px solid var(--yale-blue);
+    border: 1px solid var(--white);
     transition: 0.2s ease;
 }
 
 .invert-hover:hover {
     background-color: var(--color-white);
     color: var(--yale-blue);
+    border: var(--white);
 }
 
 .invert-hover-outline {
