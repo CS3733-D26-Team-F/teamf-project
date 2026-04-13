@@ -92,13 +92,13 @@ export function Archive() {
     const [archived, setArchived] = useState<ContentForm[]>([]);
 
     function loadExpired() {
-        fetch('${DOMAIN}/contentforms/expired')
+        fetch(`${DOMAIN}/contentforms/expired`)
             .then(res => res.json())
             .then(data => setExpired(data));
     }
 
     function loadArchived() {
-        fetch('${DOMAIN}/contentforms/archived')
+        fetch(`${DOMAIN}/contentforms/archived`)
             .then(res => res.json())
             .then(data => setArchived(data));
     }
