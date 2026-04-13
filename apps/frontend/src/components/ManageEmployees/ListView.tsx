@@ -33,13 +33,13 @@ export function EmployeeListView() {
     // Add modal
     const [addOpen, setAddOpen] = useState(false);
     const [addPersona, setAddPersona] = useState('');
-    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', profile_picture: null as File | null });
+    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null as File | null });
 
 
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
-    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', profile_picture: null as File | null });
+    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', pfp_URL: null as File | null });
 
     // Delete modal
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -60,12 +60,12 @@ export function EmployeeListView() {
 
     function openAdd(persona: string) {
         setAddPersona(persona);
-        setAddData({ username: '', password: '', first_name: '', last_name: '', profile_picture: null });
+        setAddData({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null });
         setAddOpen(true);
     }
 
     async function handleAdd() {
-        await fetch(`${DOMAIN}/addEmployee`, {
+        const addResponse = await fetch(`${DOMAIN}/addEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -74,32 +74,71 @@ export function EmployeeListView() {
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
-                profile_picture: addData.profile_picture
             })
         });
+
+        if (!addResponse.ok) {
+            return;
+        }
+
+        const createdEmployee = await addResponse.json() as { data?: { empid?: number } };
+        const createdEmpId = createdEmployee.data?.empid;
+
+        if (addData.pfp_URL && createdEmpId) {
+            const formData = new FormData();
+            formData.append('file', addData.pfp_URL);
+
+            const uploadResponse = await fetch(`${DOMAIN}/employees/${createdEmpId}/profile-picture`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                return;
+            }
+        }
+
         setAddOpen(false);
         loadEmployees();
     }
 
     function openEdit(emp: Employee) {
         setEditTarget(emp);
-        setEditData({ newUsername: emp.username, password: '', persona: emp.persona, profile_picture: null });
+        setEditData({ newUsername: emp.username, password: '', persona: emp.persona, pfp_URL: null });
         setEditOpen(true);
     }
 
     async function handleEdit() {
         if (!editTarget) return;
-        await fetch(`${DOMAIN}/updateEmployee`, {
+        const updateResponse = await fetch(`${DOMAIN}/updateEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: editTarget.username,
                 newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
                 password: editData.password || undefined,
-                persona: editData.persona !== editTarget.persona ? editData.persona : undefined,
-                profile_picture: editData.profile_picture || undefined
+                persona: editData.persona !== editTarget.persona ? editData.persona : undefined
             })
         });
+
+        if (!updateResponse.ok) {
+            return;
+        }
+
+        if (editData.pfp_URL) {
+            const formData = new FormData();
+            formData.append('file', editData.pfp_URL);
+
+            const uploadResponse = await fetch(`${DOMAIN}/employees/${editTarget.empid}/profile-picture`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                return;
+            }
+        }
+
         setEditOpen(false);
         loadEmployees();
     }
@@ -247,8 +286,8 @@ export function EmployeeListView() {
                         <FileInput
                             placeholder="Upload a profile picture"
                             accept="image/*"
-                            value={addData.profile_picture}
-                            onChange={file => setAddData({...addData, profile_picture: file})}
+                            value={addData.pfp_URL}
+                            onChange={file => setAddData({...addData, pfp_URL: file})}
                         />
                     </Box>
 
@@ -308,21 +347,14 @@ export function EmployeeListView() {
                             <FileInput
                                 placeholder="Upload a new profile picture"
                                 accept="image/*"
-                                onChange={() => handleProfilePictureUpload()}/>
+                                onChange={file => setEditData({...editData, pfp_URL: file})}
+                            />
 
                         </Box>
                         <PasswordInput
                             label="New Password (Optional)"
                             value={editData.password}
                             onChange={e => setEditData({...editData, password: e.target.value})}
-                        />
-                        <FileInput
-                            label="New Profile Picture (Optional)"
-                            placeholder="Upload a new profile picture"
-                            accept="image/*"
-                            onChange={() => handleProfilePictureUpload()}
-
-                            //to implement: handle profile picture upload and update
                         />
                         <Select
                             label="New Persona (Optional)"
@@ -369,10 +401,5 @@ export function EmployeeListView() {
     );
 }
 
-export function handleProfilePictureUpload() {
-    // upload photo into bucket
-
-    
-}
 
 
