@@ -12,7 +12,7 @@ export function ViewToggle({ viewMode, setViewMode }: ViewToggleProps) {
                           data={[
                               {
                                   label: (
-                                      <Group gap={4}>
+                                      <Group gap={4} wrap="nowrap" justify="center">
                                           <IconLayoutGrid size={16} />
                                           <span>Grid</span>
                                       </Group>
@@ -21,7 +21,7 @@ export function ViewToggle({ viewMode, setViewMode }: ViewToggleProps) {
                               },
                               {
                                   label: (
-                                      <Group gap={4}>
+                                      <Group gap={4} wrap="nowrap" justify="center">
                                           <IconList size={16} />
                                           <span>List</span>
                                       </Group>

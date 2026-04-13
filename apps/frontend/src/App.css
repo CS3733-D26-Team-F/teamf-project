@@ -427,6 +427,19 @@ input[type="file"] {
     color: var(--white);
 }
 
+.invert-hover-sapphire {
+    background-color: var(--sapphire);
+    border: 1px solid var(--white);
+    color: var(--white);
+    transition: 0.2s ease;
+}
+
+.invert-hover-sapphire:hover {
+    background-color: var(--white);
+    color: var(--sapphire);
+    border: 1px solid var(--sapphire);
+}
+
 .invert-hover-outline-sapphire {
     background-color: var(--white);
     border: 1px solid var(--sapphire);
