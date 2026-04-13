@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Header } from "../Header";
 export function UserProfile() {
     return(
@@ -11,8 +9,5 @@ export function UserProfile() {
                 <p>Feel free to explore the various sections of your profile to customize your experience and stay updated with your interactions on our platform.</p>
             </div>
         </>
-    )
-
-
+    );
 }
-    

@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 export function ButtonMenu() {
     
     return (
@@ -6,11 +5,4 @@ export function ButtonMenu() {
             
         </div>
     );
-}
-
-function handleButtonClick() {
-    let dropdown = document.querySelector('.dropdown-content') as HTMLElement;
-    if (dropdown) {
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    }
 }
