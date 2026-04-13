@@ -8,9 +8,8 @@ import App from './App.tsx'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
       <MantineProvider>
-       
-        <App />
-        <Footer />
+          <App />
+          <Footer />
       </MantineProvider>
   </StrictMode>
 );

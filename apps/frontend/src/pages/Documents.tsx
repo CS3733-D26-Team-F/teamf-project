@@ -483,7 +483,7 @@ export function Documents() {
                     bVal = getFileType(b.url);
                 }
 
-                const cmp = aVal.localeCompare(bVal);
+                const cmp = aVal.toString().localeCompare(bVal.toString() ?? "");
                 return sortDir === 'asc' ? cmp : -cmp;
             });
         } else {
@@ -491,8 +491,9 @@ export function Documents() {
                 const aMatch = a.persona === persona ? 0 : 1;
                 const bMatch = b.persona === persona ? 0 : 1;
                 if (aMatch !== bMatch) return aMatch - bMatch;
-                if (a.persona !== b.persona) return a.persona.localeCompare(b.persona);
-                return a.name.localeCompare(b.name);
+                //a.name is a string but a.persona is an object, to be safe when using localeCompare just turn it into a string
+                if (a.persona !== b.persona) return a.persona.toString().localeCompare(b.persona.toString() ?? "");
+                return a.name.toString().localeCompare(b.name.toString() ?? "");
             });
         }
         setFiltered(result);
@@ -510,7 +511,7 @@ export function Documents() {
                 bVal = getFileType(b.url);
             }
 
-            const cmp = aVal.localeCompare(bVal);
+            const cmp = aVal.toString().localeCompare(bVal.toString() ?? "");
             return favSortDir === 'asc' ? cmp : -cmp;
         });
     })();

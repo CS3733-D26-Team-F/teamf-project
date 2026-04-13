@@ -392,13 +392,6 @@ input[type="file"] {
     font-family: Roboto, sans-serif;
 }
 
-/* mantine color scheme tester */
-:root[data-mantine-color-scheme="light"] {
-    --mantine-color-primary: var(--color-yale-blue);
-    --mantine-color-primary-hover: var(--color-fresh-sky);
-}
-
-
 /*Remove iamjariwala's in-built header*/
 #header-bar, .rdv-header-bar {
     display: none !important;
