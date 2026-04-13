@@ -1,5 +1,5 @@
 import '@mantine/core/styles.css';
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import * as pdfjs from 'pdfjs-dist';
 import { Header } from "../components/Header";
 import { AccessDenied } from "../components/AccessDenied.tsx";
@@ -338,7 +338,6 @@ export function Documents() {
     const today = new Date().toISOString().split('T')[0];
 
     const [documents, setDocuments] = useState<ContentForm[]>([]);
-    const [filtered, setFiltered] = useState<ContentForm[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -401,7 +400,7 @@ export function Documents() {
         setStagedFiles(prev => [...prev, ...newStaged]);
     }
 
-    function updateStagedFile(id: string, field: keyof StagedFile, value: any) {
+    function updateStagedFile<K extends keyof StagedFile>(id: string, field: K, value: StagedFile[K]) {
         setStagedFiles(prev => prev.map(item =>
             item.id === id ? { ...item, [field]: value } : item
         ));
@@ -464,7 +463,6 @@ export function Documents() {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? [])];
                 setDocuments(flat);
-                setFiltered(flat);
             });
     }
 
@@ -490,7 +488,7 @@ export function Documents() {
             .then((data: Employee[]) => setEmployees(data));
     }, []);
 
-    useEffect(() => {
+    const filtered = useMemo(() => {
         let result = [...documents];
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
@@ -515,7 +513,8 @@ export function Documents() {
                 return a.name.localeCompare(b.name);
             });
         }
-        setFiltered(result);
+
+        return result; // We return the result instead of calling setFiltered
     }, [search, filterPersona, filterStatus, filterType, filterOwner, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
@@ -581,7 +580,7 @@ export function Documents() {
         fetch(`http://localhost:3000/contentforms/${doc.id}/checkout`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
             .then(res => {
-                if (res.status === 423) { res.json().then((data: any) => alert(data.error)); return; }
+                if (res.status === 423) { res.json().then((data: {error: string}) => alert(data.error)); return; }
                 setEditId(doc.id);
                 setEditData({
                     name: doc.name, owner: doc.owner,
