@@ -655,8 +655,8 @@ app.post('/contentforms/:id/checkout', async (req, res) => {
             select: { checkout_username: true,  checkout_date: true }
         });
 
-        if (current) {
-            const {username: takenBy, checkout_date} = current;
+        if (current && current.checkout_username) {
+            const {checkout_username: takenBy, checkout_date} = current;
             if (takenBy !== username) {
                 return res.status(423).json({
                     error: `Document is checked out by ${takenBy} since ${checkout_date}`
@@ -694,7 +694,7 @@ app.post('/contentforms/:id/checkin', async (req, res) => {
             return res.status(400).send('Document isnt checked out')
         }
 
-        const {username: takenBy, checkout_date} = current;
+        const {checkout_username: takenBy, checkout_date} = current;
 
     if (takenBy !== username) {
         return res.status(401).json({error: "You can only check in documents that you have checked out"});
@@ -707,7 +707,7 @@ app.post('/contentforms/:id/checkin', async (req, res) => {
         });
 
         return res.status(200).json({message: 'Document checked in'});
-    } catch {
+    } catch (error) {
         res.status(500).json({error: 'Something went wrong checking in doc'});
     }
     } catch (error) {
@@ -726,7 +726,7 @@ app.get('/contentforms/:id/checkout_status', async (req, res) => {
 
         if (!current) return res.status(404).json({ error: 'Document not found' });
 
-        const {username: takenBy, checkout_date} = current;
+        const {checkout_username: takenBy, checkout_date} = current;
 
         if (!takenBy) {
             return res.status(200).json({isCheckedOut: false});

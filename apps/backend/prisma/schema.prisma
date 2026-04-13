@@ -13,7 +13,7 @@ model contentform {
   name              String    @unique @db.VarChar(100)
   url               String    @unique @db.VarChar(2083)
   owner             String?   @db.VarChar(50)
-  persona           String    @db.VarChar(50)
+  persona           String[]  @db.VarChar
   date_modified     DateTime  @db.Date
   expiration_date   DateTime  @db.Date
   content_type      String    @db.VarChar(50)
