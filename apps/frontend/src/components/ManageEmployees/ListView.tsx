@@ -71,6 +71,7 @@ export function EmployeeListView() {
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
+                profile_picture: null // Placeholder for profile picture
             })
         });
         setAddOpen(false);
@@ -304,6 +305,7 @@ export function EmployeeListView() {
                             placeholder="Upload a new profile picture"
                             accept="image/*"
                             onChange={e => console.log(e)}
+
                             //to implement: handle profile picture upload and update
                         />
                         <Select
@@ -353,3 +355,4 @@ export function EmployeeListView() {
         </Box>
     );
 }
+
