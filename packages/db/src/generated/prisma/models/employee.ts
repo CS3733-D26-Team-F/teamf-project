@@ -44,10 +44,6 @@ export type EmployeeMinAggregateOutputType = {
   persona: string | null
   theme: number | null
   isLoggedIn: boolean | null
-  auth0Id: string | null
-  first_name: string | null
-  last_name: string | null
-  created_at: Date | null
 }
 
 export type EmployeeMaxAggregateOutputType = {
@@ -57,10 +53,6 @@ export type EmployeeMaxAggregateOutputType = {
   persona: string | null
   theme: number | null
   isLoggedIn: boolean | null
-  auth0Id: string | null
-  first_name: string | null
-  last_name: string | null
-  created_at: Date | null
 }
 
 export type EmployeeCountAggregateOutputType = {
@@ -70,10 +62,6 @@ export type EmployeeCountAggregateOutputType = {
   persona: number
   theme: number
   isLoggedIn: number
-  auth0Id: number
-  first_name: number
-  last_name: number
-  created_at: number
   _all: number
 }
 
@@ -95,10 +83,6 @@ export type EmployeeMinAggregateInputType = {
   persona?: true
   theme?: true
   isLoggedIn?: true
-  auth0Id?: true
-  first_name?: true
-  last_name?: true
-  created_at?: true
 }
 
 export type EmployeeMaxAggregateInputType = {
@@ -108,10 +92,6 @@ export type EmployeeMaxAggregateInputType = {
   persona?: true
   theme?: true
   isLoggedIn?: true
-  auth0Id?: true
-  first_name?: true
-  last_name?: true
-  created_at?: true
 }
 
 export type EmployeeCountAggregateInputType = {
@@ -121,10 +101,6 @@ export type EmployeeCountAggregateInputType = {
   persona?: true
   theme?: true
   isLoggedIn?: true
-  auth0Id?: true
-  first_name?: true
-  last_name?: true
-  created_at?: true
   _all?: true
 }
 
@@ -217,14 +193,10 @@ export type employeeGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
 export type EmployeeGroupByOutputType = {
   empid: number
   username: string
-  password: string | null
+  password: string
   persona: string
   theme: number | null
   isLoggedIn: boolean | null
-  auth0Id: string | null
-  first_name: string | null
-  last_name: string | null
-  created_at: Date | null
   _count: EmployeeCountAggregateOutputType | null
   _avg: EmployeeAvgAggregateOutputType | null
   _sum: EmployeeSumAggregateOutputType | null
@@ -253,14 +225,10 @@ export type employeeWhereInput = {
   NOT?: Prisma.employeeWhereInput | Prisma.employeeWhereInput[]
   empid?: Prisma.IntFilter<"employee"> | number
   username?: Prisma.StringFilter<"employee"> | string
-  password?: Prisma.StringNullableFilter<"employee"> | string | null
+  password?: Prisma.StringFilter<"employee"> | string
   persona?: Prisma.StringFilter<"employee"> | string
   theme?: Prisma.IntNullableFilter<"employee"> | number | null
   isLoggedIn?: Prisma.BoolNullableFilter<"employee"> | boolean | null
-  auth0Id?: Prisma.StringNullableFilter<"employee"> | string | null
-  first_name?: Prisma.StringNullableFilter<"employee"> | string | null
-  last_name?: Prisma.StringNullableFilter<"employee"> | string | null
-  created_at?: Prisma.DateTimeNullableFilter<"employee"> | Date | string | null
   admin?: Prisma.XOR<Prisma.AdminNullableScalarRelationFilter, Prisma.adminWhereInput> | null
   contentform?: Prisma.ContentformListRelationFilter
 }
@@ -268,14 +236,10 @@ export type employeeWhereInput = {
 export type employeeOrderByWithRelationInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
-  password?: Prisma.SortOrderInput | Prisma.SortOrder
+  password?: Prisma.SortOrder
   persona?: Prisma.SortOrder
   theme?: Prisma.SortOrderInput | Prisma.SortOrder
   isLoggedIn?: Prisma.SortOrderInput | Prisma.SortOrder
-  auth0Id?: Prisma.SortOrderInput | Prisma.SortOrder
-  first_name?: Prisma.SortOrderInput | Prisma.SortOrder
-  last_name?: Prisma.SortOrderInput | Prisma.SortOrder
-  created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   admin?: Prisma.adminOrderByWithRelationInput
   contentform?: Prisma.contentformOrderByRelationAggregateInput
 }
@@ -283,32 +247,24 @@ export type employeeOrderByWithRelationInput = {
 export type employeeWhereUniqueInput = Prisma.AtLeast<{
   empid?: number
   username?: string
-  auth0Id?: string
   AND?: Prisma.employeeWhereInput | Prisma.employeeWhereInput[]
   OR?: Prisma.employeeWhereInput[]
   NOT?: Prisma.employeeWhereInput | Prisma.employeeWhereInput[]
-  password?: Prisma.StringNullableFilter<"employee"> | string | null
+  password?: Prisma.StringFilter<"employee"> | string
   persona?: Prisma.StringFilter<"employee"> | string
   theme?: Prisma.IntNullableFilter<"employee"> | number | null
   isLoggedIn?: Prisma.BoolNullableFilter<"employee"> | boolean | null
-  first_name?: Prisma.StringNullableFilter<"employee"> | string | null
-  last_name?: Prisma.StringNullableFilter<"employee"> | string | null
-  created_at?: Prisma.DateTimeNullableFilter<"employee"> | Date | string | null
   admin?: Prisma.XOR<Prisma.AdminNullableScalarRelationFilter, Prisma.adminWhereInput> | null
   contentform?: Prisma.ContentformListRelationFilter
-}, "empid" | "username" | "auth0Id">
+}, "empid" | "username">
 
 export type employeeOrderByWithAggregationInput = {
   empid?: Prisma.SortOrder
   username?: Prisma.SortOrder
-  password?: Prisma.SortOrderInput | Prisma.SortOrder
+  password?: Prisma.SortOrder
   persona?: Prisma.SortOrder
   theme?: Prisma.SortOrderInput | Prisma.SortOrder
   isLoggedIn?: Prisma.SortOrderInput | Prisma.SortOrder
-  auth0Id?: Prisma.SortOrderInput | Prisma.SortOrder
-  first_name?: Prisma.SortOrderInput | Prisma.SortOrder
-  last_name?: Prisma.SortOrderInput | Prisma.SortOrder
-  created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.employeeCountOrderByAggregateInput
   _avg?: Prisma.employeeAvgOrderByAggregateInput
   _max?: Prisma.employeeMaxOrderByAggregateInput
@@ -322,26 +278,18 @@ export type employeeScalarWhereWithAggregatesInput = {
   NOT?: Prisma.employeeScalarWhereWithAggregatesInput | Prisma.employeeScalarWhereWithAggregatesInput[]
   empid?: Prisma.IntWithAggregatesFilter<"employee"> | number
   username?: Prisma.StringWithAggregatesFilter<"employee"> | string
-  password?: Prisma.StringNullableWithAggregatesFilter<"employee"> | string | null
+  password?: Prisma.StringWithAggregatesFilter<"employee"> | string
   persona?: Prisma.StringWithAggregatesFilter<"employee"> | string
   theme?: Prisma.IntNullableWithAggregatesFilter<"employee"> | number | null
   isLoggedIn?: Prisma.BoolNullableWithAggregatesFilter<"employee"> | boolean | null
-  auth0Id?: Prisma.StringNullableWithAggregatesFilter<"employee"> | string | null
-  first_name?: Prisma.StringNullableWithAggregatesFilter<"employee"> | string | null
-  last_name?: Prisma.StringNullableWithAggregatesFilter<"employee"> | string | null
-  created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"employee"> | Date | string | null
 }
 
 export type employeeCreateInput = {
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
   admin?: Prisma.adminCreateNestedOneWithoutEmployeeInput
   contentform?: Prisma.contentformCreateNestedManyWithoutEmployeeInput
 }
@@ -349,28 +297,20 @@ export type employeeCreateInput = {
 export type employeeUncheckedCreateInput = {
   empid?: number
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
   admin?: Prisma.adminUncheckedCreateNestedOneWithoutEmployeeInput
   contentform?: Prisma.contentformUncheckedCreateNestedManyWithoutEmployeeInput
 }
 
 export type employeeUpdateInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   admin?: Prisma.adminUpdateOneWithoutEmployeeNestedInput
   contentform?: Prisma.contentformUpdateManyWithoutEmployeeNestedInput
 }
@@ -378,14 +318,10 @@ export type employeeUpdateInput = {
 export type employeeUncheckedUpdateInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   admin?: Prisma.adminUncheckedUpdateOneWithoutEmployeeNestedInput
   contentform?: Prisma.contentformUncheckedUpdateManyWithoutEmployeeNestedInput
 }
@@ -393,39 +329,27 @@ export type employeeUncheckedUpdateInput = {
 export type employeeCreateManyInput = {
   empid?: number
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
 }
 
 export type employeeUpdateManyMutationInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type employeeUncheckedUpdateManyInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EmployeeNullableScalarRelationFilter = {
@@ -440,10 +364,6 @@ export type employeeCountOrderByAggregateInput = {
   persona?: Prisma.SortOrder
   theme?: Prisma.SortOrder
   isLoggedIn?: Prisma.SortOrder
-  auth0Id?: Prisma.SortOrder
-  first_name?: Prisma.SortOrder
-  last_name?: Prisma.SortOrder
-  created_at?: Prisma.SortOrder
 }
 
 export type employeeAvgOrderByAggregateInput = {
@@ -458,10 +378,6 @@ export type employeeMaxOrderByAggregateInput = {
   persona?: Prisma.SortOrder
   theme?: Prisma.SortOrder
   isLoggedIn?: Prisma.SortOrder
-  auth0Id?: Prisma.SortOrder
-  first_name?: Prisma.SortOrder
-  last_name?: Prisma.SortOrder
-  created_at?: Prisma.SortOrder
 }
 
 export type employeeMinOrderByAggregateInput = {
@@ -471,10 +387,6 @@ export type employeeMinOrderByAggregateInput = {
   persona?: Prisma.SortOrder
   theme?: Prisma.SortOrder
   isLoggedIn?: Prisma.SortOrder
-  auth0Id?: Prisma.SortOrder
-  first_name?: Prisma.SortOrder
-  last_name?: Prisma.SortOrder
-  created_at?: Prisma.SortOrder
 }
 
 export type employeeSumOrderByAggregateInput = {
@@ -523,28 +435,20 @@ export type employeeUpdateOneRequiredWithoutAdminNestedInput = {
 
 export type employeeCreateWithoutContentformInput = {
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
   admin?: Prisma.adminCreateNestedOneWithoutEmployeeInput
 }
 
 export type employeeUncheckedCreateWithoutContentformInput = {
   empid?: number
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
   admin?: Prisma.adminUncheckedCreateNestedOneWithoutEmployeeInput
 }
 
@@ -566,55 +470,39 @@ export type employeeUpdateToOneWithWhereWithoutContentformInput = {
 
 export type employeeUpdateWithoutContentformInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   admin?: Prisma.adminUpdateOneWithoutEmployeeNestedInput
 }
 
 export type employeeUncheckedUpdateWithoutContentformInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   admin?: Prisma.adminUncheckedUpdateOneWithoutEmployeeNestedInput
 }
 
 export type employeeCreateWithoutAdminInput = {
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
   contentform?: Prisma.contentformCreateNestedManyWithoutEmployeeInput
 }
 
 export type employeeUncheckedCreateWithoutAdminInput = {
   empid?: number
   username: string
-  password?: string | null
+  password: string
   persona: string
   theme?: number | null
   isLoggedIn?: boolean | null
-  auth0Id?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  created_at?: Date | string | null
   contentform?: Prisma.contentformUncheckedCreateNestedManyWithoutEmployeeInput
 }
 
@@ -636,28 +524,20 @@ export type employeeUpdateToOneWithWhereWithoutAdminInput = {
 
 export type employeeUpdateWithoutAdminInput = {
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contentform?: Prisma.contentformUpdateManyWithoutEmployeeNestedInput
 }
 
 export type employeeUncheckedUpdateWithoutAdminInput = {
   empid?: Prisma.IntFieldUpdateOperationsInput | number
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
   persona?: Prisma.StringFieldUpdateOperationsInput | string
   theme?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isLoggedIn?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  auth0Id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  first_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  last_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contentform?: Prisma.contentformUncheckedUpdateManyWithoutEmployeeNestedInput
 }
 
@@ -699,10 +579,6 @@ export type employeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   persona?: boolean
   theme?: boolean
   isLoggedIn?: boolean
-  auth0Id?: boolean
-  first_name?: boolean
-  last_name?: boolean
-  created_at?: boolean
   admin?: boolean | Prisma.employee$adminArgs<ExtArgs>
   contentform?: boolean | Prisma.employee$contentformArgs<ExtArgs>
   _count?: boolean | Prisma.EmployeeCountOutputTypeDefaultArgs<ExtArgs>
@@ -715,10 +591,6 @@ export type employeeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   persona?: boolean
   theme?: boolean
   isLoggedIn?: boolean
-  auth0Id?: boolean
-  first_name?: boolean
-  last_name?: boolean
-  created_at?: boolean
 }, ExtArgs["result"]["employee"]>
 
 export type employeeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -728,10 +600,6 @@ export type employeeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   persona?: boolean
   theme?: boolean
   isLoggedIn?: boolean
-  auth0Id?: boolean
-  first_name?: boolean
-  last_name?: boolean
-  created_at?: boolean
 }, ExtArgs["result"]["employee"]>
 
 export type employeeSelectScalar = {
@@ -741,13 +609,9 @@ export type employeeSelectScalar = {
   persona?: boolean
   theme?: boolean
   isLoggedIn?: boolean
-  auth0Id?: boolean
-  first_name?: boolean
-  last_name?: boolean
-  created_at?: boolean
 }
 
-export type employeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"empid" | "username" | "password" | "persona" | "theme" | "isLoggedIn" | "auth0Id" | "first_name" | "last_name" | "created_at", ExtArgs["result"]["employee"]>
+export type employeeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"empid" | "username" | "password" | "persona" | "theme" | "isLoggedIn", ExtArgs["result"]["employee"]>
 export type employeeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   admin?: boolean | Prisma.employee$adminArgs<ExtArgs>
   contentform?: boolean | Prisma.employee$contentformArgs<ExtArgs>
@@ -765,14 +629,10 @@ export type $employeePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     empid: number
     username: string
-    password: string | null
+    password: string
     persona: string
     theme: number | null
     isLoggedIn: boolean | null
-    auth0Id: string | null
-    first_name: string | null
-    last_name: string | null
-    created_at: Date | null
   }, ExtArgs["result"]["employee"]>
   composites: {}
 }
@@ -1204,10 +1064,6 @@ export interface employeeFieldRefs {
   readonly persona: Prisma.FieldRef<"employee", 'String'>
   readonly theme: Prisma.FieldRef<"employee", 'Int'>
   readonly isLoggedIn: Prisma.FieldRef<"employee", 'Boolean'>
-  readonly auth0Id: Prisma.FieldRef<"employee", 'String'>
-  readonly first_name: Prisma.FieldRef<"employee", 'String'>
-  readonly last_name: Prisma.FieldRef<"employee", 'String'>
-  readonly created_at: Prisma.FieldRef<"employee", 'DateTime'>
 }
     
 

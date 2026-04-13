@@ -83,11 +83,7 @@ export const ContentformScalarFieldEnum = {
   expiration_date: 'expiration_date',
   content_type: 'content_type',
   status: 'status',
-  empid: 'empid',
-  is_favorite: 'is_favorite',
-  deleted_at: 'deleted_at',
-  is_deleted: 'is_deleted',
-  checkout_username: 'checkout_username'
+  empid: 'empid'
 } as const
 
 export type ContentformScalarFieldEnum = (typeof ContentformScalarFieldEnum)[keyof typeof ContentformScalarFieldEnum]
@@ -99,11 +95,7 @@ export const EmployeeScalarFieldEnum = {
   password: 'password',
   persona: 'persona',
   theme: 'theme',
-  isLoggedIn: 'isLoggedIn',
-  auth0Id: 'auth0Id',
-  first_name: 'first_name',
-  last_name: 'last_name',
-  created_at: 'created_at'
+  isLoggedIn: 'isLoggedIn'
 } as const
 
 export type EmployeeScalarFieldEnum = (typeof EmployeeScalarFieldEnum)[keyof typeof EmployeeScalarFieldEnum]

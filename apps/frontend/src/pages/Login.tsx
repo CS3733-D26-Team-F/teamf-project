@@ -1,12 +1,11 @@
-
+import { LoginHeader } from "../components/login/LoginHeader";
 import { LoginForm } from "../components/login/LoginForm";
-import {Header} from "../components/Header.tsx";
 
 export function Login() {
 
     return (
-        <>        
-            <Header />
+        <>
+            <LoginHeader />
             <LoginForm />
         </>
     );
