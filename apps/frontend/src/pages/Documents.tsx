@@ -281,7 +281,7 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
                     )}
                     {canModify && (
                         <Tooltip label="Delete">
-                            <ActionIcon variant="subtle" color="red" onClick={() => onDelete(doc.id)}><IconTrash size={16} /></ActionIcon>
+                            <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onDelete(doc.id)}><IconTrash size={16} /></ActionIcon>
                         </Tooltip>
                     )}
                 </Group>
@@ -332,7 +332,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
                     {canModify && <ActionIcon variant="subtle" size="sm" onClick={() => onEdit(doc)}><IconEdit size={14} /></ActionIcon>}
-                    {canModify && <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
+                    {canModify && <ActionIcon variant="subtle" color="var(--color-neutral-red)" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
                 </Group>
             </div>
         </div>
@@ -916,7 +916,7 @@ export function Documents() {
                             {trashSelected.length > 0 && (
                                 <Group gap="xs">
                                     <Text size="sm" c="dimmed">{trashSelected.length} selected</Text>
-                                    <Button size="xs" variant="outline" color="green" onClick={async () => {
+                                    <Button size="xs" variant="outline" color="var(--color-yale-blue)" onClick={async () => {
                                         await Promise.all(trashSelected.map(id => fetch(`${DOMAIN}/contentforms/${id}/restore`, { method: 'PATCH' })));
                                         setTrashSelected([]); loadTrash(); loadDocuments();
                                     }}>Restore Selected</Button>
@@ -960,8 +960,8 @@ export function Documents() {
                                                     <IconSearch size={16} />
                                                 </ActionIcon>
                                             </Tooltip>
-                                            <Button size="xs" variant="outline" color="green" onClick={() => restoreDoc(doc.id)}>Restore</Button>
-                                            <Button size="xs" color="red" onClick={() => permanentDelete(doc.id)}>Delete Permanently</Button>
+                                            <Button size="xs" variant="outline" color="var(--color-yale-blue)" onClick={() => restoreDoc(doc.id)}>Restore</Button>
+                                            <Button size="xs" color="var(--color-neutral-red)" onClick={() => permanentDelete(doc.id)}>Delete Permanently</Button>
                                         </Group>
                                     </Group>
                                 </Box>
@@ -1085,7 +1085,7 @@ export function Documents() {
                                                     <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
                                                 </Stack>
                                             </Table.Td>
-                                            <Table.Td><ActionIcon color="red" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
+                                            <Table.Td><ActionIcon color="var(--color-neutral-red)" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>

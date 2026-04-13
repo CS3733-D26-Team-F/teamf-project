@@ -61,13 +61,13 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
                         <Table.Td>
                             <Group gap="xs">
                                 <Tooltip label="Restore to In Progress">
-                                    <ActionIcon variant="subtle" color="green" onClick={() => onRestore(doc.id)}>
+                                    <ActionIcon variant="subtle" color="var(--color-yale-blue)" onClick={() => onRestore(doc.id)}>
                                         <IconRestore size={16} />
                                     </ActionIcon>
                                 </Tooltip>
                                 {userPersona === 'Admin' && (
                                     <Tooltip label="Move to Trash">
-                                        <ActionIcon variant="subtle" color="red" onClick={() => onTrash(doc.id)}>
+                                        <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onTrash(doc.id)}>
                                             <IconTrash size={16} />
                                         </ActionIcon>
                                     </Tooltip>
