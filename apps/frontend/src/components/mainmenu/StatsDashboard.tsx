@@ -80,10 +80,10 @@ export function StatsDashboard() {
     }, []);
 
     const data = [
-        { title: 'Revenue', icon: 'receipt', value: '13,456', diff: 34 },
-        { title: 'Profit', icon: 'coin', value: '4,145', diff: -13 },
-        { title: 'Coupons usage', icon: 'discount', value: '745', diff: 18 },
-        { title: 'New customers', icon: 'user', value: '188', diff: -30 },
+        { title: 'Revenue', icon: 'receipt', value: '13,456', diff: 34, order: "first" },
+        { title: 'Profit', icon: 'coin', value: '4,145', diff: -13, order: "second" },
+        { title: 'Coupons usage', icon: 'discount', value: '745', diff: 18, order: "third" },
+        { title: 'New customers', icon: 'user', value: '188', diff: -30, order: "fourth" },
     ] as const;
 
     const stats = data.map((stat) => {
@@ -91,7 +91,7 @@ export function StatsDashboard() {
         const DiffIcon = stat.diff > 0 ? IconArrowUpRight : IconArrowDownRight;
 
         return (
-            <Paper withBorder p="md" radius="md" key={stat.title}>
+            <Paper withBorder p="md" radius="md" key={stat.title} className={`stats-item ${stat.order}`}>
                 <Group justify="space-between">
                     <Text size="xs" c="dimmed" className={classes.title}>
                         {stat.title}

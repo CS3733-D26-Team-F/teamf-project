@@ -25,6 +25,12 @@ const personaColors: Record<string, string> = {
     "Business Analyst": "var(--color-fresh-sky)",
 };
 
+const animDelay: Record<string, string> = {
+    "Admin": "first",
+    "Underwriter": "second",
+    "Business Analyst": "third",
+}
+
 export function EmployeeListView() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
@@ -148,6 +154,7 @@ export function EmployeeListView() {
                     <Box
                         key={persona}
                         mb="lg"
+                        className={`employee-box ${animDelay[persona]}`}
                         style={{
                             border: '1px solid #dee2e6',
                             borderRadius: 8,

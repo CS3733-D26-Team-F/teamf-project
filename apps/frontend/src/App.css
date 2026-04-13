@@ -59,7 +59,10 @@ a {
 }
 
 header {
-    background-color: var(--color-yale-blue);
+    &.main-header, &.login-header {
+        background: linear-gradient(to right, transparent, #00000064), var(--color-yale-blue);
+        box-shadow: 0px 0px 15px #00000080;
+    }
 
     &.main-header {
         display: flex;
@@ -87,11 +90,13 @@ header {
 
             a, button {
                 padding: 8px 12px;
-                color:white;
+                color: white;
+                border-radius: 8px;
+
                 &:hover {
                     background-color: var(--color-fresh-sky);
-                    border-radius: 4px;
-                    transition: all 0.2s ease;
+                    transition: all 0.5s ease;
+                    box-shadow: 0px 0px 10px #00000064;
                 }
             }
 
@@ -172,8 +177,8 @@ main {
             position: absolute;
             inset: 0;
             background: linear-gradient(
-                    #00355F80,
-                    #00558090
+                #00355F80,
+                #00558090
             );
             pointer-events: none;
         }
@@ -203,110 +208,6 @@ section.links {
 /*Hero formatting*/
 
 form {
-    &.content-management {
-
-        display: block;
-        text-align: left;
-        background-color: var(--color-papaya-whip);
-        color: var(--color-yale-blue);
-        gap: 10rem;
-        border-radius: 2rem;
-        margin: 1rem;
-        padding: 1rem;
-
-        h1 {
-            font-family: Roboto, sans-serif;
-            text-align: center;
-        }
-
-        h2 {
-            font-family: Roboto, sans-serif;
-            font-size: 2rem;;
-            outline: 3px solid var(--color-yale-blue);
-            text-align: center;
-        }
-
-        body {
-            font-family: Roboto, sans-serif;
-            color: var(--color-yale-blue);
-            justify-content: left;
-        }
-
-        input, textarea {
-            font-family: Roboto, sans-serif;
-            padding: 10px;
-            font-size: 1rem;
-            color: var(--color-yale-blue);
-        }
-
-        button {
-            font-family: Roboto, sans-serif;
-            padding: 12px;
-            width: 15%;
-            border-radius: 30px;
-            font-size: 1rem;
-            margin-inline: 10rem;
-            margin-top: 3rem;
-            margin-bottom: 5rem;
-        }
-
-        button[type="submit"] {
-            background-color: var(--color-yale-blue);
-            color: white;
-        }
-
-        button[type="submit"]:hover { background-color: var(--color-fresh-sky); }
-
-
-        button[type="reset"] {
-            background-color: var(--color-yale-blue);
-            color: white;
-        }
-
-        button[type="reset"]:hover { background-color: var(--color-fresh-sky); }
-
-        label, label[htmlFor="employeeSelect"]{
-            color: var(--color-yale-blue);
-            font-size: 1.5rem;
-            text-align: left;
-            margin: 0.75rem;
-        }
-
-        select {
-            color: var(--color-yale-blue);
-            font-size: 1rem;
-            text-align: left;
-            margin: 0.75rem;
-        }
-
-        input[type=radio] {
-            text-align: left;
-            transform: scale(2);
-            margin: 1rem;
-            color: var(--color-dark-beige);
-        }
-
-        input[type="text"] {
-            background-color: var(--color-pale-sky); /* Light blue background */
-            color: #333;               /* Dark grey text */
-            border: 2px solid var(--color-dark-beige); /* Blue border */
-        }
-
-        h1 {
-            font-family: Roboto, sans-serif;
-            color: var(--color-yale-blue);
-            font-size: 56px;
-            letter-spacing: -1.68px;
-            margin: 32px 0;
-            text-align: center;
-
-            @media (max-width: 1024px) {
-                font-size: 36px;
-                margin: 20px 0;
-            }
-        }
-    }
-
     &.login-form {
         display: flex;
         flex-direction: column;
@@ -384,24 +285,25 @@ footer.main-footer {
     font-family: sans-serif;
 }
 
-input[type="file"]::file-selector-button {
-    background-color: var(--color-yale-blue);
-    color: white;
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-family: Roboto, sans-serif;
-}
-
-input[type="file"]::file-selector-button:hover {
-    background-color: var(--color-fresh-sky);
-}
-
 input[type="file"] {
     color: var(--color-yale-blue); /* text "No file chosen" */
     font-size: 1rem;
     font-family: Roboto, sans-serif;
+
+    &::file-selector-button {
+
+        background-color: var(--color-yale-blue);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-family: Roboto, sans-serif;
+
+        &:hover {
+            background-color: var(--color-fresh-sky);
+        }
+    }
 }
 
 /*Remove iamjariwala's in-built header*/
@@ -414,12 +316,12 @@ input[type="file"] {
     color: var(--color-white);
     border: 1px solid var(--white);
     transition: 0.2s ease;
-}
 
-.invert-hover:hover {
-    background-color: var(--color-white);
-    color: var(--yale-blue);
-    border: 1px solid var(--yale-blue);
+    &:hover {
+        background-color: var(--color-white);
+        color: var(--yale-blue);
+        border: 1px solid var(--yale-blue);
+    }
 }
 
 .invert-hover-outline {
@@ -427,11 +329,11 @@ input[type="file"] {
     border: 1px solid var(--yale-blue);
     color: var(--yale-blue);
     transition: 0.2s ease;
-}
 
-.invert-hover-outline:hover {
-    background-color: var(--yale-blue);
-    color: var(--white);
+    &:hover {
+        background-color: var(--yale-blue);
+        color: var(--white);
+    }
 }
 
 .invert-hover-sapphire {
@@ -439,12 +341,12 @@ input[type="file"] {
     border: 1px solid var(--white);
     color: var(--white);
     transition: 0.2s ease;
-}
 
-.invert-hover-sapphire:hover {
-    background-color: var(--white);
-    color: var(--sapphire);
-    border: 1px solid var(--sapphire);
+    &:hover {
+        background-color: var(--white);
+        color: var(--sapphire);
+        border: 1px solid var(--sapphire);
+    }
 }
 
 .invert-hover-outline-sapphire {
@@ -452,11 +354,11 @@ input[type="file"] {
     border: 1px solid var(--sapphire);
     color: var(--sapphire);
     transition: 0.2s ease;
-}
 
-.invert-hover-outline-sapphire:hover {
-    background-color: var(--sapphire);
-    color: var(--white);
+    &:hover {
+        background-color: var(--sapphire);
+        color: var(--white);
+    }
 }
 
 .invert-hover-outline-fresh-sky {
@@ -464,11 +366,11 @@ input[type="file"] {
     border: 1px solid var(--fresh-sky);
     color: var(--fresh-sky);
     transition: 0.2s ease;
-}
 
-.invert-hover-outline-fresh-sky:hover {
-    background-color: var(--fresh-sky);
-    color: var(--white);
+    &:hover {
+        background-color: var(--fresh-sky);
+        color: var(--white);
+    }
 }
 
 .invert-hover-red {
@@ -476,11 +378,11 @@ input[type="file"] {
     color: var(--color-white);
     border: 1px solid var(--neutral-red);
     transition: 0.2s ease;
-}
 
-.invert-hover-red:hover {
-    background-color: var(--color-white);
-    color: var(--neutral-red);
+    &:hover {
+        background-color: var(--color-white);
+        color: var(--neutral-red);
+    }
 }
 
 .invert-hover-outline-red {
@@ -488,9 +390,45 @@ input[type="file"] {
     color: var(--neutral-red);
     border: 1px solid var(--neutral-red);
     transition: 0.2s ease;
+
+    &:hover {
+        background-color: var(--neutral-red);
+        color: var(--white);
+    }
 }
 
-.invert-hover-outline-red:hover {
-    background-color: var(--neutral-red);
-    color: var(--white);
+.stats-item {
+    animation-name: fade-in-above;
+    animation-duration: 1s;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.68, 1);
+    opacity: 0;
+    animation-fill-mode: forwards;
+
+    &.second { animation-delay: 0.5s; }
+    &.third { animation-delay: 1s; }
+    &.fourth { animation-delay: 1.5s; }
+}
+
+.employee-box {
+    animation-name: fade-in-above;
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.33, 0, 0.68, 1);
+    opacity: 0;
+    animation-fill-mode: forwards;
+
+    &.second { animation-delay: 0.5s; }
+    &.third { animation-delay: 1s; }
+    &.fourth { animation-delay: 1.5s; }
+}
+
+@keyframes fade-in-above {
+    0% {
+        opacity: 0;
+        transform: translate(0px, -40px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(0px, 0px);
+    }
 }
