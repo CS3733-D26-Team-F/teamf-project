@@ -121,7 +121,7 @@ app.post('/getEmployee', async (req, res) => {
 
 //update employee takes the current username and then optionally any data that want to be changed
 app.post('/updateEmployee', async (req, res) => {
-    const {username, newUsername, password, persona} = req.body;
+    const {username, newUsername, password, persona, profile_picture} = req.body;
 
     if (!username) {
         return res.status(400).send('Current username is required');
@@ -131,11 +131,13 @@ app.post('/updateEmployee', async (req, res) => {
         username?: string;
         password?: string;
         persona?: string;
+        profile_picture?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
     if (password) updateData.password = password;
     if (persona) updateData.persona = persona;
+    if (profile_picture) updateData.profile_picture = profile_picture;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
@@ -172,13 +174,13 @@ app.post('/updateEmployee', async (req, res) => {
 });
 
 app.post('/addEmployee', async (req, res) => {
-    const {username, password, persona, first_name, last_name} = req.body;
+    const {username, password, persona, first_name, last_name, profile_picture} = req.body;
 
     if (!username || !password || !first_name || !last_name) {
         return res.status(400).send('Missing field required');
     }
 
-    console.log('Adding employee:', { username, password, persona, first_name, last_name });
+    console.log('Adding employee:', { username, password, persona, first_name, last_name, profile_picture });
     try {
         if (persona.trim() == 'Admin') {
 
@@ -210,6 +212,7 @@ app.post('/addEmployee', async (req, res) => {
                     first_name,
                     last_name,
                     created_at: new Date(),
+                    profile_picture: profile_picture || null
                 },
             });
             return res.status(200).json({
@@ -246,6 +249,38 @@ app.delete('/deleteEmployee/:name', async (req, res) => {
     } catch (error) {
         res.status(500).json({error: 'Server error'});
     }
+});
+
+app.post('/employees/:empid/profile-picture', upload.single('file'), async (req, res) => {
+  try {
+    const empid = Number(req.params.empid);
+    const file = req.file;
+    if (!empid || !file) return res.status(400).json({ error: 'empid and file are required' });
+    if (!file.mimetype.startsWith('image/')) return res.status(400).json({ error: 'Only image uploads are allowed' });
+
+    const employee = await prisma.employee.findUnique({ where: { empid } });
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    const safeName = file.originalname.replace(/\s+/g, '_');
+    const path = `employee-profiles/${empid}/avatar-${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('employee-media')
+      .upload(path, file.buffer, { contentType: file.mimetype, upsert: true });
+
+    if (uploadError) return res.status(500).json({ error: 'Upload failed', details: uploadError.message });
+
+    const { data: urlData } = supabase.storage.from('employee-media').getPublicUrl(path);
+
+    const updated = await prisma.employee.update({
+      where: { empid },
+      data: { pfp_URL: urlData.publicUrl }
+    });
+
+    return res.status(200).json({ message: 'Profile picture uploaded', data: updated });
+  } catch (e) {
+    return res.status(500).json({ error: 'Unexpected error' });
+  }
 });
 
 app.post('/updateTheme', async (req, res) => {

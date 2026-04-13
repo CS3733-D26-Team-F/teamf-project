@@ -14,6 +14,7 @@ type Employee = {
     persona: string;
     password: string;
     created_at: string;
+    pfp_URL?: string | null;
 }
 
 const personas = ["Admin", "Underwriter", "Business Analyst"];
@@ -31,7 +32,8 @@ export function EmployeeListView() {
     // Add modal
     const [addOpen, setAddOpen] = useState(false);
     const [addPersona, setAddPersona] = useState('');
-    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: ''});
+    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', profile_picture: null as File | null });
+    const [editProfilePicture, setEditProfilePicture] = useState<File | null>(null);
 
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
@@ -57,7 +59,7 @@ export function EmployeeListView() {
 
     function openAdd(persona: string) {
         setAddPersona(persona);
-        setAddData({ username: '', password: '', first_name: '', last_name: '' });
+        setAddData({ username: '', password: '', first_name: '', last_name: '', profile_picture: null });
         setAddOpen(true);
     }
 
@@ -71,7 +73,7 @@ export function EmployeeListView() {
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
-                profile_picture: null // Placeholder for profile picture
+                profile_picture: addData.profile_picture
             })
         });
         setAddOpen(false);
@@ -237,13 +239,17 @@ export function EmployeeListView() {
                         value={addData.username}
                         onChange={e => setAddData({...addData, username: e.target.value})}
                     />
-                    <FileInput
-                        label="Profile Picture (Optional)"
-                        placeholder="Upload a profile picture"
-                        accept="image/*"
-                        onChange={e => console.log(e)}
-                        //to implement: handle profile picture upload and update
-                    />
+                    
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Profile Picture (Optional)</Text>
+                        <FileInput
+                            placeholder="Upload a profile picture"
+                            accept="image/*"
+                            value={addData.profile_picture}
+                            onChange={file => setAddData({...addData, profile_picture: file})}
+                        />
+                    </Box>
+
                     <PasswordInput
                         label="Password"
                         value={addData.password}
@@ -295,6 +301,14 @@ export function EmployeeListView() {
                             value={editData.newUsername}
                             onChange={e => setEditData({...editData, newUsername: e.target.value})}
                         />
+                        <Box>
+                            <Text size="sm" fw={500} mb={4}>New Profile Picture (Optional)</Text>
+                            <FileInput
+                                placeholder="Upload a new profile picture"
+                                accept="image/*"
+                                onChange={() => handleProfilePictureUpload()}/>
+
+                        </Box>
                         <PasswordInput
                             label="New Password (Optional)"
                             value={editData.password}
@@ -304,7 +318,7 @@ export function EmployeeListView() {
                             label="New Profile Picture (Optional)"
                             placeholder="Upload a new profile picture"
                             accept="image/*"
-                            onChange={e => console.log(e)}
+                            onChange={() => handleProfilePictureUpload()}
 
                             //to implement: handle profile picture upload and update
                         />
@@ -355,4 +369,11 @@ export function EmployeeListView() {
         </Box>
     );
 }
+
+export function handleProfilePictureUpload() {
+    // upload photo into bucket
+
+    
+}
+
 

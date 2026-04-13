@@ -15,7 +15,7 @@ export function Profile() {
                 width={150}>
                     <Menu.Target>
                         <Button rightSection={<IconChevronDown size={18} />} pr={20} variant="filled" color="primary">
-                        <img src="https://via.placeholder.com/40" alt="Profile" />
+                        <img src={localStorage.getItem('profilePicture')} alt="Profile" />
                         <span>{localStorage.getItem('username') || 'Guest'}</span>
                         </Button>
                     </Menu.Target>
