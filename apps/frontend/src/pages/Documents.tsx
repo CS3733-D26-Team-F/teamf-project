@@ -6,7 +6,7 @@ import { AccessDenied } from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip
+    Tooltip, SegmentedControl
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconEdit, IconTrash,
@@ -418,6 +418,8 @@ export function Documents() {
     }
 
     const [addFile, setAddFile] = useState<File | null>(null);
+    const [addUrl, setAddUrl] = useState<string>('');
+    const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [editOpen, setEditOpen] = useState(false);
@@ -427,6 +429,8 @@ export function Documents() {
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
+    const [editUrl, setEditUrl] = useState<string>('');
+    const [editUploadMode, setEditUploadMode] = useState<'file' | 'url'>('file');
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -545,7 +549,8 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
     async function handleAdd() {
-        if (!addFile) { alert('Please upload a file.'); return; }
+        if (uploadMode === 'file' && !addFile) { alert('Please upload a file.'); return; }
+        if (uploadMode === 'url' && !addUrl) { alert('Please enter a URL.'); return; }
         if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.content_type || !addData.status) {
             alert('Please fill in all fields.'); return;
         }
@@ -557,13 +562,19 @@ export function Documents() {
         formPayload.append('expiration_date', addData.expiration_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
-        formPayload.append('file', addFile);
+
+        if(addFile) {
+            formPayload.append('file', addFile);
+        } else {
+            formPayload.append('url', addUrl);
+        }
         await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
-        setAddOpen(false); setAddFile(null);
+        setAddOpen(false); setAddFile(null); setAddUrl('');
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
     }
 
+    //does not support bulk urls (for now)
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
         const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
@@ -610,7 +621,12 @@ export function Documents() {
             formPayload.append('content_type', editData.content_type);
             formPayload.append('status', editData.status);
             formPayload.append('file', editFile);
-            await fetch(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
+            await fetch(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+        } else if (editUploadMode === 'url' && editUrl) {
+            await fetch(`${DOMAIN}/contentforms/${editId}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({...editData, url: editUrl})
+            });
         } else {
             await fetch(`${DOMAIN}/contentforms/${editId}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData)
@@ -624,7 +640,7 @@ export function Documents() {
 
     function closeEdit() {
         if (editId) fetch(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-        setEditOpen(false);
+        setEditOpen(false); setEditUrl(''); setEditUploadMode('file');
     }
 
     async function handleDelete() {
@@ -980,8 +996,22 @@ export function Documents() {
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={addData.name} onChange={e => setAddData({...addData, name: e.target.value})} />
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Upload File</Text>
-                        <input ref={fileInputRef} type="file" onChange={e => setAddFile(e.target.files?.[0] ?? null)} />
+                        <SegmentedControl
+                            value={uploadMode}
+                            onChange={(val) => {
+                                setUploadMode(val as 'file' | 'url');
+                                setAddFile(null);
+                                setAddUrl('');
+                            }}
+                            data={[{label: 'Upload File', value: 'file'}, {label: 'Enter URL', value: 'url'}]}
+                            mb="sm"
+                        />
+                        {uploadMode === 'file'
+                            ? <input ref={fileInputRef} type="file"
+                                     onChange={e => setAddFile(e.target.files?.[0] ?? null)}/>
+                            : <TextInput label="URL" placeholder="https://example.com" value={addUrl}
+                                         onChange={e => setAddUrl(e.target.value)}/>
+                        }
                     </Box>
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
@@ -1009,9 +1039,25 @@ export function Documents() {
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Update File (Optional)</Text>
-                        <input type="file" onChange={e => setEditFile(e.target.files?.[0] ?? null)} />
-                        <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document details.</Text>
+                        <SegmentedControl
+                            value={editUploadMode}
+                            onChange={(val) => {
+                                setEditUploadMode(val as 'file' | 'url');
+                                setEditFile(null);
+                                setEditUrl('');
+                            }}
+                            data={[{label: 'Upload File', value: 'file'}, {label: 'Enter URL', value: 'url'}]}
+                            mb="sm"
+                        />
+                        {editUploadMode === 'file'
+                            ? <>
+                                <input type="file" onChange={e => setEditFile(e.target.files?.[0] ?? null)}/>
+                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document
+                                    details.</Text>
+                            </>
+                            : <TextInput label="URL" placeholder="https://example.com" value={editUrl}
+                                         onChange={e => setEditUrl(e.target.value)}/>
+                        }
                     </Box>
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
