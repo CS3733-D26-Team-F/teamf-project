@@ -43,6 +43,12 @@ const checkJWT = auth({
     tokenSigningAlg: 'RS256'
 });
 
+const management = new ManagementClient({
+    domain: process.env.AUTH0_DOMAIN,
+    clientId: process.env.AUTH0_CLIENT_ID,
+    clientSecret: process.env.AUTH0_CLIENT_SECRET,
+});
+
 async function getManagementToken(): Promise<string> {
     const res = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
@@ -58,10 +64,12 @@ async function getManagementToken(): Promise<string> {
     if (!data.access_token) {
         throw new Error(`Failed to get management token: ${JSON.stringify(data)}`);
     }
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Auth0 token request failed: ${res.status} - ${text}`);
+    }
     return data.access_token;
 }
-
-app.use(express.static(distPath));
 
 app.use(cors({
     origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev"],
@@ -71,6 +79,8 @@ app.use(cors({
 
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(express.static(distPath));
+
 // Send HTTP 200 at root
 
 /**
@@ -124,8 +134,8 @@ app.post('/api/auth/logout', checkJWT, async (_req, res) => {
     res.sendStatus(200);
 });*/
 
-app.get('/employees', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
+app.get('/employees', async (req, res) => {
+    //const auth0Id = req.auth!.payload.sub as string;
     const employees = await prisma.employee.findMany();
     console.log('Employee Data:', employees);
     res.json(employees);
@@ -140,8 +150,8 @@ app.get('/contentforms', checkJWT, async (req, res) => {
     res.json(contentForms);
 });
 
-app.post('/getEmployee', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
+app.post('/getEmployee', async (req, res) => {
+    //const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
 
     if (!username) {
@@ -175,38 +185,42 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
 
     const updateData: {
         username?: string;
+        password?: string;
         persona?: string;
         first_name?: string;
         last_name?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
+    if (newPassword) updateData.password = newPassword;
     if (persona) updateData.persona = persona;
     if (first_name) updateData.first_name = first_name;
-    if (last_name) updateData.first_name = last_name;
+    if (last_name) updateData.last_name = last_name;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
     }
 
     try {
+
         const employee = await prisma.employee.update({
             where: {username: username},
             data: updateData
         });
-        const auth0Updates: Record<string, string> = {};
+        const auth0Updates: any = {};
+
         if (newPassword) auth0Updates.password = newPassword;
         if (newUsername) {
             auth0Updates.username = newUsername;
-            auth0Updates.email    = `${newUsername}@noemail.internal`;
+            auth0Updates.email = `${newUsername}@noemail.internal`;
         }
 
         const updateRes = await fetch(
-            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.auth0Id)}`,
             {
-                method:  'PATCH',
+                method: 'PATCH',
                 headers: {
-                    Authorization:  `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(auth0Updates),
@@ -220,6 +234,53 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
             }
             return res.status(500).json({ error: 'Failed to update Auth0 user', details: error });
         }
+
+        // if (persona) {
+        //     const rolesRes = await fetch(
+        //         `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
+        //         {
+        //             headers: {
+        //                 Authorization: `Bearer ${token}`,
+        //             },
+        //         }
+        //     );
+        //
+        //     const roles = await rolesRes.json();
+        //     const matchedRole = roles.find((r: any) => r.name === persona);
+        //     const existingRoles = await rolesRes.json();
+        //
+        //     if (existingRoles.length > 0) {
+        //         await fetch(
+        //             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+        //             {
+        //                 method: 'DELETE',
+        //                 headers: {
+        //                     Authorization: `Bearer ${token}`,
+        //                     'Content-Type': 'application/json',
+        //                 },
+        //                 body: JSON.stringify({
+        //                     roles: existingRoles.map((r: any) => r.id),
+        //                 }),
+        //             }
+        //         );
+        //     }
+        //
+        //     if (matchedRole) {
+        //         await fetch(
+        //             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+        //             {
+        //                 method: 'POST',
+        //                 headers: {
+        //                     Authorization: `Bearer ${token}`,
+        //                     'Content-Type': 'application/json',
+        //                 },
+        //                 body: JSON.stringify({
+        //                     roles: [matchedRole.id],
+        //                 }),
+        //             }
+        //         );
+        //     }
+        // }
 
         if (persona.trim() == 'Admin'){
             await prisma.admin.create({
@@ -274,11 +335,41 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
             }),
         });
 
+        const userData = await createRes.json();
+        const auth0UserId = userData.user_id;
+
+        const rolesRes = await fetch(
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        const rolesData = await rolesRes.json();
+        const matchedRole = rolesData.find((r: any) => r.name === persona);
+
+        if (matchedRole) {
+            await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${auth0UserId}/roles`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        roles: [matchedRole.id],
+                    }),
+                }
+            );
+        }
+
         if (persona.trim() == 'Admin'){
-
-
             const newAdmin = await prisma.employee.create({
                 data: {
+                    auth0Id: userData.user_id,
                     username,
                     password,
                     persona,
@@ -298,6 +389,7 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
 
             const newEmp = await prisma.employee.create({
                 data: {
+                    auth0Id: userData.user_id,
                     username,
                     password,
                     persona,
@@ -331,11 +423,15 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
             return res.status(404).send('Not Found');
         }
 
+        const token = await getManagementToken();
+
         const deleteRes = await fetch(
-            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.auth0Id)}`,
             {
                 method:  'DELETE',
-                headers: {},
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
             }
         );
 
@@ -1065,6 +1161,5 @@ app.use((req, res) => {
 app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);
 });
-
 
 export default app;

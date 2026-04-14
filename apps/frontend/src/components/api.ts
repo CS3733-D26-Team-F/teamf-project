@@ -15,12 +15,13 @@ export const useApi = () => {
             headers: {
                 ...(options.headers || {}),
                 Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
             },
-            cache: "no-store"
+
         });
 
         if (!res.ok) throw new Error("API error");
 
-        return res.json();
+        return res;
     };
 };
