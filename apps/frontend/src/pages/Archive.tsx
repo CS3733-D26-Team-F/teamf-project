@@ -11,6 +11,7 @@ import { DOMAIN } from '../const.ts';
 import {PersonaBadges} from "../components/PersonaBadge.tsx";
 import { useApi } from "../../src/components/api.ts";
 
+import { PageTitle } from "../components/Title.tsx"
 
 type ContentForm = {
     id: number;
@@ -38,9 +39,6 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
     }
     return (
         <>
-            <title>
-                Archive - Hanover Insurance
-            </title>
             <Table highlightOnHover withTableBorder withColumnBorders>
                 <Table.Thead>
                     <Table.Tr>
@@ -139,9 +137,7 @@ export function Archive() {
         <>
             <Header />
             <Box p="md">
-                <Text fw={700} size="xl" mb="md" style={{ color: 'var(--color-yale-blue)' }}>
-                    Archive
-                </Text>
+                <PageTitle title="Archive" />
 
                 <Tabs defaultValue="expired">
                     <Tabs.List mb="md">
