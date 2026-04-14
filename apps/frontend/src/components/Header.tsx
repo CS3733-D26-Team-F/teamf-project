@@ -41,17 +41,17 @@ export function Header() {
             </div>
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
-                {isAdmin && (<Link to="/manageemployees">Employees</Link>)}
-                {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
-                    <Link to="/documents">Documents</Link>
-                    )}
-                {(isAdmin || !isBusinessAnalyst || !isUnderwriter) && (
-                    (<Link to="/manageemployees">Employees</Link>)
+                <Link to="/managecontent">Manage Content</Link>
+                {isAdmin && <Link to="/manageemployees">Employees</Link>}
+                {(isAdmin || isBusinessAnalyst) && (
+                    <Link to="/businessanalyst">Business Analyst</Link>
+                )}
+                {(isAdmin || isUnderwriter) && (
+
+                    <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
                 )}
                 <Profile />
                 <ThemeToggle />
-                
-
             </nav>
         </header>
     );

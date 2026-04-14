@@ -25,13 +25,15 @@
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",
     "nodemon": "^3.1.14",
-    "prisma": "^6.19.3",
+    "prisma": "^7.6.0",
     "turbo": "^2.9.1"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.16.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@gfazioli/mantine-list-view-table": "^3.0.0",
+    "@iamjariwala/react-doc-viewer": "^1.8.0",
     "@mantine/core": "^9.0.1",
     "@mantine/hooks": "^9.0.1",
     "@mantine/notifications": "^9.0.1",

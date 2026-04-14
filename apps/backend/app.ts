@@ -1,12 +1,14 @@
 import express from 'express';
 import morgan from 'morgan';
+
 const app = express();
 import dotenv from 'dotenv';
 import {PrismaClient} from '@prisma/client';
 import {PrismaPg} from "@prisma/adapter-pg";
-import { createClient } from '@supabase/supabase-js';
+import {createClient} from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
+
 app.use(cors());
 import { ManagementClient } from 'auth0';
 import { auth } from "express-oauth2-jwt-bearer";
@@ -23,7 +25,10 @@ const port = process.env.PORT || 3000;
 
 //set up stuff for passing the files using multipart form data
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({storage: multer.memoryStorage()});
+
+// setting up constent for checkin/checkout document stuff
+const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};
 
 const checkJWT = auth({
     audience: process.env.AUTH0_AUDIENCE,
@@ -142,7 +147,7 @@ app.post('/getEmployee', checkJWT, async (req, res) => {
             data: employee
         });
     } catch (error) {
-        res.status(404).json({ error: 'User not Found' });
+        res.status(404).json({error: 'User not Found'});
     }
 });
 
@@ -151,7 +156,7 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
     const token = await getManagementToken();
     const {username,newUsername,newPassword,persona, first_name, last_name} = req.body;
 
-    if(!username) {
+    if (!username) {
         return res.status(400).send('Current username is required');
     }
 
@@ -173,7 +178,7 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
 
     try {
         const employee = await prisma.employee.update({
-            where: { username: username },
+            where: {username: username},
             data: updateData
         });
         const auth0Updates: Record<string, string> = {};
@@ -205,15 +210,15 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
 
         if (persona.trim() == 'Admin'){
             await prisma.admin.create({
-                data:{
+                data: {
                     adid: employee.empid
                 }
             })
         } else {
             const check = await prisma.admin.findUnique({
-                where: { adid: employee.empid}
+                where: {adid: employee.empid}
             });
-            if (check){
+            if (check) {
                 await prisma.admin.delete({
                     where: {adid: employee.empid},
                 })
@@ -224,7 +229,7 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
             data: employee
         });
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -233,10 +238,11 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
 
     const {username, password, persona, first_name, last_name} = req.body;
 
-    if (!username || !password || !persona) {
+    if (!username || !password || !first_name || !last_name) {
         return res.status(400).send('Missing field required');
     }
 
+    console.log('Adding employee:', { username, password, persona, first_name, last_name });
     try {
         const token = await getManagementToken();
 
@@ -267,16 +273,14 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
 
             const newAdmin = await prisma.employee.create({
                 data: {
-                    username: username,
-                    password: password,
-                    persona: persona,
-                    first_name: first_name,
-                    last_name: last_name,
+                    username,
+                    password,
+                    persona,
+                    first_name,
+                    last_name,
                     created_at: new Date(),
                     admin: {
-                        create: {
-
-                        }
+                        create: {}
                     }
                 },
             })
@@ -302,6 +306,7 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
             });
         }
     } catch (error) {
+        console.error('Add employee error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
@@ -310,10 +315,10 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
     try{
-        const {username} = req.body;
+        const {name} = req.params;
 
         const user = await prisma.employee.findUnique({
-            where: { username:username }
+            where: { username:name }
         });
 
         if (!user) {
@@ -334,7 +339,7 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
         }
 
         const deletedEmp = await prisma.employee.delete({
-            where: { username: username }
+            where: { username: name }
         });
 
         return res.status(200).json({
@@ -342,7 +347,7 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
             data: deletedEmp
         })
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({error: 'Server error'});
     }
 });
 
@@ -356,15 +361,15 @@ app.post('/updateTheme', checkJWT, async (req, res) => {
 
     try {
         const employee = await prisma.employee.update({
-            where: { empid: empid },
-            data: { theme: theme }
+            where: {empid: empid},
+            data: {theme: theme}
         });
         return res.status(200).json({
             message: 'Theme updated',
             data: employee
         });
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -426,7 +431,7 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
         }
 
         const employee = await prisma.employee.findUnique({
-            where: { empid: parseInt(empid) }
+            where: {empid: parseInt(empid)}
         });
 
         if (!employee) {
@@ -503,7 +508,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         const content = await prisma.contentform.create({
             data: {
                 name: filename,
-                url: urlData.publicUrl,
+                url: `${urlData.publicUrl}?t=${Date.now()}`,
                 owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
@@ -532,9 +537,9 @@ app.post('/employee_manage', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
     try {
-        const { username, edits, employee, priority, email, comments } = req.body;
+        const {username, edits, employee, priority, email, comments} = req.body;
         const employeeManage = await prisma.employee_manage.create({
-            data: { username, edits, employee, priority, email, comments }
+            data: {username, edits, employee, priority, email, comments}
         });
         res.json(employeeManage);
     } catch (error) {
@@ -559,13 +564,13 @@ app.delete('/deleteContentForm/:id', checkJWT, async (req, res)=> {
     try {
 
         const contentForm = await prisma.contentform.delete({
-            where: {id:id}
+            where: {id: id}
         });
         return res.status(200).json({
             message: 'Content form deleted successfully',
             data: contentForm
         });
-    }catch (error) {
+    } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
@@ -576,11 +581,11 @@ app.get('/contentforms/persona/:persona', checkJWT, async (req, res) => {
     const { persona } = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
-            where: { persona: persona }
+            where: {persona: persona}
         });
         res.json(contentForms);
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -589,12 +594,12 @@ app.get('/contentforms/admin', checkJWT, async (req, res) => {
 
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
-            prisma.contentform.findMany({ where: { persona: 'Underwriter' } }),
-            prisma.contentform.findMany({ where: { persona: 'Business Analyst' } })
+            prisma.contentform.findMany({where: {persona: 'Underwriter'}}),
+            prisma.contentform.findMany({where: {persona: 'Business Analyst'}})
         ]);
-        res.json({ Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms });
+        res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
     } catch (error) {
-        res.status(500).json({ error: 'Something went wrong' });
+        res.status(500).json({error: 'Something went wrong'});
     }
 });
 
@@ -623,10 +628,29 @@ app.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
     }
 });
 
+app.get('/contentforms/filter/:persona/:file_type', async (req, res) => {
+    const {persona, file_type} = req.params;
+    try {
+        const where: any = {};
+        if (persona === 'Admin') {
+            where.persona = {in: ['Underwriter', 'Business Analyst']};
+        } else {
+            where.persona = persona;
+        }
+        const contentForm = await prisma.contentform.findMany({where})
+        const filtered = contentForm.filter(form => {
+            const ext = form.url.split('.').pop();
+            return ext === file_type;
+        });
+        res.json(filtered);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 // Trash - get all soft deleted (admin only)
 app.get('/contentforms/trash', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-
     try {
         const trashed = await prisma.contentform.findMany({
             where: { is_deleted: true }
@@ -655,7 +679,6 @@ app.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
 // Restore from trash
 app.patch('/contentforms/:id/restore', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-
     try {
         const id = parseInt(req.params.id);
         const restored = await prisma.contentform.update({
@@ -671,7 +694,6 @@ app.patch('/contentforms/:id/restore', checkJWT, async (req, res) => {
 // Permanent delete - admin only
 app.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-
     try {
         const id = parseInt(req.params.id);
         const deleted = await prisma.contentform.delete({ where: { id } });
@@ -681,39 +703,145 @@ app.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
     }
 });
 
-app.get('/contentforms/:id', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
-
+app.get('/contentforms/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
             where: {id}
         });
-        if (!contentForm) return res.status(404).json({error:'Not found'});
+        if (!contentForm) return res.status(404).json({error: 'Not found'});
         res.json(contentForm);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
 
-app.put('/contentforms/:id', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
+app.post('/contentforms/:id/checkout', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const {username} = req.body;
+    if (!username) {
+        return res.status(400).send('Requires username');
+    }
+
+    if (checkOutMem[id]) {
+        const {username: takenBy, checkedOut} = checkOutMem[id];
+        if (takenBy !== username) {
+            return res.status(423).json({
+                error: `Document is checked out by ${takenBy} since ${checkedOut}`
+            });
+        }
+    }
+    checkOutMem[id] = {username, checkedOut: new Date()};
+    return res.status(200).json({message: 'Document checked out'});
+});
+
+app.post('/contentforms/:id/checkin', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const {username} = req.body;
+
+    if (!checkOutMem[id]) {
+        return res.status(400).send('Document isnt checked out')
+    }
+    ;
+    if (checkOutMem[id].username !== username) {
+        return res.status(401).json({error: "You can only check in documents that you have checked out"});
+    }
+
+    delete checkOutMem[id];
+    return res.status(200).json({message: 'Document checked in'});
+});
+
+app.get('/contentforms/:id/checkout_status', async (req, res) => {
+    const id = parseInt(req.params.id);
+
+    if (!checkOutMem[id]) {
+        return res.status(401).json({isCheckedOut: false});
+    }
+    return res.status(200).json({
+        isCheckedOut: true,
+        checkedOutBy: checkOutMem[id].username,
+        checkedOutAt: checkOutMem[id].checkedOut
+    });
+})
+
+app.get('/contentforms/checkout/all', async (req, res) => {
+    try {
+        const checkedOutId = Object.keys(checkOutMem).map(Number);
+        if (checkedOutId.length === 0) {
+            return res.status(200).json([]);
+        }
+        const forms = await prisma.contentform.findMany({
+            where: {id: {in: checkedOutId}}
+        });
+
+        const result = forms.map(form => ({
+            ...form,
+            checkedOutBy: checkOutMem[form.id].username,
+            checkedOutAt: checkOutMem[form.id].checkedOut
+        }));
+        return res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({error: 'Something is Wrong'});
+    }
+});
+
+app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
+    console.log('PUT body:', req.body);
+    console.log('PUT file:', req.file?.originalname);
 
     try {
-        const id = parseInt(req.params.id);
-        const { name, url, owner, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const id = parseInt(req.params.id.toString());
+        const { name, ownerUsername, persona, date_modified, expiration_date, content_type, status } = req.body;
+
+        const updateData: any = {
+            name: name,
+            owner: ownerUsername,
+            persona,
+            date_modified: new Date(date_modified),
+            expiration_date: expiration_date ? new Date(expiration_date) : null,
+            content_type,
+            status,
+            employee: { connect: { username: ownerUsername } }
+        };
+
+        if (req.file) {
+            // look up the employee to get their persona/bucket
+            const employee = await prisma.employee.findUnique({
+                where: { username: ownerUsername }
+            });
+
+            if (!employee) {
+                return res.status(404).json({ error: 'Employee not found' });
+            }
+
+            const bucket = employee.persona;
+
+            const { error } = await supabase.storage
+                .from(bucket)
+                .upload(req.file.originalname, req.file.buffer, {
+                    contentType: req.file.mimetype,
+                    upsert: true  // overwrites existing file with same name
+                });
+
+            if (error) {
+                return res.status(500).json({ error: 'Failed to upload file to Supabase', details: error.message });
+            }
+
+            const { data: urlData } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(req.file.originalname);
+
+            updateData.url = `${urlData.publicUrl}?t=${Date.now()}`;
+        }
+
         const updated = await prisma.contentform.update({
             where: { id },
-            data: {
-                name, url, owner, persona,
-                date_modified: new Date(date_modified),
-                expiration_date: new Date(expiration_date),
-                content_type, status,
-                employee: { connect: { username: owner } }
-            }
+            data: updateData
         });
+
         res.json(updated);
     } catch (error) {
+        console.error('Error updating document:', error);
         res.status(500).json({ error: 'Something went wrong' });
     }
 });
@@ -734,7 +862,6 @@ app.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
 
 app.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-
     const id = parseInt(req.params.id);
     const {is_favorite} = req.body;
     try {
@@ -747,12 +874,64 @@ app.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
+app.get('/ba-files', async (req, res) => {
+    const { data, error } = await supabase
+        .from('ba_files_with_size')
+        .select('name, file_size_kb')
+        .not('file_size_kb', 'is', null)
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file size' })
+    }
+
+    res.json(data)
+})
+
+app.get('/uw-files', async (req, res) => {
+    const { data, error } = await supabase
+        .from('underwriter_files_with_size')
+        .select('name, file_size_kb')
+        .not('file_size_kb', 'is', null)
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file size' })
+    }
+
+    res.json(data)
+})
+
+app.get('/uw-files/:name', async(req, res) => {
+    const {name} = req.params;
+    const { data, error } = await supabase
+        .from('underwriter_files_with_size') // your VIEW
+        .select('name, file_size_kb')
+        .eq('name', name)
+        .single()
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file' })
+    }
+    res.json(data)
+})
+
+app.get('/ba-files/:name', async(req, res) => {
+    const {name} = req.params;
+    const { data, error } = await supabase
+        .from('ba_files_with_size') // your VIEW
+        .select('name, file_size_kb')
+        .eq('name', name)
+        .single()
+
+    if (error) {
+        return res.status(500).json({ error: 'Cannot find file' })
+    }
+    res.json(data)
+})
 
 // Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
-
 
 
 export default app;
