@@ -1,7 +1,7 @@
 import '@mantine/core/styles.css';
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
-    Badge, Stack, Box, Table, Checkbox, ActionIcon,
+    Badge, Stack, Box, Table, Checkbox, Image,
     Tooltip
 } from '@mantine/core';
 
@@ -19,7 +19,7 @@ export function ProfileComponent() {
 
                     </tr>
                     <tr>
-                        <td><img src={localStorage.getItem('pfp_URL')} alt="Profile" /></td>
+                        <td><Image src={localStorage.getItem('pfp_URL')} alt="Profile" /></td>
                         <td>Email: {localStorage.getItem('email')}</td>
                     </tr>
                 </thead>

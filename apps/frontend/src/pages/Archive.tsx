@@ -35,49 +35,54 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
         return <Text c="dimmed" ta="center" py="xl">No documents here.</Text>;
     }
     return (
-        <Table highlightOnHover withTableBorder withColumnBorders>
-            <Table.Thead>
-                <Table.Tr>
-                    <Table.Th>Document Name</Table.Th>
-                    <Table.Th>Persona</Table.Th>
-                    <Table.Th>Owner</Table.Th>
-                    <Table.Th>Content Type</Table.Th>
-                    <Table.Th>Date Modified</Table.Th>
-                    <Table.Th>Expiration Date</Table.Th>
-                    <Table.Th>Actions</Table.Th>
-                </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-                {docs.map(doc => (
-                    <Table.Tr key={doc.id}>
-                        <Table.Td fw={500}>{doc.name}</Table.Td>
-                        <Table.Td>
-                            <PersonaBadges personas={doc.persona} />
-                        </Table.Td>
-                        <Table.Td>{doc.owner}</Table.Td>
-                        <Table.Td>{doc.content_type}</Table.Td>
-                        <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
-                        <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
-                        <Table.Td>
-                            <Group gap="xs">
-                                <Tooltip label="Restore to In Progress">
-                                    <ActionIcon variant="subtle" color="green" onClick={() => onRestore(doc.id)}>
-                                        <IconRestore size={16} />
-                                    </ActionIcon>
-                                </Tooltip>
-                                {userPersona === 'Admin' && (
-                                    <Tooltip label="Move to Trash">
-                                        <ActionIcon variant="subtle" color="red" onClick={() => onTrash(doc.id)}>
-                                            <IconTrash size={16} />
+        <>
+            <title>
+                Archive - Hanover Insurance
+            </title>
+            <Table highlightOnHover withTableBorder withColumnBorders>
+                <Table.Thead>
+                    <Table.Tr>
+                        <Table.Th>Document Name</Table.Th>
+                        <Table.Th>Persona</Table.Th>
+                        <Table.Th>Owner</Table.Th>
+                        <Table.Th>Content Type</Table.Th>
+                        <Table.Th>Date Modified</Table.Th>
+                        <Table.Th>Expiration Date</Table.Th>
+                        <Table.Th>Actions</Table.Th>
+                    </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                    {docs.map(doc => (
+                        <Table.Tr key={doc.id}>
+                            <Table.Td fw={500}>{doc.name}</Table.Td>
+                            <Table.Td>
+                                <PersonaBadges personas={doc.persona} />
+                            </Table.Td>
+                            <Table.Td>{doc.owner}</Table.Td>
+                            <Table.Td>{doc.content_type}</Table.Td>
+                            <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
+                            <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
+                            <Table.Td>
+                                <Group gap="xs">
+                                    <Tooltip label="Restore to In Progress">
+                                        <ActionIcon variant="subtle" color="var(--color-yale-blue)" onClick={() => onRestore(doc.id)}>
+                                            <IconRestore size={16} />
                                         </ActionIcon>
                                     </Tooltip>
-                                )}
-                            </Group>
-                        </Table.Td>
-                    </Table.Tr>
-                ))}
-            </Table.Tbody>
-        </Table>
+                                    {userPersona === 'Admin' && (
+                                        <Tooltip label="Move to Trash">
+                                            <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onTrash(doc.id)}>
+                                                <IconTrash size={16} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    )}
+                                </Group>
+                            </Table.Td>
+                        </Table.Tr>
+                    ))}
+                </Table.Tbody>
+            </Table>
+        </>
     );
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
-import ThemeToggle from "./ThemeToggle.tsx";
+import { SettingsModal } from '../components/SettingsModal';
 import { Profile } from "./Profile.tsx";
 
 export function Header() {
@@ -49,7 +49,7 @@ export function Header() {
                     <Link to="/archive">Archive</Link>
                 )}
                 <Profile />
-                <ThemeToggle />
+                <SettingsModal />
 
                 
 

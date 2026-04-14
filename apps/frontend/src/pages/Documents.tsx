@@ -19,6 +19,7 @@ import { DOMAIN } from '../const.ts';
 import {ViewToggle } from "../components/content/ViewToggle.tsx"
 import { PageTitle } from "../components/Title.tsx"
 import {PersonaBadges} from "../components/PersonaBadge.tsx";
+import {ConfirmModal} from "../components/content/ConfirmModal"
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -281,7 +282,7 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
                     )}
                     {canModify && (
                         <Tooltip label="Delete">
-                            <ActionIcon variant="subtle" color="red" onClick={() => onDelete(doc.id)}><IconTrash size={16} /></ActionIcon>
+                            <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onDelete(doc.id)}><IconTrash size={16} /></ActionIcon>
                         </Tooltip>
                     )}
                 </Group>
@@ -332,7 +333,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
                     {canModify && <ActionIcon variant="subtle" size="sm" onClick={() => onEdit(doc)}><IconEdit size={14} /></ActionIcon>}
-                    {canModify && <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
+                    {canModify && <ActionIcon variant="subtle" color="var(--color-neutral-red)" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
                 </Group>
             </div>
         </div>
@@ -710,6 +711,9 @@ export function Documents() {
 
     return (
         <>
+            <title>
+                Documents - Hanover Insurance
+            </title>
             <Header />
             <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
 
@@ -916,7 +920,7 @@ export function Documents() {
                             {trashSelected.length > 0 && (
                                 <Group gap="xs">
                                     <Text size="sm" c="dimmed">{trashSelected.length} selected</Text>
-                                    <Button size="xs" variant="outline" color="green" onClick={async () => {
+                                    <Button size="xs" variant="outline" color="var(--color-yale-blue)" onClick={async () => {
                                         await Promise.all(trashSelected.map(id => fetch(`${DOMAIN}/contentforms/${id}/restore`, { method: 'PATCH' })));
                                         setTrashSelected([]); loadTrash(); loadDocuments();
                                     }}>Restore Selected</Button>
@@ -960,8 +964,8 @@ export function Documents() {
                                                     <IconSearch size={16} />
                                                 </ActionIcon>
                                             </Tooltip>
-                                            <Button size="xs" variant="outline" color="green" onClick={() => restoreDoc(doc.id)}>Restore</Button>
-                                            <Button size="xs" color="red" onClick={() => permanentDelete(doc.id)}>Delete Permanently</Button>
+                                            <Button size="xs" variant="outline" color="var(--color-yale-blue)" onClick={() => restoreDoc(doc.id)}>Restore</Button>
+                                            <Button size="xs" color="var(--color-neutral-red)" onClick={() => permanentDelete(doc.id)}>Delete Permanently</Button>
                                         </Group>
                                     </Group>
                                 </Box>
@@ -1030,21 +1034,23 @@ export function Documents() {
                 </Stack>
             </Modal>
 
-            <Modal opened={confirmSaveOpen} onClose={() => setConfirmSaveOpen(false)} title="Confirm Changes" centered>
-                <Text size="sm" mb="md">Are you sure you want to save these changes?</Text>
-                <Group justify="flex-end">
-                    <Button className="invert-hover-outline" onClick={() => setConfirmSaveOpen(false)}>Cancel</Button>
-                    <Button onClick={handleEdit} className="invert-hover">Confirm</Button>
-                </Group>
-            </Modal>
+            <ConfirmModal
+                opened={confirmSaveOpen}
+                onClose={() => setConfirmSaveOpen(false)}
+                title="Confirm Changes"
+                message={<>Are you sure you want to save these changes?</>}
+                onConfirm={handleEdit}
+                onCancel={() => setConfirmSaveOpen(false)}
+            />
 
-            <Modal opened={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete form?" centered>
-                <Text size="sm" mb="md">Are you sure you want to <strong>delete</strong> this file?</Text>
-                <Group justify="flex-end">
-                    <Button className="invert-hover-outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                    <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
-                </Group>
-            </Modal>
+            <ConfirmModal
+                opened={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                title="Delete form?"
+                message={<>Are you sure you want to <strong>delete</strong> this file?</>}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteOpen(false)}
+            />
 
             {/* bulk upload modal */}
             <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
@@ -1085,7 +1091,7 @@ export function Documents() {
                                                     <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
                                                 </Stack>
                                             </Table.Td>
-                                            <Table.Td><ActionIcon color="red" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
+                                            <Table.Td><ActionIcon color="var(--color-neutral-red)" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>

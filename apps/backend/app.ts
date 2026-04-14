@@ -602,8 +602,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
-
 // Soft delete - sets is_deleted flag instead of removing from DB
 app.patch('/contentforms/:id/softdelete', async (req, res) => {
     try {
@@ -732,67 +730,118 @@ app.get('/contentforms/:id', async (req, res) => {
 app.post('/contentforms/:id/checkout', async (req, res) => {
     const id = parseInt(req.params.id);
     const {username} = req.body;
+    console.log('checkout hit', { id, username });
     if (!username) {
         return res.status(400).send('Requires username');
     }
 
-    if (checkOutMem[id]) {
-        const {username: takenBy, checkedOut} = checkOutMem[id];
-        if (takenBy !== username) {
-            return res.status(423).json({
-                error: `Document is checked out by ${takenBy} since ${checkedOut}`
-            });
+    try {
+        const current = await prisma.contentform.findUnique({
+            where: { id },
+            select: { checkout_username: true,  checkout_date: true }
+        });
+
+        if (current && current.checkout_username) {
+            const {checkout_username: takenBy, checkout_date} = current;
+            if (takenBy !== username) {
+                return res.status(423).json({
+                    error: `Document is checked out by ${takenBy} since ${checkout_date}`
+                });
+            }
         }
+
+        try {
+            const updated = await prisma.contentform.update({
+                where: {id},
+                data: {checkout_username: username, checkout_date: new Date()}
+            });
+            return res.status(200).json({message: 'Document checked out'});
+        } catch (error) {
+            res.status(500).json({error: 'Something went wrong 1'});
+        }
+
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong 2'});
     }
-    checkOutMem[id] = {username, checkedOut: new Date()};
-    return res.status(200).json({message: 'Document checked out'});
+
 });
 
 app.post('/contentforms/:id/checkin', async (req, res) => {
     const id = parseInt(req.params.id);
     const {username} = req.body;
 
-    if (!checkOutMem[id]) {
-        return res.status(400).send('Document isnt checked out')
-    }
-    ;
-    if (checkOutMem[id].username !== username) {
+    try {
+        const current = await prisma.contentform.findUnique({
+            where: { id },
+            select: { checkout_username: true,  checkout_date: true }
+        });
+
+        if (!current) {
+            return res.status(400).send('Document isnt checked out')
+        }
+
+        const {checkout_username: takenBy, checkout_date} = current;
+
+    if (takenBy !== username) {
         return res.status(401).json({error: "You can only check in documents that you have checked out"});
     }
 
-    delete checkOutMem[id];
-    return res.status(200).json({message: 'Document checked in'});
+    try {
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { checkout_username: null, checkout_date: null }
+        });
+
+        return res.status(200).json({message: 'Document checked in'});
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong checking in doc'});
+    }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
 });
 
 app.get('/contentforms/:id/checkout_status', async (req, res) => {
     const id = parseInt(req.params.id);
 
-    if (!checkOutMem[id]) {
-        return res.status(401).json({isCheckedOut: false});
+    try {
+        const current = await prisma.contentform.findUnique({
+            where: {id},
+            select: {checkout_username: true, checkout_date: true}
+        });
+
+        if (!current) return res.status(404).json({ error: 'Document not found' });
+
+        const {checkout_username: takenBy, checkout_date} = current;
+
+        if (!takenBy) {
+            return res.status(200).json({isCheckedOut: false});
+        }
+        return res.status(200).json({
+            isCheckedOut: true,
+            checkedOutBy: takenBy,
+            checkedOutAt: checkout_date
+        });
+    }catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
     }
-    return res.status(200).json({
-        isCheckedOut: true,
-        checkedOutBy: checkOutMem[id].username,
-        checkedOutAt: checkOutMem[id].checkedOut
-    });
-})
+});
 
 app.get('/contentforms/checkout/all', async (req, res) => {
     try {
-        const checkedOutId = Object.keys(checkOutMem).map(Number);
-        if (checkedOutId.length === 0) {
-            return res.status(200).json([]);
-        }
         const forms = await prisma.contentform.findMany({
-            where: {id: {in: checkedOutId}}
+            where: {checkout_username: {not: null}},
+            select: {id: true, checkout_username: true, checkout_date: true}
         });
 
         const result = forms.map(form => ({
-            ...form,
-            checkedOutBy: checkOutMem[form.id].username,
-            checkedOutAt: checkOutMem[form.id].checkedOut
+            id: form.id,
+            checkedOutBy: form.checkout_username,
+            checkedOutAt: form.checkout_date
         }));
+
         return res.status(200).json(result);
+
     } catch (error) {
         res.status(500).json({error: 'Something is Wrong'});
     }

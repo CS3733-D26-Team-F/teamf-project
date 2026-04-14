@@ -8,7 +8,6 @@
     --color-white: var(--white);
     --color-light-gray: var(--light-gray);
     --color-neutral-red: var(--neutral-red);
-    --color-dark-beige: var(--dark-beige);
     --color-yale-blue: var(--yale-blue);
     --color-pale-sky: var(--pale-sky);
     --color-fresh-sky: var(--fresh-sky);
@@ -22,8 +21,6 @@
     --white: #FFFFFF;
     --light-gray: #D3D3D3;
     --neutral-red: #951528;
-    --papaya-whip: #FFEFD5;
-    --dark-beige: #D0C0A7;
     --yale-blue: #1B4965;
     --pale-sky: #CAE9FF;
     --fresh-sky: #5FA8D3;
@@ -34,11 +31,20 @@
 }
 
 [data-theme="high-visibility"] {
-    --papaya-whip: #f57600;
-    --dark-beige: #c44601;
-    --yale-blue: #054fb9;
-    --pale-sky: #8babf1;
-    --fresh-sky: #0073e6;
+    /* Blues */
+    --yale-blue: #0a3d6b;
+    --pale-sky: #9ecfee;
+    --fresh-sky: #0070c0;
+    --fresh-sky-light: #5aaee0;
+    --sapphire: #1a56b0;
+    --sapphire-light: #5f8fcf;
+    --pacific-blue: #0085a1;
+
+    --neutral-red: #b45000;
+
+    /* Neutrals */
+    --white: #ffffff;
+    --light-gray: #c0c0c0;
 }
 
 /* Menu Formatting */
