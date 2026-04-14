@@ -17,6 +17,9 @@ const { PrismaClient } = pkg;
 const distPath = path.resolve("../frontend/dist");
 
 app.use(cors());
+import { ManagementClient } from 'auth0';
+import { auth } from "express-oauth2-jwt-bearer";
+
 
 dotenv.config();
 
@@ -34,7 +37,39 @@ const upload = multer({storage: multer.memoryStorage()});
 // setting up constent for checkin/checkout document stuff
 const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};
 
-app.use(express.static(distPath));
+const checkJWT = auth({
+    audience: process.env.AUTH0_AUDIENCE,
+    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+    tokenSigningAlg: 'RS256'
+});
+
+const management = new ManagementClient({
+    domain: process.env.AUTH0_DOMAIN,
+    clientId: process.env.AUTH0_CLIENT_ID,
+    clientSecret: process.env.AUTH0_CLIENT_SECRET,
+});
+
+async function getManagementToken(): Promise<string> {
+    const res = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            grant_type:    'client_credentials',
+            client_id:     process.env.AUTH0_MGMT_CLIENT_ID,
+            client_secret: process.env.AUTH0_MGMT_CLIENT_SECRET,
+            audience:      `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
+        }),
+    });
+    const data = await res.json();
+    if (!data.access_token) {
+        throw new Error(`Failed to get management token: ${JSON.stringify(data)}`);
+    }
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Auth0 token request failed: ${res.status} - ${text}`);
+    }
+    return data.access_token;
+}
 
 app.use(cors({
     origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev"],
@@ -44,6 +79,8 @@ app.use(cors({
 
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(express.static(distPath));
+
 // Send HTTP 200 at root
 
 /**
@@ -51,18 +88,61 @@ app.use(morgan('dev'));
  * Requests after this
  *
  */
+// Used for login
+app.post('/api/auth/login', checkJWT, async (req, res) => {
+    try {
+        console.log("Body =", req.body);
+        console.log("Payload =", req.auth!.payload);
+        console.log("=================================================Here1");
+        const auth0Id  = req.auth!.payload.sub;
+        const username = req.auth!.payload['name'] as string;
+
+        const employee = await prisma.employee.upsert({
+            where:  { auth0Id },
+            update: {
+                username,
+                isLoggedIn: true
+            },
+            create: {
+                auth0Id,
+                username
+            },
+        });
+        res.json({ employee });
+        console.log("=================================================Here2");
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Login sync failed' });
+    }
+});
+
+app.get('/api/auth/me', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const employee = await prisma.employee.findUnique({ where: { auth0Id } });
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    res.json({ employee });
+});
+
+// Possible for additional logout options
+app.post('/api/auth/logout', checkJWT, async (_req, res) => {
+    res.json({ message: 'Logged out' });
+});
+
 
 /*app.get('/', (req, res) => {
     res.sendStatus(200);
 });*/
 
 app.get('/employees', async (req, res) => {
+    //const auth0Id = req.auth!.payload.sub as string;
     const employees = await prisma.employee.findMany();
     console.log('Employee Data:', employees);
     res.json(employees);
 });
 
-app.get('/contentforms', async (req, res) => {
+app.get('/contentforms', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false}
     });
@@ -70,46 +150,8 @@ app.get('/contentforms', async (req, res) => {
     res.json(contentForms);
 });
 
-app.get('/employee_manage', async (req, res) => {
-    const employeeManage = await prisma.employee_manage.findMany();
-    console.log('Employee Manage Data:', employeeManage);
-    res.json(employeeManage);
-});
-
-app.post('/login', async (req, res) => {
-    const {username, password} = req.body;
-
-    if (!username || !password) {
-        return res.status(400).send('Please input username and password');
-    }
-
-    const employee = await prisma.employee.findUnique({
-        where: {username: username}
-    });
-
-    if (employee && employee.password === password) {
-        console.log(`Okay: ${username}`);
-
-        //receive session info from front end, including empid, username, and persona
-
-        return res.status(200).json({
-            message: 'okay',
-            employee: {
-                empid: employee.empid,
-                username: employee.username,
-                first_name: employee.first_name,
-                last_name: employee.last_name,
-                persona: employee.persona,
-                pfp_URL: employee.pfp_URL
-            }
-        });
-    } else {
-        console.log(`failed: ${username}`);
-        return res.status(401).send('Invalid username or password');
-    }
-});
-
 app.post('/getEmployee', async (req, res) => {
+    //const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
 
     if (!username) {
@@ -132,8 +174,10 @@ app.post('/getEmployee', async (req, res) => {
 });
 
 //update employee takes the current username and then optionally any data that want to be changed
-app.post('/updateEmployee', async (req, res) => {
-    const {username, newUsername, password, persona} = req.body;
+app.patch('/updateEmployee', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const token = await getManagementToken();
+    const {username,newUsername,newPassword,persona, first_name, last_name} = req.body;
 
     if (!username) {
         return res.status(400).send('Current username is required');
@@ -143,27 +187,114 @@ app.post('/updateEmployee', async (req, res) => {
         username?: string;
         password?: string;
         persona?: string;
+        first_name?: string;
+        last_name?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
-    if (password) updateData.password = password;
+    if (newPassword) updateData.password = newPassword;
     if (persona) updateData.persona = persona;
+    if (first_name) updateData.first_name = first_name;
+    if (last_name) updateData.last_name = last_name;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
     }
 
     try {
+
         const employee = await prisma.employee.update({
             where: {username: username},
             data: updateData
         });
+        
+        const auth0Updates: any = {};
+
+        if (newPassword) auth0Updates.password = newPassword;
+        if (newUsername) {
+            auth0Updates.username = newUsername;
+            auth0Updates.email = `${newUsername}@noemail.internal`;
+        }
+
+        const updateRes = await fetch(
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.auth0Id)}`,
+            {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(auth0Updates),
+            }
+        );
+
+        if (!updateRes.ok) {
+            const error = await updateRes.json();
+            if (updateRes.status === 409) {
+                return res.status(409).json({ error: 'Username already in use' });
+            }
+            return res.status(500).json({ error: 'Failed to update Auth0 user', details: error });
+        }
+
+        // if (persona) {
+        //     const rolesRes = await fetch(
+        //         `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
+        //         {
+        //             headers: {
+        //                 Authorization: `Bearer ${token}`,
+        //             },
+        //         }
+        //     );
+        //
+        //     const roles = await rolesRes.json();
+        //     const matchedRole = roles.find((r: any) => r.name === persona);
+        //     const existingRoles = await rolesRes.json();
+        //
+        //     if (existingRoles.length > 0) {
+        //         await fetch(
+        //             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+        //             {
+        //                 method: 'DELETE',
+        //                 headers: {
+        //                     Authorization: `Bearer ${token}`,
+        //                     'Content-Type': 'application/json',
+        //                 },
+        //                 body: JSON.stringify({
+        //                     roles: existingRoles.map((r: any) => r.id),
+        //                 }),
+        //             }
+        //         );
+        //     }
+        //
+        //     if (matchedRole) {
+        //         await fetch(
+        //             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+        //             {
+        //                 method: 'POST',
+        //                 headers: {
+        //                     Authorization: `Bearer ${token}`,
+        //                     'Content-Type': 'application/json',
+        //                 },
+        //                 body: JSON.stringify({
+        //                     roles: [matchedRole.id],
+        //                 }),
+        //             }
+        //         );
+        //     }
+        // }
+        
         if (employee.persona.trim() === 'Admin') {
             await prisma.admin.upsert({
                 where: {adid: employee.empid},
                 create: {adid: employee.empid},
                 update: {}
             });
+        if (persona.trim() == 'Admin'){
+            await prisma.admin.create({
+                data: {
+                    adid: employee.empid
+                }
+            })
         } else {
             await prisma.admin.deleteMany({
                 where: {adid: employee.empid},
@@ -179,7 +310,9 @@ app.post('/updateEmployee', async (req, res) => {
     }
 });
 
-app.post('/addEmployee', async (req, res) => {
+app.post('/addEmployee', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {username, password, persona, first_name, last_name, pfp_URL} = req.body;
 
     if (!username || !password || !first_name || !last_name) {
@@ -188,11 +321,58 @@ app.post('/addEmployee', async (req, res) => {
 
     console.log('Adding employee:', { username, password, persona, first_name, last_name, pfp_URL });
     try {
-        if (persona.trim() == 'Admin') {
+        const token = await getManagementToken();
 
+        const createRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                connection: 'Username-Password-Authentication',
+                username,
+                password,
+                email: `${username}@noemail.internal`,
+                email_verified: true,
+            }),
+        });
 
+        const userData = await createRes.json();
+        const auth0UserId = userData.user_id;
+
+        const rolesRes = await fetch(
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        const rolesData = await rolesRes.json();
+        const matchedRole = rolesData.find((r: any) => r.name === persona);
+
+        if (matchedRole) {
+            await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${auth0UserId}/roles`,
+                {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        roles: [matchedRole.id],
+                    }),
+                }
+            );
+        }
+
+        if (persona.trim() == 'Admin'){
             const newAdmin = await prisma.employee.create({
                 data: {
+                    auth0Id: userData.user_id,
                     username,
                     password,
                     persona,
@@ -212,6 +392,7 @@ app.post('/addEmployee', async (req, res) => {
 
             const newEmp = await prisma.employee.create({
                 data: {
+                    auth0Id: userData.user_id,
                     username,
                     password,
                     persona,
@@ -232,16 +413,35 @@ app.post('/addEmployee', async (req, res) => {
     }
 });
 
-app.delete('/deleteEmployee/:name', async (req, res) => {
+app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     try{
         const {name} = req.params;
 
         const user = await prisma.employee.findUnique({
-            where: { username:name }
+            where: { username: name }
         });
 
         if (!user) {
             return res.status(404).send('Not Found');
+        }
+
+        const token = await getManagementToken();
+
+        const deleteRes = await fetch(
+            `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.auth0Id)}`,
+            {
+                method:  'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            }
+        );
+
+        if (deleteRes.status !== 204) {
+            const error = await deleteRes.json();
+            return res.status(500).json({ error: 'Failed to delete from Auth0', details: error });
         }
 
         const deletedEmp = await prisma.employee.delete({
@@ -288,8 +488,9 @@ app.post('/employees/:empid/profile-picture', upload.single('file'), async (req,
     return res.status(500).json({ error: 'Unexpected error' });
   }
 });
-
-app.post('/updateTheme', async (req, res) => {
+  
+app.post('/updateTheme', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const {empid, theme} = req.body;
     if (!empid || theme === undefined) {
         return res.status(400).send('Missing field required, need to provide theme');
@@ -309,7 +510,9 @@ app.post('/updateTheme', async (req, res) => {
     }
 });
 
-app.post('/updateContentForm', async (req, res) => {
+app.post('/updateContentForm', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {name, newName, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
 
     if (!name) {
@@ -355,7 +558,8 @@ app.post('/updateContentForm', async (req, res) => {
 });
 
 // the emid shoudld be the logged in user
-app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
+app.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const {empid} = req.body;
         const file = req.file;
@@ -402,15 +606,16 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
 });
 
 
-
-app.post('/contentforms', upload.single('file'), async (req, res) => {
+app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
+        const rawUrl = req.body.url;
 
-        if (!file) {
-            return res.status(400).json({error: 'File is required'});
+        if (!file && !rawUrl) {
+            return res.status(400).json({error: 'File or URL is required'});
         }
 
         const employee = await prisma.employee.findUnique({
@@ -422,25 +627,38 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         }
 
         const persona = JSON.parse(req.body.persona ?? '[]');
-        const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
 
-        const { data, error } = await supabase.storage
-            .from(bucket)
-            .upload(file.originalname, file.buffer, { contentType: file.mimetype, upsert: true });
+        let contentUrl: string = '';
 
-        if (error) {
-            return res.status(500).json({ error: 'Failed to upload file to bucket', details: error.message });
+        if(file) {
+
+            const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
+
+            const {data, error} = await supabase.storage
+                .from(bucket)
+                .upload(file.originalname, file.buffer, {contentType: file.mimetype, upsert: true});
+
+            if (error) {
+                return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
+            }
+
+            const {data: urlData} = supabase.storage
+                .from(bucket)
+                .getPublicUrl(file.originalname);
+
+            contentUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+        }else{
+            try { new URL(rawUrl); }catch(error){
+                return res.status(400).json({error: 'Invalid URL'});
+            }
+            contentUrl = rawUrl;
         }
-
-        const { data: urlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(file.originalname);
 
         // Create the content form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
                 name: filename,
-                url: `${urlData.publicUrl}?t=${Date.now()}`,
+                url: contentUrl,
                 owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
@@ -456,7 +674,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         return res.status(200).json({
             message: 'Content form created successfully',
             data: content,
-            url: urlData.publicUrl
+            url: contentUrl
         });
 
     } catch (error) {
@@ -465,20 +683,9 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
     }
 });
 
-app.post('/employee_manage', async (req, res) => {
-    try {
-        const {username, edits, employee, priority, email, comments} = req.body;
-        const employeeManage = await prisma.employee_manage.create({
-            data: {username, edits, employee, priority, email, comments}
-        });
-        res.json(employeeManage);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error creating employee management request');
-    }
-});
+app.delete('/deleteContentForm/:id', checkJWT, async (req, res)=> {
+    const auth0Id = req.auth!.payload.sub as string;
 
-app.delete('/deleteContentForm/:id', async (req, res) => {
     const id = parseInt(req.params.id);
 
     const contentform1 = await prisma.contentform.findUnique({
@@ -503,8 +710,10 @@ app.delete('/deleteContentForm/:id', async (req, res) => {
     }
 });
 
-app.get('/contentforms/persona/:persona', async (req, res) => {
-    const {persona} = req.params;
+app.get('/contentforms/persona/:persona', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    const { persona } = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
             where: {persona: {has: persona}}
@@ -515,7 +724,9 @@ app.get('/contentforms/persona/:persona', async (req, res) => {
     }
 });
 
-app.get('/contentforms/admin', async (req, res) => {
+app.get('/contentforms/admin', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
             prisma.contentform.findMany({ where: { persona: { has: 'Underwriter' } } }),
@@ -527,7 +738,9 @@ app.get('/contentforms/admin', async (req, res) => {
     }
 });
 
-app.get('/contentforms/persona/:persona/:field', async (req, res) => {
+app.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     const {persona, field} = req.params;
     try {
         if (persona === 'Admin') {
@@ -550,7 +763,8 @@ app.get('/contentforms/persona/:persona/:field', async (req, res) => {
     }
 });
 
-app.get('/contentforms/filter/:persona/:file_type', async (req, res) => {
+app.get('/contentforms/filter/:persona/:file_type', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const {persona, file_type} = req.params;
     try {
         const where: any = {};
@@ -570,36 +784,22 @@ app.get('/contentforms/filter/:persona/:file_type', async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
-    const {username, password} = req.body;
-
-    if (!username || !password) {
-        return res.status(400).send('Please input username and password');
-    }
-
-    const employee = await prisma.employee.findFirst({
-        where: {username: username}
-    });
-
-    if (employee && employee.password === password) {
-        console.log(`Okay: ${username}`);
-        return res.status(200).json({
-            message: 'okay',
-            employee: {
-                empid: employee.empid,
-                username: employee.username,
-                first_name: employee.first_name,
-                isLoggedIn: true,
-            }
+// Trash - get all soft deleted (admin only)
+app.get('/contentforms/trash', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const trashed = await prisma.contentform.findMany({
+            where: { is_deleted: true }
         });
-    } else {
-        console.log(`failed: ${username}`);
-        return res.status(401).send('Invalid username or password');
+        res.json(trashed);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
     }
 });
 
 // Soft delete - sets is_deleted flag instead of removing from DB
-app.patch('/contentforms/:id/softdelete', async (req, res) => {
+app.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const id = parseInt(req.params.id);
         const updated = await prisma.contentform.update({
@@ -613,7 +813,8 @@ app.patch('/contentforms/:id/softdelete', async (req, res) => {
 });
 
 // Restore from trash
-app.patch('/contentforms/:id/restore', async (req, res) => {
+app.patch('/contentforms/:id/restore', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const id = parseInt(req.params.id);
         const restored = await prisma.contentform.update({
@@ -627,7 +828,8 @@ app.patch('/contentforms/:id/restore', async (req, res) => {
 });
 
 // Permanent delete - admin only
-app.delete('/contentforms/:id/permanent', async (req, res) => {
+app.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const id = parseInt(req.params.id);
         const deleted = await prisma.contentform.delete({ where: { id } });
@@ -639,7 +841,8 @@ app.delete('/contentforms/:id/permanent', async (req, res) => {
 
 // Auto-expire documents past their expiration date
 // NOTE: this must stay above GET /contentforms/:id or Express will treat "autoexpire" as an id
-app.patch('/contentforms/autoexpire', async (req, res) => {
+app.patch('/contentforms/autoexpire', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const updated = await prisma.contentform.updateMany({
             where: {
@@ -657,7 +860,8 @@ app.patch('/contentforms/autoexpire', async (req, res) => {
 
 // Get archived documents
 // NOTE: must stay above GET /contentforms/:id
-app.get('/contentforms/archived', async (req, res) => {
+app.get('/contentforms/archived', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const archived = await prisma.contentform.findMany({
             where: { status: 'Archived', is_deleted: false }
@@ -670,7 +874,8 @@ app.get('/contentforms/archived', async (req, res) => {
 
 // Get expired documents
 // NOTE: must stay above GET /contentforms/:id
-app.get('/contentforms/expired', async (req, res) => {
+app.get('/contentforms/expired', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const expired = await prisma.contentform.findMany({
             where: { status: 'Expired', is_deleted: false }
@@ -710,7 +915,8 @@ app.patch('/contentforms/:id/status', async (req, res) => {
     }
 });
 
-app.get('/contentforms/:id', async (req, res) => {
+app.get('/contentforms/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const id = parseInt(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
@@ -723,7 +929,8 @@ app.get('/contentforms/:id', async (req, res) => {
     }
 });
 
-app.post('/contentforms/:id/checkout', async (req, res) => {
+app.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
     const {username} = req.body;
     console.log('checkout hit', { id, username });
@@ -762,7 +969,8 @@ app.post('/contentforms/:id/checkout', async (req, res) => {
 
 });
 
-app.post('/contentforms/:id/checkin', async (req, res) => {
+app.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
     const {username} = req.body;
 
@@ -797,7 +1005,8 @@ app.post('/contentforms/:id/checkin', async (req, res) => {
     }
 });
 
-app.get('/contentforms/:id/checkout_status', async (req, res) => {
+app.get('/contentforms/:id/checkout_status', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
 
     try {
@@ -823,7 +1032,8 @@ app.get('/contentforms/:id/checkout_status', async (req, res) => {
     }
 });
 
-app.get('/contentforms/checkout/all', async (req, res) => {
+app.get('/contentforms/checkout/all', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const forms = await prisma.contentform.findMany({
             where: {checkout_username: {not: null}},
@@ -843,7 +1053,8 @@ app.get('/contentforms/checkout/all', async (req, res) => {
     }
 });
 
-app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
+app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     console.log('PUT body:', req.body);
     console.log('PUT file:', req.file?.originalname);
 
@@ -894,6 +1105,11 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
                 .getPublicUrl(req.file.originalname);
 
             updateData.url = `${urlData.publicUrl}?t=${Date.now()}`;
+        } else if (req.body.url) {
+            try { new URL(req.body.url); } catch (error) {
+                return res.status(400).json({ error: 'Invalid URL' });
+            }
+            updateData.url = req.body.url;
         }
 
         const updated = await prisma.contentform.update({
@@ -908,7 +1124,9 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
     }
 });
 
-app.get('/contentforms/employee/:empid', async (req, res) => {
+app.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
     try {
         const empid = parseInt(req.params.empid);
         const contentForms = await prisma.contentform.findMany({
@@ -920,7 +1138,8 @@ app.get('/contentforms/employee/:empid', async (req, res) => {
     }
 });
 
-app.post('/contentforms/:id/favorite', async (req, res) => {
+app.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
     const {is_favorite} = req.body;
     try {
@@ -996,6 +1215,5 @@ app.use((req, res) => {
 app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);
 });
-
 
 export default app;

@@ -1,36 +1,15 @@
-import { useState, useEffect } from 'react';
-
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import { SettingsModal } from '../components/SettingsModal';
 import { Profile } from "./Profile.tsx";
+import { usePersona } from "../hooks/usePersona";
 
 export function Header() {
-    const [persona, setPersona] = useState<string | null>(() =>
-        localStorage.getItem('persona')
-    );
+    const personaHook = usePersona();
 
-    useEffect(() => {
-        const handleStorage = () => {
-            setPersona(localStorage.getItem('persona'));
-        }
-
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
-
-    useEffect(() => {
-        const handleStorage = () => {
-            setPersona(localStorage.getItem('persona'));
-        };
-
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
-
-    const isAdmin = persona === 'Admin';
-    const isUnderwriter = persona === 'Underwriter';
-    const isBusinessAnalyst = persona === 'Business Analyst';
+    const isAdmin = personaHook === 'Admin';
+    const isUnderwriter = personaHook === 'Underwriter';
+    const isBusinessAnalyst = personaHook === 'Business Analyst';
 
     return (
         <header className="main-header">

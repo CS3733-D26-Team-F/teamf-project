@@ -7,6 +7,7 @@ import {
 import { Group, Paper, SimpleGrid, Text, RingProgress } from '@mantine/core';
 import classes from './StatsGrid.module.css';
 import {useEffect, useState} from "react";
+import {useApi} from "../api.ts";
 import { DOMAIN } from '../../const';
 
 const icons = {
@@ -35,6 +36,8 @@ export function StatsDashboard() {
     //number of files of each status type
     const[filesByStatus, setFilesByStatus] = useState({});
 
+    const api = useApi();
+
     useEffect(() => {
 
         const monthAgo = new Date();
@@ -46,8 +49,9 @@ export function StatsDashboard() {
             const myEmpid = Number(localStorage.getItem('empid'));
 
             let fileData = []
-
-            const res = await fetch(`${DOMAIN}/contentforms`);
+            //Might need to restrict this to the specified persona later /persona/Underwriter
+            //I was thinking an admin might want to know total number of files, rather then just those that match the persona
+            const res = await api(`${DOMAIN}/contentforms`);
             fileData = await res.json();
 
             const myPersonaFiles = [];

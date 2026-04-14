@@ -6,6 +6,8 @@ import {
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
 import { DOMAIN } from '../../const';
+//import {useAuth0} from "@auth0/auth0-react";
+import { useApi } from "../api.ts";
 
 type Employee = {
     empid: number;
@@ -27,6 +29,7 @@ const personaColors: Record<string, string> = {
 };
 
 export function EmployeeListView() {
+    const api = useApi();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
 
@@ -56,7 +59,7 @@ export function EmployeeListView() {
     const today = new Date().toISOString().split('T')[0];
 
     function loadEmployees() {
-        fetch(`${DOMAIN}/employees`)
+        api(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then(data => setEmployees(data));
     }
@@ -72,9 +75,9 @@ export function EmployeeListView() {
     }
 
     async function handleAdd() {
-        const addResponse = await fetch(`${DOMAIN}/addEmployee`, {
+        await api(`${DOMAIN}/addEmployee`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json'},
             body: JSON.stringify({
                 username: addData.username,
                 password: addData.password,
@@ -135,7 +138,7 @@ export function EmployeeListView() {
             }
 
             if (hasAccountChanges) {
-                const updateResponse = await fetch(`${DOMAIN}/updateEmployee`, {
+                const updateResponse = await api(`${DOMAIN}/updateEmployee`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -183,7 +186,7 @@ export function EmployeeListView() {
 
     async function handleDelete() {
         if (!deleteTarget) return;
-        await fetch(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
+        await api(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
             method: 'DELETE'
         });
         setDeleteOpen(false);
