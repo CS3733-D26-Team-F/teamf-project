@@ -79,7 +79,7 @@ export function Profile() {
                     <Menu.Dropdown>
                         <span><h3>Username:{localStorage.getItem('username')}</h3></span>
                         <Menu.Item component="button" >
-                            <Link to="/profile" style={{ color: 'var(--color-yale-blue)' }}>Profile</Link>
+                            <Link to="/profilePage" style={{ color: 'var(--color-yale-blue)' }}>Profile</Link>
                         </Menu.Item>
                         <Menu.Item component="button" >
                             <Link to="/settings" style={{ color: 'var(--color-yale-blue)' }}>Settings</Link>

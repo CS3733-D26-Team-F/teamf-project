@@ -3,6 +3,7 @@ import {Documents} from './pages/Documents';
 import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { Login } from "./pages/Login";
 import { MainMenu } from './pages/MainMenu';
+import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {MantineProvider} from "@mantine/core";
@@ -19,6 +20,7 @@ export default function App() {
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                 <Route path="/archive" element={<Archive />}/>
+                <Route path="/profilePage" element={<ProfilePage />}/>
             </Routes>
         </BrowserRouter>
     </MantineProvider>
