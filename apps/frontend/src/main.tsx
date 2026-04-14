@@ -4,7 +4,6 @@ import { Footer } from './components/Footer.tsx'
 import App from './App.tsx'
 import {MantineProvider} from "@mantine/core";
 
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
       <MantineProvider>
@@ -12,7 +11,4 @@ createRoot(document.getElementById('root')!).render(
           <Footer />
       </MantineProvider>
   </StrictMode>
-)
-
-
-
+);

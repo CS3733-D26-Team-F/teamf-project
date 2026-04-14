@@ -1,13 +1,20 @@
 import express from 'express';
 import morgan from 'morgan';
+import path from 'path';
 
 const app = express();
 import dotenv from 'dotenv';
-import {PrismaClient} from '@prisma/client';
+
+import pkg from '@prisma/client';
+
 import {PrismaPg} from "@prisma/adapter-pg";
 import {createClient} from '@supabase/supabase-js';
 import cors from 'cors';
 import multer from 'multer';
+
+const { PrismaClient } = pkg;
+
+const distPath = path.resolve("../frontend/dist");
 
 app.use(cors());
 import { ManagementClient } from 'auth0';
@@ -54,11 +61,14 @@ async function getManagementToken(): Promise<string> {
     return data.access_token;
 }
 
+app.use(express.static(distPath));
+
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5175"],
+    origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 // Send HTTP 200 at root
@@ -110,9 +120,9 @@ app.post('/api/auth/logout', checkJWT, async (_req, res) => {
 });
 
 
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
     res.sendStatus(200);
-});
+});*/
 
 app.get('/employees', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
@@ -382,7 +392,7 @@ app.post('/updateContentForm', checkJWT, async (req, res) => {
         name?: string;
         url?: string;
         owner?: string;
-        persona?: string;
+        persona?: string[];
         date_modified?: string;
         expiration_date?: string;
         content_type?: string;
@@ -484,22 +494,19 @@ app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
             return res.status(404).json({error: 'Employee not found this should be the current user'});
         }
 
-        const persona = employee.persona;
+        const persona = JSON.parse(req.body.persona ?? '[]');
+        const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
 
-        const {data, error} = await supabase.storage
-            .from(persona)
-            .upload(file.originalname, file.buffer, {
-                contentType: file.mimetype,
-                upsert: true
-            });
+        const { data, error } = await supabase.storage
+            .from(bucket)
+            .upload(file.originalname, file.buffer, { contentType: file.mimetype, upsert: true });
 
         if (error) {
-            return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
+            return res.status(500).json({ error: 'Failed to upload file to bucket', details: error.message });
         }
 
-        // Get the public URL to store in the DB
-        const {data: urlData} = supabase.storage
-            .from(persona)
+        const { data: urlData } = supabase.storage
+            .from(bucket)
             .getPublicUrl(file.originalname);
 
         // Create the content form record with the supabase URL
@@ -564,7 +571,7 @@ app.get('/contentforms/persona/:persona', checkJWT, async (req, res) => {
     const { persona } = req.params;
     try {
         const contentForms = await prisma.contentform.findMany({
-            where: {persona: persona}
+            where: {persona: {has: persona}}
         });
         res.json(contentForms);
     } catch (error) {
@@ -577,8 +584,8 @@ app.get('/contentforms/admin', checkJWT, async (req, res) => {
 
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
-            prisma.contentform.findMany({where: {persona: {has: 'Underwriter'}}}),
-            prisma.contentform.findMany({where: {persona: {has: 'Business Analyst'}}})
+            prisma.contentform.findMany({ where: { persona: { has: 'Underwriter' } } }),
+            prisma.contentform.findMany({ where: { persona: { has: 'Business Analyst' } } }),
         ]);
         res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
     } catch (error) {
@@ -593,14 +600,14 @@ app.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
     try {
         if (persona === 'Admin') {
             const contentForm = await prisma.contentform.findMany({
-                where: {persona: {hasSome: ['Underwriter', 'Business Analyst']}},
+                where: { persona: { hasSome: ['Underwriter', 'Business Analyst'] } },
                 select: {[field]: true}
             });
             const links = contentForm.map(item => item[field])
             res.json(links);
         } else {
             const contentForms = await prisma.contentform.findMany({
-                where: {persona: {has: persona}},
+                where: { persona: { has: persona } },
                 select: {[field]: true}
             });
             const links = contentForms.map(item => item[field])
@@ -687,6 +694,82 @@ app.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
     }
 });
 
+// Auto-expire documents past their expiration date
+// NOTE: this must stay above GET /contentforms/:id or Express will treat "autoexpire" as an id
+app.patch('/contentforms/autoexpire', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const updated = await prisma.contentform.updateMany({
+            where: {
+                expiration_date: { lt: new Date() },
+                status: { not: 'Expired' },
+                is_deleted: false
+            },
+            data: { status: 'Expired' }
+        });
+        res.json({ message: `${updated.count} documents expired` });
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Get archived documents
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/archived', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const archived = await prisma.contentform.findMany({
+            where: { status: 'Archived', is_deleted: false }
+        });
+        res.json(archived);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Get expired documents
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/expired', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const expired = await prisma.contentform.findMany({
+            where: { status: 'Expired', is_deleted: false }
+        });
+        res.json(expired);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Trash - get all soft deleted (admin only)
+// NOTE: must stay above GET /contentforms/:id
+app.get('/contentforms/trash', async (req, res) => {
+    try {
+        const trashed = await prisma.contentform.findMany({
+            where: { is_deleted: true }
+        });
+        res.json(trashed);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
+// Patch just the status field — used by Archive page restore
+app.patch('/contentforms/:id/status', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { status } = req.body;
+        if (!status) return res.status(400).json({ error: 'status is required' });
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { status }
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Something went wrong' });
+    }
+});
+
 app.get('/contentforms/:id', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
@@ -705,20 +788,40 @@ app.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
     const {username} = req.body;
+    console.log('checkout hit', { id, username });
     if (!username) {
         return res.status(400).send('Requires username');
     }
 
-    if (checkOutMem[id]) {
-        const {username: takenBy, checkedOut} = checkOutMem[id];
-        if (takenBy !== username) {
-            return res.status(423).json({
-                error: `Document is checked out by ${takenBy} since ${checkedOut}`
-            });
+    try {
+        const current = await prisma.contentform.findUnique({
+            where: { id },
+            select: { checkout_username: true,  checkout_date: true }
+        });
+
+        if (current && current.checkout_username) {
+            const {checkout_username: takenBy, checkout_date} = current;
+            if (takenBy !== username) {
+                return res.status(423).json({
+                    error: `Document is checked out by ${takenBy} since ${checkout_date}`
+                });
+            }
         }
+
+        try {
+            const updated = await prisma.contentform.update({
+                where: {id},
+                data: {checkout_username: username, checkout_date: new Date()}
+            });
+            return res.status(200).json({message: 'Document checked out'});
+        } catch (error) {
+            res.status(500).json({error: 'Something went wrong 1'});
+        }
+
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong 2'});
     }
-    checkOutMem[id] = {username, checkedOut: new Date()};
-    return res.status(200).json({message: 'Document checked out'});
+
 });
 
 app.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
@@ -726,49 +829,80 @@ app.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
     const id = parseInt(req.params.id);
     const {username} = req.body;
 
-    if (!checkOutMem[id]) {
-        return res.status(400).send('Document isnt checked out')
-    }
-    ;
-    if (checkOutMem[id].username !== username) {
+    try {
+        const current = await prisma.contentform.findUnique({
+            where: { id },
+            select: { checkout_username: true,  checkout_date: true }
+        });
+
+        if (!current) {
+            return res.status(400).send('Document isnt checked out')
+        }
+
+        const {checkout_username: takenBy, checkout_date} = current;
+
+    if (takenBy !== username) {
         return res.status(401).json({error: "You can only check in documents that you have checked out"});
     }
 
-    delete checkOutMem[id];
-    return res.status(200).json({message: 'Document checked in'});
+    try {
+        const updated = await prisma.contentform.update({
+            where: { id },
+            data: { checkout_username: null, checkout_date: null }
+        });
+
+        return res.status(200).json({message: 'Document checked in'});
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong checking in doc'});
+    }
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
 });
 
 app.get('/contentforms/:id/checkout_status', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
 
-    if (!checkOutMem[id]) {
-        return res.status(401).json({isCheckedOut: false});
+    try {
+        const current = await prisma.contentform.findUnique({
+            where: {id},
+            select: {checkout_username: true, checkout_date: true}
+        });
+
+        if (!current) return res.status(404).json({ error: 'Document not found' });
+
+        const {checkout_username: takenBy, checkout_date} = current;
+
+        if (!takenBy) {
+            return res.status(200).json({isCheckedOut: false});
+        }
+        return res.status(200).json({
+            isCheckedOut: true,
+            checkedOutBy: takenBy,
+            checkedOutAt: checkout_date
+        });
+    }catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
     }
-    return res.status(200).json({
-        isCheckedOut: true,
-        checkedOutBy: checkOutMem[id].username,
-        checkedOutAt: checkOutMem[id].checkedOut
-    });
-})
+});
 
 app.get('/contentforms/checkout/all', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const checkedOutId = Object.keys(checkOutMem).map(Number);
-        if (checkedOutId.length === 0) {
-            return res.status(200).json([]);
-        }
         const forms = await prisma.contentform.findMany({
-            where: {id: {in: checkedOutId}}
+            where: {checkout_username: {not: null}},
+            select: {id: true, checkout_username: true, checkout_date: true}
         });
 
         const result = forms.map(form => ({
-            ...form,
-            checkedOutBy: checkOutMem[form.id].username,
-            checkedOutAt: checkOutMem[form.id].checkedOut
+            id: form.id,
+            checkedOutBy: form.checkout_username,
+            checkedOutAt: form.checkout_date
         }));
+
         return res.status(200).json(result);
+
     } catch (error) {
         res.status(500).json({error: 'Something is Wrong'});
     }
@@ -781,23 +915,27 @@ app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) =
 
     try {
         const id = parseInt(req.params.id.toString());
-        const { name, ownerUsername, persona, date_modified, expiration_date, content_type, status } = req.body;
+        const { name, ownerUsername, owner, date_modified, expiration_date, content_type, status } = req.body;
+        const resolvedOwner = ownerUsername ?? owner;
+        console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
+        const rawPersona = req.body.persona;
+        const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
         const updateData: any = {
-            name: name,
-            owner: ownerUsername,
-            persona,
+            name,
+            owner: resolvedOwner,
+            persona,  // now correctly set
             date_modified: new Date(date_modified),
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
-            employee: { connect: { username: ownerUsername } }
+            employee: { connect: { username: resolvedOwner } }
         };
 
         if (req.file) {
             // look up the employee to get their persona/bucket
             const employee = await prisma.employee.findUnique({
-                where: { username: ownerUsername }
+                where: { username: resolvedOwner }
             });
 
             if (!employee) {
@@ -919,8 +1057,12 @@ app.get('/ba-files/:name', async(req, res) => {
     res.json(data)
 })
 
+app.use((req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+});
+
 // Start server
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}`);
 });
 

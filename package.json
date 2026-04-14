@@ -6,8 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "turbo run dev --filter=frontend --filter=backend",
-    "build": "turbo run build --filter=frontend --filter=backend",
-    "start": "turbo run start --filter=frontend --filter=backend",
+    "build": "turbo run build --filter=frontend",
+    "start": "turbo run start --filter=backend",
     "db:generate": "node scripts/run-db-prisma.mjs db:generate",
     "db:pull": "node scripts/run-db-prisma.mjs db:pull",
     "db:push": "node scripts/run-db-prisma.mjs db:push",
@@ -24,6 +24,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/dotenv": "^6.1.1",
+    "@types/node": "^25.6.0",
     "nodemon": "^3.1.14",
     "prisma": "^7.6.0",
     "turbo": "^2.9.1"
@@ -40,6 +41,7 @@
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@prisma/client": "^7.6.0",
+    "@railway/cli": "^4.36.1",
     "@tabler/icons-react": "^3.41.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/express": "^5.0.6",
@@ -53,6 +55,7 @@
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "morgan": "^1.10.1",
+    "railway": "^2.0.17",
     "react-router-dom": "^7.13.2",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"

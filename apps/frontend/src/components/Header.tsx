@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
-import ThemeToggle from "./ThemeToggle.tsx";
+import { SettingsModal } from '../components/SettingsModal';
 import { Profile } from "./Profile.tsx";
 import { usePersona } from "../hooks/usePersona";
 
@@ -23,15 +23,17 @@ export function Header() {
                 {(isAdmin || isBusinessAnalyst || isUnderwriter) &&
                     (<Link to="/managecontent">Manage Content</Link>)}
                 {isAdmin && <Link to="/manageemployees">Employees</Link>}
-                {(isAdmin || isBusinessAnalyst) && (
-                    <Link to="/businessanalyst">Business Analyst</Link>
-                )}
-                {(isAdmin || isUnderwriter) && (
-
-                    <Link to="/corecommercialunderwriter">Core Commercial Underwriter</Link>
+                {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
+                    <Link to="/documents">Documents</Link>
+                    )}
+                {(isAdmin || isUnderwriter || isBusinessAnalyst) && (
+                    <Link to="/archive">Archive</Link>
                 )}
                 <Profile />
-                <ThemeToggle />
+                <SettingsModal />
+
+                
+
             </nav>
         </header>
     );

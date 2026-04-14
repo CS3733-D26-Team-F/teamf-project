@@ -1,16 +1,16 @@
 import * as React from 'react';
 import Switch from '@mui/material/Switch';
-import {alpha, styled} from "@mui/material";
+import {styled} from "@mui/material";
 
 const ThemeSwitch = styled(Switch)(({ theme }) => ({
     '& .MuiSwitch-switchBase.Mui-checked': {
-        color: "#ff9800",
+        color: "var(--color-yale-blue)",
         '&:hover': {
-            backgroundColor: alpha("#ff9800", theme.palette.action.hoverOpacity),
+            backgroundColor: `rgba(27, 73, 101, ${theme.palette.action.hoverOpacity})`,
         },
     },
     '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-        backgroundColor: "#ff9800",
+        backgroundColor: "var(--color-yale-blue)",
     },
 }));
 
@@ -36,7 +36,7 @@ export default function ThemeToggle() {
     }
 
     return (
-        <div className={"outline outline-white outline-offset-4" }><label className={"text-white"}>Theme: </label><ThemeSwitch
+        <div className={"outline outline-white outline-offset-4" }><label className={"text-black"}>Red-Green Colorblind Theme: </label><ThemeSwitch
                                            checked={checked}
                                            onChange={handleChange}
                                            slotProps={{input: {'aria-label': 'controlled'}}}/>

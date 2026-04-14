@@ -10,6 +10,7 @@ import { Group, Paper, SimpleGrid, Text } from '@mantine/core';
 import classes from './StatsGrid.module.css';
 import {useEffect, useState} from "react";
 import {useApi} from "../api.ts";
+import { DOMAIN } from '../../const';
 
 const icons = {
     user: IconUserPlus,
@@ -54,7 +55,7 @@ export function StatsDashboard() {
             let fileData = []
             //Might need to restrict this to the specified persona later /persona/Underwriter
             //I was thinking an admin might want to know total number of files, rather then just those that match the persona
-            const res = await api(`http://localhost:3000/contentforms`);
+            const res = await api(`${DOMAIN}/contentforms`);
             fileData = await res.json();
 
             //currently just number of files that match myPersona
