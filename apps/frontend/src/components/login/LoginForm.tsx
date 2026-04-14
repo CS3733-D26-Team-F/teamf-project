@@ -4,6 +4,9 @@ import { DOMAIN } from "../../const";
 
 import * as React from "react";
 
+
+const placeholder = "/default-profile-picture.png";
+
 export function LoginForm() {
 
     const [username, setUsername] = useState("");
@@ -37,11 +40,7 @@ export function LoginForm() {
             localStorage.setItem('username', data.employee.username);
             localStorage.setItem('empid', String(data.employee.empid));
             localStorage.setItem('first_name', data.employee.first_name);
-            if (data.employee.pfp_URL) {
-                localStorage.setItem('profilePicture', data.employee.pfp_URL);
-            } else {
-                localStorage.removeItem('profilePicture');
-            }
+            localStorage.setItem('profilePicture', data.employee.pfp_URL || placeholder);
             setSessionTo(data.employee.persona);
 
             navigate("/menu");
