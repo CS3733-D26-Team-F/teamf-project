@@ -6,6 +6,8 @@ import {
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
 import { DOMAIN } from '../../const';
+//import {useAuth0} from "@auth0/auth0-react";
+import { useApi } from "../api.ts";
 
 type Employee = {
     empid: number;
@@ -26,6 +28,7 @@ const personaColors: Record<string, string> = {
 };
 
 export function EmployeeListView() {
+    const api = useApi();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
 
@@ -52,7 +55,7 @@ export function EmployeeListView() {
     const today = new Date().toISOString().split('T')[0];
 
     function loadEmployees() {
-        fetch(`${DOMAIN}/employees`)
+        api(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then(data => setEmployees(data));
     }
@@ -68,16 +71,16 @@ export function EmployeeListView() {
     }
 
     async function handleAdd() {
-        await fetch(`${DOMAIN}/addEmployee`, {
+        await api(`${DOMAIN}/addEmployee`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json'},
             body: JSON.stringify({
                 username: addData.username,
                 password: addData.password,
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
-            })
+            },)
         });
         setAddOpen(false);
         loadEmployees();
@@ -91,9 +94,9 @@ export function EmployeeListView() {
 
     async function handleEdit() {
         if (!editTarget) return;
-        await fetch(`${DOMAIN}/updateEmployee`, {
+        await api(`${DOMAIN}/updateEmployee`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json'},
             body: JSON.stringify({
                 username: editTarget.username,
                 newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
@@ -112,7 +115,7 @@ export function EmployeeListView() {
 
     async function handleDelete() {
         if (!deleteTarget) return;
-        await fetch(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
+        await api(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
             method: 'DELETE'
         });
         setDeleteOpen(false);

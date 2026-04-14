@@ -9,6 +9,8 @@ import {
 import { IconArchive, IconClock, IconRestore, IconTrash } from '@tabler/icons-react';
 import { DOMAIN } from '../const.ts';
 import {PersonaBadges} from "../components/PersonaBadge.tsx";
+import { useApi } from "../../src/components/api.ts";
+
 import { PageTitle } from "../components/Title.tsx"
 
 type ContentForm = {
@@ -88,21 +90,22 @@ export function Archive() {
     const persona = localStorage.getItem('persona');
     const [expired, setExpired] = useState<ContentForm[]>([]);
     const [archived, setArchived] = useState<ContentForm[]>([]);
+    const api = useApi();
 
     function loadExpired() {
-        fetch(`${DOMAIN}/contentforms/expired`)
+        api(`${DOMAIN}/contentforms/expired`)
             .then(res => res.json())
             .then(data => setExpired(data));
     }
 
     function loadArchived() {
-        fetch(`${DOMAIN}/contentforms/archived`)
+        api(`${DOMAIN}/contentforms/archived`)
             .then(res => res.json())
             .then(data => setArchived(data));
     }
 
     useEffect(() => {
-        fetch(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' });
+        api(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' });
         loadExpired();
         loadArchived();
     }, []);
@@ -110,7 +113,7 @@ export function Archive() {
     // Uses PATCH /contentforms/:id/status — a simple status-only update.
     // Do NOT use PUT /:id here; that handler expects multipart/form-data for file uploads.
     async function restoreDoc(id: number) {
-        await fetch(`${DOMAIN}/contentforms/${id}/status`, {
+        await api(`${DOMAIN}/contentforms/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'In Progress' })
@@ -120,7 +123,7 @@ export function Archive() {
     }
 
     async function trashDoc(id: number) {
-        await fetch(`${DOMAIN}/contentforms/${id}/softdelete`, {
+        await api(`${DOMAIN}/contentforms/${id}/softdelete`, {
             method: 'PATCH'
         });
         loadExpired();
