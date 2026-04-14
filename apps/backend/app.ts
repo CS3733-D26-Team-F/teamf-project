@@ -97,6 +97,8 @@ app.post('/login', async (req, res) => {
             employee: {
                 empid: employee.empid,
                 username: employee.username,
+                first_name: employee.first_name,
+                last_name: employee.last_name,
                 persona: employee.persona,
                 pfp_URL: employee.pfp_URL
             }

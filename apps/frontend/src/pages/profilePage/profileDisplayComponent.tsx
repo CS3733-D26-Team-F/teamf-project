@@ -18,7 +18,7 @@ export function ProfileComponent() {
                 
                 <thead id="profile-header" style={{ padding: '20px' }}>
                     <tr>
-                        <th>{localStorage.getItem('first_name')}</th>
+                        <th>User: {localStorage.getItem('first_name')}</th>
                         <th>Role: {localStorage.getItem('persona')}</th>
 
                     </tr>
