@@ -6,12 +6,12 @@ import { AccessDenied } from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip
+    Tooltip, SegmentedControl
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconEdit, IconTrash,
     IconDownload, IconFilter, IconStar, IconStarFilled,
-    IconClock, IconArrowsSort
+    IconClock, IconArrowsSort, IconExternalLink
 } from '@tabler/icons-react';
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -89,7 +89,19 @@ function getExt(url: string) {
 }
 
 function getFileType(url: string) {
-    return getExt(url).toUpperCase() || 'Unknown';
+    const ext = getExt(url).toUpperCase();
+    if (!ext || !['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'CSV', 'PPTX', 'PPT', 'PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'SVG', 'TXT'].includes(ext)) {
+        return 'Link';
+    }
+    return ext;
+}
+
+function normalizeUrl(input: string): string {
+    if (!input) return input;
+    if (!/^https?:\/\//i.test(input)) {
+        return `https://${input}`;
+    }
+    return input;
 }
 
 function OfficePlaceholder({ ext }: { ext: string }) {
@@ -237,7 +249,7 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
 
 interface RowCallbacks {
     persona: string | null;
-    onView: (url: string, label: string, id: number) => void;
+    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
     onFavorite: (doc: ContentForm) => void;
     onDownload: (url: string, name: string) => void;
     onEdit: (doc: ContentForm) => void;
@@ -252,8 +264,9 @@ interface DocRowProps extends RowCallbacks {
 
 function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
+    const isUrl = getFileType(doc.url) === 'Link';
     return (
-        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id)}>
+        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
@@ -272,8 +285,22 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
                             {doc.is_favorite ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                         </ActionIcon>
                     </Tooltip>
-                    <Tooltip label="Download">
-                        <ActionIcon variant="subtle" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={16} /></ActionIcon>
+                    <Tooltip label={isUrl ? "Open URL" : "Download"}>
+                        {isUrl ? (
+                            <ActionIcon
+                                variant="subtle"
+                                onClick={() => window.open(doc.url, '_blank')}
+                            >
+                                <IconExternalLink size={16} />
+                            </ActionIcon>
+                        ) : (
+                            <ActionIcon
+                                variant="subtle"
+                                onClick={() => onDownload(doc.url, doc.name)}
+                            >
+                                <IconDownload size={16} />
+                            </ActionIcon>
+                        )}
                     </Tooltip>
                     {canModify && (
                         <Tooltip label="Edit">
@@ -299,6 +326,7 @@ interface DocCardProps extends RowCallbacks {
 
 function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
+    const isUrl = getFileType(doc.url) === 'Link';
     return (
         <div
             style={{
@@ -307,7 +335,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 transition: 'box-shadow 0.15s', overflow: 'hidden',
                 border: isSelected ? '2px solid var(--color-fresh-sky, #3b82f6)' : '2px solid transparent',
             }}
-            onClick={() => onView(doc.url, doc.name, doc.id)}
+            onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}
         >
             <DocThumbnail url={doc.url} />
 
@@ -419,6 +447,8 @@ export function Documents() {
     }
 
     const [addFile, setAddFile] = useState<File | null>(null);
+    const [addUrl, setAddUrl] = useState<string>('');
+    const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [editOpen, setEditOpen] = useState(false);
@@ -428,6 +458,8 @@ export function Documents() {
         date_modified: today, expiration_date: '', content_type: '', status: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
+    const [editUrl, setEditUrl] = useState<string>('');
+    const [editUploadMode, setEditUploadMode] = useState<'file' | 'url'>('file');
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -501,7 +533,10 @@ export function Documents() {
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
-        if (filterType.length > 0) result = result.filter(d => filterType.map(t => t.toLowerCase()).includes(getExt(d.url)));
+        if (filterType.length > 0) result = result.filter(d => {
+            if (filterType.includes('link') && getFileType(d.url) === 'Link') return true;
+            return filterType.map(t => t.toLowerCase()).includes(getExt(d.url));
+        });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
 
         if (sortField) {
@@ -546,7 +581,8 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
     async function handleAdd() {
-        if (!addFile) { alert('Please upload a file.'); return; }
+        if (uploadMode === 'file' && !addFile) { alert('Please upload a file.'); return; }
+        if (uploadMode === 'url' && !addUrl) { alert('Please enter a URL.'); return; }
         if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.content_type || !addData.status) {
             alert('Please fill in all fields.'); return;
         }
@@ -558,13 +594,20 @@ export function Documents() {
         formPayload.append('expiration_date', addData.expiration_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
-        formPayload.append('file', addFile);
+
+        if(addFile) {
+            formPayload.append('file', addFile);
+        } else {
+            formPayload.append('url', normalizeUrl(addUrl));
+        }
         await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
-        setAddOpen(false); setAddFile(null);
+        setAddOpen(false); setAddFile(null); setAddUrl('');
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
+        if (uploadMode === 'file') {}
     }
 
+    //does not support bulk urls (for now)
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
         const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
@@ -611,7 +654,12 @@ export function Documents() {
             formPayload.append('content_type', editData.content_type);
             formPayload.append('status', editData.status);
             formPayload.append('file', editFile);
-            await fetch(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
+            await fetch(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+        } else if (editUploadMode === 'url' && editUrl) {
+            await fetch(`${DOMAIN}/contentforms/${editId}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
+            });
         } else {
             await fetch(`${DOMAIN}/contentforms/${editId}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData)
@@ -625,7 +673,7 @@ export function Documents() {
 
     function closeEdit() {
         if (editId) fetch(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-        setEditOpen(false);
+        setEditOpen(false); setEditUrl(''); setEditUploadMode('file');
     }
 
     async function handleDelete() {
@@ -686,7 +734,12 @@ export function Documents() {
         }
     }
 
-    function openViewer(url: string, label: string, id: number) {
+    function openViewer(url: string, label: string, id: number, isUrl: boolean) {
+        if (isUrl) {
+            recordView(id);
+            window.open(url, '_blank');
+            return;
+        }
         recordView(id);
         setViewerUrl(url);
         setViewerLabel(label);
@@ -770,7 +823,7 @@ export function Documents() {
                             {recentDocs.map(doc => (
                                 <div
                                     key={doc.id}
-                                    onClick={() => openViewer(doc.url, doc.name, doc.id)}
+                                    onClick={() => openViewer(doc.url, doc.name, doc.id, (getFileType(doc.url) === 'Link'))}
                                     style={{
                                         minWidth: 160, maxWidth: 160, background: 'white', borderRadius: 8,
                                         padding: '10px 12px', cursor: 'pointer', flexShrink: 0,
@@ -893,7 +946,7 @@ export function Documents() {
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv']} clearable />
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
@@ -981,8 +1034,24 @@ export function Documents() {
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={addData.name} onChange={e => setAddData({...addData, name: e.target.value})} />
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Upload File</Text>
-                        <input ref={fileInputRef} type="file" onChange={e => setAddFile(e.target.files?.[0] ?? null)} />
+                        <SegmentedControl
+                            value={uploadMode}
+                            onChange={(val) => {
+                                setUploadMode(val as 'file' | 'url');
+                                setAddFile(null);
+                                setAddUrl('');
+                            }}
+                            data={[{label: 'Upload File', value: 'file'}, {label: 'Enter URL', value: 'url'}]}
+                            mb="sm"
+                        />
+                        {uploadMode === 'file'
+                            ? <Box>
+                                <input ref={fileInputRef} type="file"
+                                       onChange={e => setAddFile(e.target.files?.[0] ?? null)}/>
+                            </Box>
+                            : <TextInput label="URL" placeholder="https://example.com" value={addUrl}
+                                         onChange={e => setAddUrl(e.target.value)}/>
+                        }
                     </Box>
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
@@ -1010,9 +1079,25 @@ export function Documents() {
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Update File (Optional)</Text>
-                        <input type="file" onChange={e => setEditFile(e.target.files?.[0] ?? null)} />
-                        <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document details.</Text>
+                        <SegmentedControl
+                            value={editUploadMode}
+                            onChange={(val) => {
+                                setEditUploadMode(val as 'file' | 'url');
+                                setEditFile(null);
+                                setEditUrl('');
+                            }}
+                            data={[{label: 'Upload File', value: 'file'}, {label: 'Enter URL', value: 'url'}]}
+                            mb="sm"
+                        />
+                        {editUploadMode === 'file'
+                            ? <Box>
+                                <input type="file" style={{display: 'block', marginTop: '8px'}}
+                                       onChange={e => setEditFile(e.target.files?.[0] ?? null)}/>
+                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document details.</Text>
+                            </Box>
+                            : <TextInput label="URL" placeholder="https://example.com" value={editUrl}
+                                         onChange={e => setEditUrl(e.target.value)}/>
+                        }
                     </Box>
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />

@@ -375,9 +375,10 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
+        const rawUrl = req.body.url;
 
-        if (!file) {
-            return res.status(400).json({error: 'File is required'});
+        if (!file && !rawUrl) {
+            return res.status(400).json({error: 'File or URL is required'});
         }
 
         const employee = await prisma.employee.findUnique({
@@ -389,25 +390,38 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         }
 
         const persona = JSON.parse(req.body.persona ?? '[]');
-        const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
 
-        const { data, error } = await supabase.storage
-            .from(bucket)
-            .upload(file.originalname, file.buffer, { contentType: file.mimetype, upsert: true });
+        let contentUrl: string = '';
 
-        if (error) {
-            return res.status(500).json({ error: 'Failed to upload file to bucket', details: error.message });
+        if(file) {
+
+            const bucket = Array.isArray(persona) && persona.length > 0 ? persona[0] : employee.persona;
+
+            const {data, error} = await supabase.storage
+                .from(bucket)
+                .upload(file.originalname, file.buffer, {contentType: file.mimetype, upsert: true});
+
+            if (error) {
+                return res.status(500).json({error: 'Failed to upload file to bucket', details: error.message});
+            }
+
+            const {data: urlData} = supabase.storage
+                .from(bucket)
+                .getPublicUrl(file.originalname);
+
+            contentUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+        }else{
+            try { new URL(rawUrl); }catch(error){
+                return res.status(400).json({error: 'Invalid URL'});
+            }
+            contentUrl = rawUrl;
         }
-
-        const { data: urlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(file.originalname);
 
         // Create the content form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
                 name: filename,
-                url: `${urlData.publicUrl}?t=${Date.now()}`,
+                url: contentUrl,
                 owner: ownerUsername,
                 persona,
                 date_modified: new Date(date_modified),
@@ -423,7 +437,7 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
         return res.status(200).json({
             message: 'Content form created successfully',
             data: content,
-            url: urlData.publicUrl
+            url: contentUrl
         });
 
     } catch (error) {
@@ -860,6 +874,11 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
                 .getPublicUrl(req.file.originalname);
 
             updateData.url = `${urlData.publicUrl}?t=${Date.now()}`;
+        } else if (req.body.url) {
+            try { new URL(req.body.url); } catch (error) {
+                return res.status(400).json({ error: 'Invalid URL' });
+            }
+            updateData.url = req.body.url;
         }
 
         const updated = await prisma.contentform.update({
