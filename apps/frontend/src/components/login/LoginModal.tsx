@@ -1,92 +1,120 @@
 import { useDisclosure } from '@mantine/hooks';
-import {Modal, Button, TextInput, PasswordInput} from '@mantine/core';
 import * as React from "react";
 import { useAuth0 } from '@auth0/auth0-react';
+import {useNavigate} from "react-router-dom";
+import {useEffect} from "react";
+import {Button} from "@mantine/core";
 
 
 function LoginModal() {
     const [opened, { open, close }] = useDisclosure(false);
-    const { isLoading, error, loginWithPopup, getAccessTokenSilently } = useAuth0();
-    const [username, setUsername] = React.useState('');
-    const [password, setPassword] = React.useState('');
+    const { isLoading, error, getAccessTokenSilently, loginWithPopup, user, isAuthenticated } = useAuth0();
+    const navigate = useNavigate();
 
-    const handleSubmit = async (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-        try {
-            await loginWithPopup({
-                authorizationParams: {
-                    login_hint: username,
-                    password_hint: password,
-                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                    scope: "openid profile email read:profile read:data read:api"
-                }
-            });
-            const token = await getAccessTokenSilently({
-                audience: import.meta.env.VITE_AUTH0_AUDIENCE
-            });
+    async function sendToBackend() {
+        const token = await getAccessTokenSilently({});
 
-            await fetch(`http://localhost:3000/api/auth/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
-            });
+        setFirst(false);
 
+        const inputToken = await fetch(`http://localhost:3000/api/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token} `
+            }
+        });
+    }
 
-            close();
+    const [first, setFirst] = React.useState(true);
+
+    useEffect(()=> {
+        if(isAuthenticated){
+            console.log("User: ", user);
+            if(first){
+                sendToBackend();
+            }
         }
-        catch (err) {
-            console.error(err);
-        }
-    };
+    }, [isAuthenticated, user, sendToBackend, first, setFirst]);
+
+
 
     return (
         <>
-            <Modal
-                opened={opened}
-                onClose={close}
-                title="Authentication"
-                centered size={"lg"}
-                padding={"xl"}
-                styles={{
-                    body: {
-                        paddingBottom: "2rem",
-                }
-                }}
-            >
-                <form className="login-form" onSubmit={handleSubmit}>
-                    <TextInput
-                        label="Username"
-                        placeholder="Enter your username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        size="md"
-                        required
-                    />
+            {
+                !isAuthenticated && (
+                    <Button variant="default" onClick={async () => {
+                        try {
 
-                    <PasswordInput
-                        label="Password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        size="md"
-                        required
-                    />
+                            await loginWithPopup({
+                                authorizationParams: {
+                                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                                    scope: "openid profile email read:profile read:data read:api"
+                                }
+                            });
 
-                    {error && <p className="error">{error.message}</p>}
+                            close();
 
-                    <Button type="submit" fullWidth loading={isLoading} size={"lg"} mt={"sm"} color={"blue"} fz={"sm"}>
-                        Log In
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    }
+                    } size={"xl"} text-size={"10px"}>
+                        Get Started
                     </Button>
-                </form>
-            </Modal>
-
-            <Button variant="default" onClick={open} size={"xl"} text-size={"10px"}>
-                Get Started
-            </Button>
+                )
+            }
         </>
     );
 }
 
 export default LoginModal;
+
+
+async function setSessionTo(persona: string) {
+
+
+    if (persona === 'Admin') {
+        displayAdmin();
+        console.log('Admin access');
+    }
+
+    if (persona === 'Underwriter'){
+        displayUnderwriter();
+        console.log('Underwriter access');
+    }
+
+    if (persona === 'Business Analyst'){
+        displayBusinessAnalyst();
+        console.log('Business Analyst access');
+    }
+    else {
+        console.log('Limit access: No persona found');
+    }
+}
+
+async function displayAdmin(){
+    console.log(
+        document.getElementById('manage-content'),
+        document.getElementById('manage-employees'),
+        document.getElementById('business-analyst'),
+        document.getElementById('core-commercial-underwriter')
+    );
+    document.getElementById('manage-content')!.style.display = ''
+    document.getElementById('manage-employees')!.style.display = '';
+    document.getElementById('business-analyst')!.style.display = 'block';
+    document.getElementById('core-commercial-underwriter')!.style.display = 'block';
+}
+
+async function displayUnderwriter(){
+    document.getElementById('manage-content')!.style.display = '';
+    document.getElementById('manage-employees')!.style.display = 'block';
+    document.getElementById('business-analyst')!.style.display = 'block';
+    document.getElementById('core-commercial-underwriter')!.style.display = '';
+}
+
+async function displayBusinessAnalyst(){
+    document.getElementById('manage-content')!.style.display = 'block';
+    document.getElementById('manage-employees')!.style.display = 'block';
+    document.getElementById('business-analyst')!.style.display = '';
+    document.getElementById('core-commercial-underwriter')!.style.display = 'block';
+}

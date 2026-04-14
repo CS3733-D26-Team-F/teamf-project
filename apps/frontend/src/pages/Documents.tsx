@@ -708,7 +708,7 @@ export function Documents() {
         setViewerUrl(url); setViewerLabel(label);
     }
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    const allowedAccess = persona === 'admin' || persona === 'underwriter' || persona === 'business analyst';
     if (!allowedAccess) return <AccessDenied />;
 
     const rowCallbacks: RowCallbacks = {

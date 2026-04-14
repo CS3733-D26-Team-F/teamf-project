@@ -28,9 +28,9 @@ export function Header() {
         return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
-    const isAdmin = persona === 'Admin';
-    const isUnderwriter = persona === 'Underwriter';
-    const isBusinessAnalyst = persona === 'Business Analyst';
+    const isAdmin = persona === 'admin';
+    const isUnderwriter = persona === 'underwriter';
+    const isBusinessAnalyst = persona === 'business analyst';
 
     return (
         <header className="main-header">
@@ -41,13 +41,15 @@ export function Header() {
             </div>
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
-                {isAdmin && <Link to="/manageemployees">Employees</Link>}
+                {isAdmin && (<Link to="/manageemployees">Employees</Link>)}
                 {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
                     <Link to="/documents">Documents</Link>
                     )}
+                {(isAdmin || !isBusinessAnalyst || !isUnderwriter) && (
+                    (<Link to="/manageemployees">Employees</Link>)
+                )}
                 <Profile />
                 <ThemeToggle />
-
                 
 
             </nav>

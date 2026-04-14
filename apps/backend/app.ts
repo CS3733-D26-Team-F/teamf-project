@@ -66,13 +66,16 @@ app.use(morgan('dev'));
 // Used for login
 app.post('/api/auth/login', checkJWT, async (req, res) => {
     try {
-        const auth0Id  = req.auth.payload.sub;
+        console.log("Body =", req.body);
+        console.log("Payload =", req.auth.payload);
+        console.log("=================================================Here1");
+        const auth0Id  = req.auth!.payload.sub;
         const username = req.auth!.payload['name'] as string;
 
         const employee = await prisma.employee.upsert({
             where:  { auth0Id },
             update: {
-               username,
+                username,
                 isLoggedIn: true
             },
             create: {
@@ -81,6 +84,7 @@ app.post('/api/auth/login', checkJWT, async (req, res) => {
             },
         });
         res.json({ employee });
+        console.log("=================================================Here2");
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Login sync failed' });
@@ -119,13 +123,7 @@ app.get('/contentforms', checkJWT, async (req, res) => {
     res.json(contentForms);
 });
 
-app.get('/employee_manage', async (req, res) => {
-    const employeeManage = await prisma.employee_manage.findMany();
-    console.log('Employee Manage Data:', employeeManage);
-    res.json(employeeManage);
-});
-
-app.post('/getEmployee', async (req, res) => {
+app.post('/getEmployee', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
 
