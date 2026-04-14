@@ -11,7 +11,7 @@ import {
 import {
     IconSearch, IconPlus, IconEdit, IconTrash,
     IconDownload, IconFilter, IconStar, IconStarFilled,
-    IconClock, IconArrowsSort
+    IconClock, IconArrowsSort, IconExternalLink
 } from '@tabler/icons-react';
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -89,7 +89,11 @@ function getExt(url: string) {
 }
 
 function getFileType(url: string) {
-    return getExt(url).toUpperCase() || 'Unknown';
+    const ext = getExt(url).toUpperCase();
+    if (!ext || !['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'CSV', 'PPTX', 'PPT', 'PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'SVG', 'TXT'].includes(ext)) {
+        return 'Link';
+    }
+    return ext;
 }
 
 function normalizeUrl(input: string): string {
@@ -260,6 +264,7 @@ interface DocRowProps extends RowCallbacks {
 
 function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
+    const isUrl = getFileType(doc.url) === 'Link';
     return (
         <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
@@ -280,8 +285,22 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
                             {doc.is_favorite ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                         </ActionIcon>
                     </Tooltip>
-                    <Tooltip label="Download">
-                        <ActionIcon variant="subtle" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={16} /></ActionIcon>
+                    <Tooltip label={isUrl ? "Open URL" : "Download"}>
+                        {isUrl ? (
+                            <ActionIcon
+                                variant="subtle"
+                                onClick={() => window.open(doc.url, '_blank')}
+                            >
+                                <IconExternalLink size={16} />
+                            </ActionIcon>
+                        ) : (
+                            <ActionIcon
+                                variant="subtle"
+                                onClick={() => onDownload(doc.url, doc.name)}
+                            >
+                                <IconDownload size={16} />
+                            </ActionIcon>
+                        )}
                     </Tooltip>
                     {canModify && (
                         <Tooltip label="Edit">
@@ -581,6 +600,7 @@ export function Documents() {
         setAddOpen(false); setAddFile(null); setAddUrl('');
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
+        if (uploadMode === 'file') {}
     }
 
     //does not support bulk urls (for now)
