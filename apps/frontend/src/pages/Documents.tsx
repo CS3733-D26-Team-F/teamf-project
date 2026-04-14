@@ -19,6 +19,7 @@ import { DOMAIN } from '../const.ts';
 import {ViewToggle } from "../components/content/ViewToggle.tsx"
 import { PageTitle } from "../components/Title.tsx"
 import {PersonaBadges} from "../components/PersonaBadge.tsx";
+import {ConfirmModal} from "../components/content/ConfirmModal"
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -1079,21 +1080,23 @@ export function Documents() {
                 </Stack>
             </Modal>
 
-            <Modal opened={confirmSaveOpen} onClose={() => setConfirmSaveOpen(false)} title="Confirm Changes" centered>
-                <Text size="sm" mb="md">Are you sure you want to save these changes?</Text>
-                <Group justify="flex-end">
-                    <Button className="invert-hover-outline" onClick={() => setConfirmSaveOpen(false)}>Cancel</Button>
-                    <Button onClick={handleEdit} className="invert-hover">Confirm</Button>
-                </Group>
-            </Modal>
+            <ConfirmModal
+                opened={confirmSaveOpen}
+                onClose={() => setConfirmSaveOpen(false)}
+                title="Confirm Changes"
+                message={<>Are you sure you want to save these changes?</>}
+                onConfirm={handleEdit}
+                onCancel={() => setConfirmSaveOpen(false)}
+            />
 
-            <Modal opened={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete form?" centered>
-                <Text size="sm" mb="md">Are you sure you want to <strong>delete</strong> this file?</Text>
-                <Group justify="flex-end">
-                    <Button className="invert-hover-outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-                    <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
-                </Group>
-            </Modal>
+            <ConfirmModal
+                opened={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                title="Delete form?"
+                message={<>Are you sure you want to <strong>delete</strong> this file?</>}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteOpen(false)}
+            />
 
             {/* bulk upload modal */}
             <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
