@@ -3,8 +3,8 @@ import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { MainMenu } from './pages/MainMenu';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
-import {MantineProvider} from "@mantine/core";
 import {Auth0Provider} from "@auth0/auth0-react";
+import {Documents} from "./pages/Documents";
 // import { ProtectedRoute } from './components/ProtectedRoute';
 
 
@@ -21,7 +21,6 @@ export default function App() {
                 scope: "openid profile email read:profile read:data read:api"
             }}
         >
-            <MantineProvider>
             <BrowserRouter>
 
             {/*<Routes>*/}
@@ -35,13 +34,10 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<MainMenu />}/>
                 <Route path="/menu" element={<MainMenu />} />
-                <Route path="/businessanalyst" element={<BusinessAnalyst />} />
-                <Route path="/corecommercialunderwriter" element={<CoreCommercialUnderwriter />} />
-                <Route path="/managecontent" element={<ManageContentForm />} />
+                <Route path="/documents" element={<Documents />} />
                 <Route path="/manageemployees" element={<ManageEmployeesForm />} />
             </Routes>
         </BrowserRouter>
-        </MantineProvider>
 </Auth0Provider>
     );
 }
