@@ -1,5 +1,6 @@
 import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { MainMenu } from './pages/MainMenu';
+import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
@@ -29,6 +30,7 @@ export default function App() {
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
+                    <Route path="/profilePage" element={<ProfilePage />}/>
                 </Routes>
             </BrowserRouter>
 </Auth0Provider>

@@ -28,7 +28,7 @@ const adapter = new PrismaPg({
 });
 
 const prisma = new PrismaClient({adapter});
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 
 //set up stuff for passing the files using multipart form data
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
@@ -207,6 +207,7 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
             where: {username: username},
             data: updateData
         });
+        
         const auth0Updates: any = {};
 
         if (newPassword) auth0Updates.password = newPassword;
@@ -281,7 +282,13 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
         //         );
         //     }
         // }
-
+        
+        if (employee.persona.trim() === 'Admin') {
+            await prisma.admin.upsert({
+                where: {adid: employee.empid},
+                create: {adid: employee.empid},
+                update: {}
+            });
         if (persona.trim() == 'Admin'){
             await prisma.admin.create({
                 data: {
@@ -289,34 +296,30 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
                 }
             })
         } else {
-            const check = await prisma.admin.findUnique({
-                where: {adid: employee.empid}
+            await prisma.admin.deleteMany({
+                where: {adid: employee.empid},
             });
-            if (check) {
-                await prisma.admin.delete({
-                    where: {adid: employee.empid},
-                })
-            }
         }
         return res.status(200).json({
             message: 'Employee updated',
             data: employee
         });
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        console.error('updateEmployee error:', error);
+        res.status(500).json({error: 'Something went wrong updating employee'});
     }
 });
 
 app.post('/addEmployee', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
-    const {username, password, persona, first_name, last_name} = req.body;
+    const {username, password, persona, first_name, last_name, pfp_URL} = req.body;
 
     if (!username || !password || !first_name || !last_name) {
         return res.status(400).send('Missing field required');
     }
 
-    console.log('Adding employee:', { username, password, persona, first_name, last_name });
+    console.log('Adding employee:', { username, password, persona, first_name, last_name, pfp_URL });
     try {
         const token = await getManagementToken();
 
@@ -396,6 +399,7 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
                     first_name,
                     last_name,
                     created_at: new Date(),
+                    pfp_URL: pfp_URL || null
                 },
             });
             return res.status(200).json({
@@ -453,10 +457,41 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
     }
 });
 
+app.post('/employees/:empid/profile-picture', upload.single('file'), async (req, res) => {
+  try {
+    const empid = Number(req.params.empid);
+    const file = req.file;
+    if (!empid || !file) return res.status(400).json({ error: 'empid and file are required' });
+    if (!file.mimetype.startsWith('image/')) return res.status(400).json({ error: 'Only image uploads are allowed' });
+
+    const employee = await prisma.employee.findUnique({ where: { empid } });
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    const safeName = file.originalname.replace(/\s+/g, '_');
+    const path = `employee-profiles/${empid}/avatar-${Date.now()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('Employee Media') //direct to Employee Media bucket
+      .upload(path, file.buffer, { contentType: file.mimetype, upsert: true });
+
+    if (uploadError) return res.status(500).json({ error: 'Upload failed', details: uploadError.message });
+
+    const { data: urlData } = supabase.storage.from('Employee Media').getPublicUrl(path);
+
+    const updated = await prisma.employee.update({
+      where: { empid },
+      data: { pfp_URL: urlData.publicUrl }
+    });
+
+    return res.status(200).json({ message: 'Profile picture uploaded', data: updated });
+  } catch (e) {
+    return res.status(500).json({ error: 'Unexpected error' });
+  }
+});
+  
 app.post('/updateTheme', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-
-    const { empid, theme } = req.body;
+    const {empid, theme} = req.body;
     if (!empid || theme === undefined) {
         return res.status(400).send('Missing field required, need to provide theme');
     }

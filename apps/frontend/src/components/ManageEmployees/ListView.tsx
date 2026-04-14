@@ -1,8 +1,8 @@
 import '@mantine/core/styles.css';
 import { useEffect, useState } from "react";
 import {
-    TextInput, PasswordInput, Select, Button, Modal,
-    Group, Text, Badge, Stack, Box, Image, Center
+    TextInput, PasswordInput, Image, Center, FileInput, Select, Button, Modal,
+    Group, Text, Badge, Stack, Box
 } from '@mantine/core';
 import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
 import { DOMAIN } from '../../const';
@@ -17,6 +17,7 @@ type Employee = {
     persona: string;
     password: string;
     created_at: string;
+    pfp_URL?: string | null;
 }
 
 const personas = ["Admin", "Underwriter", "Business Analyst"];
@@ -35,12 +36,15 @@ export function EmployeeListView() {
     // Add modal
     const [addOpen, setAddOpen] = useState(false);
     const [addPersona, setAddPersona] = useState('');
-    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: ''});
+    const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null as File | null });
+
 
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
-    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '' });
+    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', newPfp_URL: null as File | null });
+    const [editSaving, setEditSaving] = useState(false);
+    const [editError, setEditError] = useState('');
 
     // Delete modal
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -66,7 +70,7 @@ export function EmployeeListView() {
 
     function openAdd(persona: string) {
         setAddPersona(persona);
-        setAddData({ username: '', password: '', first_name: '', last_name: '' });
+        setAddData({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null });
         setAddOpen(true);
     }
 
@@ -80,32 +84,99 @@ export function EmployeeListView() {
                 persona: addPersona,
                 first_name: addData.first_name,
                 last_name: addData.last_name,
-            },)
+                pfp_URL: addData.pfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
+            })
         });
+
+        if (!addResponse.ok) {
+            return;
+        }
+
+        const createdEmployee = await addResponse.json() as { data?: { empid?: number } };
+        const createdEmpId = createdEmployee.data?.empid;
+
+        if (addData.pfp_URL && createdEmpId) {
+            const formData = new FormData();
+            formData.append('file', addData.pfp_URL);
+
+            const uploadResponse = await fetch(`${DOMAIN}/employees/${createdEmpId}/profile-picture`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+                return;
+            }
+        }
+
         setAddOpen(false);
         loadEmployees();
     }
 
     function openEdit(emp: Employee) {
         setEditTarget(emp);
-        setEditData({ newUsername: emp.username, password: '', persona: emp.persona });
+        setEditData({ newUsername: emp.username, password: '', persona: emp.persona, newPfp_URL: null });
+        setEditError('');
         setEditOpen(true);
     }
 
     async function handleEdit() {
         if (!editTarget) return;
-        await api(`${DOMAIN}/updateEmployee`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                username: editTarget.username,
-                newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
-                password: editData.password || undefined,
-                persona: editData.persona !== editTarget.persona ? editData.persona : undefined,
-            })
-        });
-        setEditOpen(false);
-        loadEmployees();
+        setEditSaving(true);
+        setEditError('');
+
+        try {
+            const newUsername = editData.newUsername !== editTarget.username ? editData.newUsername : undefined;
+            const newPassword = editData.password || undefined;
+            const newPersona = editData.persona !== editTarget.persona ? editData.persona : undefined;
+            const hasAccountChanges = Boolean(newUsername || newPassword || newPersona);
+            const hasPictureChange = Boolean(editData.newPfp_URL);
+
+            if (!hasAccountChanges && !hasPictureChange) {
+                setEditError('No changes to save.');
+                return;
+            }
+
+            if (hasAccountChanges) {
+                const updateResponse = await api(`${DOMAIN}/updateEmployee`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: editTarget.username,
+                        newUsername,
+                        password: newPassword,
+                        persona: newPersona,
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    setEditError('Could not save account changes. Please try again.');
+                    return;
+                }
+            }
+
+            if (hasPictureChange && editData.newPfp_URL) {
+                const formData = new FormData();
+                formData.append('file', editData.newPfp_URL);
+
+                const uploadResponse = await fetch(`${DOMAIN}/employees/${editTarget.empid}/profile-picture`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!uploadResponse.ok) {
+                    setEditError('Profile picture upload failed.');
+                    return;
+                }
+            }
+
+            setEditOpen(false);
+            loadEmployees();
+        } catch {
+            setEditError('Could not save changes. Please try again.');
+        } finally {
+            setEditSaving(false);
+        }
     }
 
     function openDelete(emp: Employee) {
@@ -124,6 +195,7 @@ export function EmployeeListView() {
 
     function openEmployee(emp: Employee) {
         setEmployeeTarget(emp);
+        setImageLoadError(false);
         setEmployeeOpen(true);
     }
 
@@ -253,8 +325,20 @@ export function EmployeeListView() {
                         value={addData.username}
                         onChange={e => setAddData({...addData, username: e.target.value})}
                     />
+                    
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Profile Picture (Optional)</Text>
+                        <FileInput
+                            placeholder="Upload a profile picture"
+                            accept="image/*"
+                            value={addData.pfp_URL}
+                            onChange={file => setAddData({...addData, pfp_URL: file})}
+                        />
+                    </Box>
+
                     <PasswordInput
                         label="Password"
+                        autoComplete="new-password"
                         value={addData.password}
                         onChange={e => setAddData({...addData, password: e.target.value})}
                     />
@@ -304,8 +388,19 @@ export function EmployeeListView() {
                             value={editData.newUsername}
                             onChange={e => setEditData({...editData, newUsername: e.target.value})}
                         />
+                        <Box>
+                            <Text size="sm" fw={500} mb={4}>New Profile Picture (Optional)</Text>
+                            <FileInput
+                                placeholder="Upload a new profile picture"
+                                accept="image/*"
+                                value={editData.newPfp_URL}
+                                onChange={file => setEditData({...editData, newPfp_URL: file})}
+                            />
+
+                        </Box>
                         <PasswordInput
                             label="New Password (Optional)"
+                            autoComplete="new-password"
                             value={editData.password}
                             onChange={e => setEditData({...editData, password: e.target.value})}
                         />
@@ -315,6 +410,9 @@ export function EmployeeListView() {
                             onChange={val => setEditData({...editData, persona: val ?? ''})}
                             data={['Underwriter', 'Business Analyst', 'Admin']}
                         />
+                        {editError && (
+                            <Text c="red" size="sm">{editError}</Text>
+                        )}
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>Account History</Text>
                             <Group>
@@ -323,10 +421,12 @@ export function EmployeeListView() {
                             </Group>
                         </Box>
                         <Group justify="flex-end" mt="md">
-                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline">Cancel</Button>
+                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline" disabled={editSaving}>Cancel</Button>
                             <Button
                                 onClick={handleEdit}
                                 className="invert-hover"
+                                loading={editSaving}
+                                disabled={editSaving}
                             >
                                 + Save Account
                             </Button>
@@ -380,7 +480,8 @@ export function EmployeeListView() {
                                     ta="center"
                                     w="200px"
                                     h="200px"
-                                    src="patthToEmployeeImage"
+                                    src={employeeTarget.pfp_URL}
+                                    fallbackSrc = "invalid"
                                     onError={() => setImageLoadError(true)}
                                 />
                             )}
@@ -402,3 +503,6 @@ export function EmployeeListView() {
         </Box>
     );
 }
+
+
+
