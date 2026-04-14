@@ -592,6 +592,7 @@ app.post('/login', async (req, res) => {
             employee: {
                 empid: employee.empid,
                 username: employee.username,
+                first_name: employee.first_name,
                 isLoggedIn: true,
             }
         });

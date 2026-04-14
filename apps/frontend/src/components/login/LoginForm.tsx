@@ -36,6 +36,7 @@ export function LoginForm() {
             localStorage.setItem('persona', data.employee.persona);
             localStorage.setItem('username', data.employee.username);
             localStorage.setItem('empid', String(data.employee.empid));
+            localStorage.setItem('first_name', data.employee.first_name);
             if (data.employee.pfp_URL) {
                 localStorage.setItem('profilePicture', data.employee.pfp_URL);
             } else {
@@ -85,6 +86,7 @@ async function setSessionTo(persona: string) {
     localStorage.getItem('persona');
     localStorage.getItem('username');
     localStorage.getItem('empid');
+    localStorage.getItem('first_name');
 
 
     if (persona === 'Admin') {
