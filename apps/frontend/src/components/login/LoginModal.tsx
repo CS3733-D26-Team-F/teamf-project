@@ -3,7 +3,7 @@ import * as React from "react";
 import { useAuth0 } from '@auth0/auth0-react';
 import {useEffect} from "react";
 import {Button} from "@mantine/core";
-
+import { DOMAIN } from "../../const.ts";
 
 function LoginModal() {
     const [opened, { open, close }] = useDisclosure(false);
@@ -14,7 +14,7 @@ function LoginModal() {
 
         setFirst(false);
 
-        const inputToken = await fetch(`http://localhost:3000/api/auth/login`, {
+        const inputToken = await fetch(`${DOMAIN}/api/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

@@ -20,8 +20,6 @@ export function Header() {
             </div>
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
-                {(isAdmin || isBusinessAnalyst || isUnderwriter) &&
-                    (<Link to="/managecontent">Manage Content</Link>)}
                 {isAdmin && <Link to="/manageemployees">Employees</Link>}
                 {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
                     <Link to="/documents">Documents</Link>

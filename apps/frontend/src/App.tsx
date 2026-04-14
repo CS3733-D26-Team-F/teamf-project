@@ -5,8 +5,6 @@ import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
 import {Documents} from "./pages/Documents";
 // import { ProtectedRoute } from './components/ProtectedRoute';
-
-
 import {MantineProvider} from "@mantine/core";
 import { Archive } from './pages/Archive';
 
@@ -25,23 +23,14 @@ export default function App() {
             cacheLocation = "localstorage"
         >
             <BrowserRouter>
-
-            {/*<Routes>*/}
-            {/*    <Route path="/" element={<Login/>}/>*/}
-            {/*    <Route path="/menu" element={<ProtectedRoute><MainMenu /></ProtectedRoute>} />*/}
-            {/*    <Route path="/businessanalyst" element={<ProtectedRoute><BusinessAnalyst /></ProtectedRoute>} />*/}
-            {/*    <Route path="/corecommercialunderwriter" element={<ProtectedRoute><CoreCommercialUnderwriter /></ProtectedRoute>} />*/}
-            {/*    <Route path="/managecontent" element={<ProtectedRoute><ManageContentForm /></ProtectedRoute>} />*/}
-            {/*    <Route path="/manageemployees" element={<ProtectedRoute><ManageEmployeesForm /></ProtectedRoute>} />*/}
-            {/*</Routes>*/}
-            <Routes>
-                <Route path="/" element={<MainMenu />}/>
-                <Route path="/menu" element={<MainMenu />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/manageemployees" element={<ManageEmployeesForm />} />
-                <Route path="/archive" element={<Archive />}/>
-            </Routes>
-        </BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<MainMenu />}/>
+                    <Route path="/menu" element={<MainMenu />} />
+                    <Route path="/documents" element={<Documents />} />
+                    <Route path="/manageemployees" element={<ManageEmployeesForm />} />
+                    <Route path="/archive" element={<Archive />}/>
+                </Routes>
+            </BrowserRouter>
 </Auth0Provider>
     );
 }
