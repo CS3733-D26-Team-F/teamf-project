@@ -1008,8 +1008,12 @@ export function Documents() {
                             mb="sm"
                         />
                         {uploadMode === 'file'
-                            ? <input ref={fileInputRef} type="file"
-                                     onChange={e => setAddFile(e.target.files?.[0] ?? null)}/>
+                            ? <Box>
+                                <input ref={fileInputRef} type="file"
+                                       onChange={e => setAddFile(e.target.files?.[0] ?? null)}/>
+                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document
+                                    details.</Text>
+                            </Box>
                             : <TextInput label="URL" placeholder="https://example.com" value={addUrl}
                                          onChange={e => setAddUrl(e.target.value)}/>
                         }
@@ -1051,11 +1055,11 @@ export function Documents() {
                             mb="sm"
                         />
                         {editUploadMode === 'file'
-                            ? <>
-                                <input type="file" onChange={e => setEditFile(e.target.files?.[0] ?? null)}/>
-                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document
-                                    details.</Text>
-                            </>
+                            ? <Box>
+                                <input type="file" style={{display: 'block', marginTop: '8px'}}
+                                       onChange={e => setEditFile(e.target.files?.[0] ?? null)}/>
+                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document details.</Text>
+                            </Box>
                             : <TextInput label="URL" placeholder="https://example.com" value={editUrl}
                                          onChange={e => setEditUrl(e.target.value)}/>
                         }
