@@ -92,6 +92,14 @@ function getFileType(url: string) {
     return getExt(url).toUpperCase() || 'Unknown';
 }
 
+function normalizeUrl(input: string): string {
+    if (!input) return input;
+    if (!/^https?:\/\//i.test(input)) {
+        return `https://${input}`;
+    }
+    return input;
+}
+
 function OfficePlaceholder({ ext }: { ext: string }) {
     const info = officeMeta[ext] ?? { bg: '#f5f5f5', color: '#888', label: ext.toUpperCase() || 'FILE' };
     return (
@@ -567,7 +575,7 @@ export function Documents() {
         if(addFile) {
             formPayload.append('file', addFile);
         } else {
-            formPayload.append('url', addUrl);
+            formPayload.append('url', normalizeUrl(addUrl));
         }
         await fetch(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         setAddOpen(false); setAddFile(null); setAddUrl('');
@@ -626,7 +634,7 @@ export function Documents() {
         } else if (editUploadMode === 'url' && editUrl) {
             await fetch(`${DOMAIN}/contentforms/${editId}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({...editData, url: editUrl})
+                body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
             });
         } else {
             await fetch(`${DOMAIN}/contentforms/${editId}`, {
