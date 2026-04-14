@@ -88,9 +88,9 @@ export function EmployeeListView() {
             })
         });
 
-        if (!addResponse.ok) {
-            return;
-        }
+        // if (!addResponse.ok) {
+        //     return;
+        // }
 
         const createdEmployee = await addResponse.json() as { data?: { empid?: number } };
         const createdEmpId = createdEmployee.data?.empid;

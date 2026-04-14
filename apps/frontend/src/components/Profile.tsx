@@ -1,5 +1,4 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import {useState} from "react";
 import {Popover} from "@mantine/core";
 
 import { useEffect, useState } from 'react';
@@ -16,7 +15,7 @@ const placeholderProfilePicture =
 
 export function Profile() {
     const [profilePicture, setProfilePicture] = useState<string | undefined>(
-        localStorage.getItem('pfp_URL') ?? undefined
+        localStorage.getItem('pfp_URL') ?? undefined);
     const { user, isAuthenticated, logout } = useAuth0();
     const [open, setOpen] = useState(false);
 
