@@ -39,7 +39,7 @@ export function EmployeeListView() {
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
-    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', pfp_URL: null as File | null });
+    const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', newPfp_URL: null as File | null });
 
     // Delete modal
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -110,7 +110,7 @@ export function EmployeeListView() {
 
     function openEdit(emp: Employee) {
         setEditTarget(emp);
-        setEditData({ newUsername: emp.username, password: '', persona: emp.persona, pfp_URL: null });
+        setEditData({ newUsername: emp.username, password: '', persona: emp.persona, newPfp_URL: null });
         setEditOpen(true);
     }
 
@@ -124,7 +124,7 @@ export function EmployeeListView() {
                 newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
                 password: editData.password || undefined,
                 persona: editData.persona !== editTarget.persona ? editData.persona : undefined,
-                pfp_URL: editData.pfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
+                pfp_URL: editData.newPfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
             })
         });
 
@@ -132,9 +132,9 @@ export function EmployeeListView() {
             return;
         }
 
-        if (editData.pfp_URL) {
+        if (editData.newPfp_URL) {
             const formData = new FormData();
-            formData.append('file', editData.pfp_URL);
+            formData.append('file', editData.newPfp_URL);
 
             const uploadResponse = await fetch(`${DOMAIN}/employees/${editTarget.empid}/profile-picture`, {
                 method: 'POST',
@@ -362,7 +362,8 @@ export function EmployeeListView() {
                             <FileInput
                                 placeholder="Upload a new profile picture"
                                 accept="image/*"
-                                onChange={file => setEditData({...editData, pfp_URL: file})}
+                                value={editData.newPfp_URL}
+                                onChange={file => setEditData({...editData, newPfp_URL: file})}
                             />
 
                         </Box>
@@ -442,7 +443,7 @@ export function EmployeeListView() {
                                     ta="center"
                                     w="200px"
                                     h="200px"
-                                    src="patthToEmployeeImage"
+                                    src={localStorage.getItem('pfp_URL')}
                                     onError={() => setImageLoadError(true)}
                                 />
                             )}
