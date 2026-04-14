@@ -166,6 +166,7 @@ export function EmployeeListView() {
 
     function openEmployee(emp: Employee) {
         setEmployeeTarget(emp);
+        setImageLoadError(false);
         setEmployeeOpen(true);
     }
 
@@ -443,7 +444,8 @@ export function EmployeeListView() {
                                     ta="center"
                                     w="200px"
                                     h="200px"
-                                    src={localStorage.getItem('pfp_URL')}
+                                    src={employeeTarget.pfp_URL}
+                                    fallbackSrc = "invalid"
                                     onError={() => setImageLoadError(true)}
                                 />
                             )}
