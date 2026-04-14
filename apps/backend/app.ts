@@ -874,6 +874,11 @@ app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
                 .getPublicUrl(req.file.originalname);
 
             updateData.url = `${urlData.publicUrl}?t=${Date.now()}`;
+        } else if (req.body.url) {
+            try { new URL(req.body.url); } catch (error) {
+                return res.status(400).json({ error: 'Invalid URL' });
+            }
+            updateData.url = req.body.url;
         }
 
         const updated = await prisma.contentform.update({
