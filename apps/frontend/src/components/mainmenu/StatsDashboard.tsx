@@ -176,8 +176,6 @@ export function StatsDashboard() {
                     </Text>
                     <Icon className={classes.icon} size={22} stroke={1.5} />
                 </Group>
-
-                {/* NUMBER + RING SIDE BY SIDE */}
                 <Group justify="space-between" align="center" mt={20}>
                     <div>
                         <Text className={classes.value}>{stat.value}</Text>
