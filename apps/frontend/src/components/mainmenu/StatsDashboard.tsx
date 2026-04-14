@@ -122,7 +122,7 @@ export function StatsDashboard() {
         persona,
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
-        color: ['var(--sapphire)', 'var(--pacific-blue)'][index % 2]
+        color: ['var(--sapphire)', 'var(--fresh-sky)'][index % 2]
     }));
 
     //content ring types
@@ -137,7 +137,7 @@ export function StatsDashboard() {
         status,
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
-        color: ['var(--dark-beige)', 'var(--yale-blue)', 'var(--fresh-sky)', 'var(--sapphire)', 'var(--pacific-blue)'][index % 5],
+        color: ['var(--pale-sky', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--sapphire)', 'var(--neutral-red)', 'var(--light-gray)'][index % 6],
     }));
 
     const data = [
@@ -153,14 +153,14 @@ export function StatsDashboard() {
             icon: 'file',
             value: myOwnedFiles.toString(),
             progress: numFiles > 0 ? (myOwnedFiles / numFiles) * 100 : 0,
-            color: 'var(--sapphire)'
+            color: 'var(--fresh-sky-light)'
         },
         {
             title: 'Persona Files Expiring Soon',
             icon: 'clock',
             value: expiringSoon.toString(),
             progress: numFiles > 0 ? (expiringSoon / numFiles) * 100 : 0,
-            color: 'var(--dark-beige)'
+            color: 'var(--neutral-red)'
         }
     ] as const;
 
@@ -227,7 +227,7 @@ export function StatsDashboard() {
                         </div>
                     </Group>
                 </Paper>
-                {stats}</SimpleGrid>;
+                {stats}</SimpleGrid>
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="xl">
                 <Paper withBorder p="md" radius="md"  style={{ height: '100%'}} >
                     <Text fw={700} size="lg" mb="md">
