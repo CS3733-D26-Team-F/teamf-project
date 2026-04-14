@@ -1,36 +1,15 @@
-import { useState, useEffect } from 'react';
-
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import ThemeToggle from "./ThemeToggle.tsx";
 import { Profile } from "./Profile.tsx";
+import { usePersona } from "../hooks/usePersona";
 
 export function Header() {
-    const [persona, setPersona] = useState<string | null>(() =>
-        localStorage.getItem('persona')
-    );
+    const personaHook = usePersona();
 
-    useEffect(() => {
-        const handleStorage = () => {
-            setPersona(localStorage.getItem('persona'));
-        }
-
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
-
-    useEffect(() => {
-        const handleStorage = () => {
-            setPersona(localStorage.getItem('persona'));
-        };
-
-        window.addEventListener('storage', handleStorage);
-        return () => window.removeEventListener('storage', handleStorage);
-    }, []);
-
-    const isAdmin = persona === 'admin';
-    const isUnderwriter = persona === 'underwriter';
-    const isBusinessAnalyst = persona === 'business analyst';
+    const isAdmin = personaHook === 'Admin';
+    const isUnderwriter = personaHook === 'Underwriter';
+    const isBusinessAnalyst = personaHook === 'Business Analyst';
 
     return (
         <header className="main-header">
@@ -41,7 +20,8 @@ export function Header() {
             </div>
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
-                <Link to="/managecontent">Manage Content</Link>
+                {(isAdmin || isBusinessAnalyst || isUnderwriter) &&
+                    (<Link to="/managecontent">Manage Content</Link>)}
                 {isAdmin && <Link to="/manageemployees">Employees</Link>}
                 {(isAdmin || isBusinessAnalyst) && (
                     <Link to="/businessanalyst">Business Analyst</Link>

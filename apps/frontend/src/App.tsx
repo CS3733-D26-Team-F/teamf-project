@@ -20,6 +20,8 @@ export default function App() {
                 audience: import.meta.env.VITE_AUTH0_AUDIENCE,
                 scope: "openid profile email read:profile read:data read:api"
             }}
+            useRefreshTokens = {true}
+            cacheLocation = "localstorage"
         >
             <BrowserRouter>
 
