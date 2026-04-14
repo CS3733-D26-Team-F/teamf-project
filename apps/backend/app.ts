@@ -25,7 +25,7 @@ const adapter = new PrismaPg({
 });
 
 const prisma = new PrismaClient({adapter});
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 
 //set up stuff for passing the files using multipart form data
 const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
@@ -131,7 +131,7 @@ app.post('/getEmployee', async (req, res) => {
 
 //update employee takes the current username and then optionally any data that want to be changed
 app.post('/updateEmployee', async (req, res) => {
-    const {username, newUsername, password, persona, pfp_URL} = req.body;
+    const {username, newUsername, password, persona} = req.body;
 
     if (!username) {
         return res.status(400).send('Current username is required');
@@ -141,13 +141,11 @@ app.post('/updateEmployee', async (req, res) => {
         username?: string;
         password?: string;
         persona?: string;
-        pfp_URL?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
     if (password) updateData.password = password;
     if (persona) updateData.persona = persona;
-    if (pfp_URL) updateData.pfp_URL = pfp_URL;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
@@ -158,28 +156,24 @@ app.post('/updateEmployee', async (req, res) => {
             where: {username: username},
             data: updateData
         });
-        if (persona.trim() == 'Admin') {
-            await prisma.admin.create({
-                data: {
-                    adid: employee.empid
-                }
-            })
-        } else {
-            const check = await prisma.admin.findUnique({
-                where: {adid: employee.empid}
+        if (employee.persona.trim() === 'Admin') {
+            await prisma.admin.upsert({
+                where: {adid: employee.empid},
+                create: {adid: employee.empid},
+                update: {}
             });
-            if (check) {
-                await prisma.admin.delete({
-                    where: {adid: employee.empid},
-                })
-            }
+        } else {
+            await prisma.admin.deleteMany({
+                where: {adid: employee.empid},
+            });
         }
         return res.status(200).json({
             message: 'Employee updated',
             data: employee
         });
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        console.error('updateEmployee error:', error);
+        res.status(500).json({error: 'Something went wrong updating employee'});
     }
 });
 

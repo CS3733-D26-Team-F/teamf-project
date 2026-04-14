@@ -40,6 +40,8 @@ export function EmployeeListView() {
     const [editOpen, setEditOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<Employee | null>(null);
     const [editData, setEditData] = useState({ newUsername: '', password: '', persona: '', newPfp_URL: null as File | null });
+    const [editSaving, setEditSaving] = useState(false);
+    const [editError, setEditError] = useState('');
 
     // Delete modal
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -111,43 +113,67 @@ export function EmployeeListView() {
     function openEdit(emp: Employee) {
         setEditTarget(emp);
         setEditData({ newUsername: emp.username, password: '', persona: emp.persona, newPfp_URL: null });
+        setEditError('');
         setEditOpen(true);
     }
 
     async function handleEdit() {
         if (!editTarget) return;
-        const updateResponse = await fetch(`${DOMAIN}/updateEmployee`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: editTarget.username,
-                newUsername: editData.newUsername !== editTarget.username ? editData.newUsername : undefined,
-                password: editData.password || undefined,
-                persona: editData.persona !== editTarget.persona ? editData.persona : undefined,
-                pfp_URL: editData.newPfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
-            })
-        });
+        setEditSaving(true);
+        setEditError('');
 
-        if (!updateResponse.ok) {
-            return;
-        }
+        try {
+            const newUsername = editData.newUsername !== editTarget.username ? editData.newUsername : undefined;
+            const newPassword = editData.password || undefined;
+            const newPersona = editData.persona !== editTarget.persona ? editData.persona : undefined;
+            const hasAccountChanges = Boolean(newUsername || newPassword || newPersona);
+            const hasPictureChange = Boolean(editData.newPfp_URL);
 
-        if (editData.newPfp_URL) {
-            const formData = new FormData();
-            formData.append('file', editData.newPfp_URL);
-
-            const uploadResponse = await fetch(`${DOMAIN}/employees/${editTarget.empid}/profile-picture`, {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!uploadResponse.ok) {
+            if (!hasAccountChanges && !hasPictureChange) {
+                setEditError('No changes to save.');
                 return;
             }
-        }
 
-        setEditOpen(false);
-        loadEmployees();
+            if (hasAccountChanges) {
+                const updateResponse = await fetch(`${DOMAIN}/updateEmployee`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: editTarget.username,
+                        newUsername,
+                        password: newPassword,
+                        persona: newPersona,
+                    })
+                });
+
+                if (!updateResponse.ok) {
+                    setEditError('Could not save account changes. Please try again.');
+                    return;
+                }
+            }
+
+            if (hasPictureChange && editData.newPfp_URL) {
+                const formData = new FormData();
+                formData.append('file', editData.newPfp_URL);
+
+                const uploadResponse = await fetch(`${DOMAIN}/employees/${editTarget.empid}/profile-picture`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!uploadResponse.ok) {
+                    setEditError('Profile picture upload failed.');
+                    return;
+                }
+            }
+
+            setEditOpen(false);
+            loadEmployees();
+        } catch {
+            setEditError('Could not save changes. Please try again.');
+        } finally {
+            setEditSaving(false);
+        }
     }
 
     function openDelete(emp: Employee) {
@@ -308,6 +334,7 @@ export function EmployeeListView() {
 
                     <PasswordInput
                         label="Password"
+                        autoComplete="new-password"
                         value={addData.password}
                         onChange={e => setAddData({...addData, password: e.target.value})}
                     />
@@ -369,6 +396,7 @@ export function EmployeeListView() {
                         </Box>
                         <PasswordInput
                             label="New Password (Optional)"
+                            autoComplete="new-password"
                             value={editData.password}
                             onChange={e => setEditData({...editData, password: e.target.value})}
                         />
@@ -378,6 +406,9 @@ export function EmployeeListView() {
                             onChange={val => setEditData({...editData, persona: val ?? ''})}
                             data={['Underwriter', 'Business Analyst', 'Admin']}
                         />
+                        {editError && (
+                            <Text c="red" size="sm">{editError}</Text>
+                        )}
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>Account History</Text>
                             <Group>
@@ -386,10 +417,12 @@ export function EmployeeListView() {
                             </Group>
                         </Box>
                         <Group justify="flex-end" mt="md">
-                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline">Cancel</Button>
+                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline" disabled={editSaving}>Cancel</Button>
                             <Button
                                 onClick={handleEdit}
                                 className="invert-hover"
+                                loading={editSaving}
+                                disabled={editSaving}
                             >
                                 + Save Account
                             </Button>
