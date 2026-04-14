@@ -15,7 +15,7 @@ import {
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
 //import {token} from "morgan";
-import {useAuth0} from "@auth0/auth0-react";
+import { useApi } from "../../src/components/api.ts";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -328,9 +328,6 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
 }
 
 export function Documents() {
-    const { getAccessTokenSilently} = useAuth0();
-    const token =  getAccessTokenSilently({});
-
     const persona = localStorage.getItem('persona');
     const username = localStorage.getItem('username');
     const today = new Date().toISOString().split('T')[0];
@@ -368,6 +365,8 @@ export function Documents() {
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    const api = useApi();
+
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
             id: Math.random().toString(36).substring(7), // Random temp ID
@@ -421,18 +420,15 @@ export function Documents() {
     });
 
     async function loadTrash() {
-        const res = await fetch('http://localhost:3000/contentforms/trash');
+        const res = await api('http://localhost:3000/contentforms/trash');
         const data = await res.json();
         setTrashDocs(data);
     }
 
     async function restoreDoc(id: number) {
         if (!window.confirm('Are you sure you want to restore?')) return;
-        await fetch(`http://localhost:3000/contentforms/${id}/restore`, {
+        await api(`http://localhost:3000/contentforms/${id}/restore`, {
             method: 'PATCH',
-            headers: {
-                "Authorization": `Bearer ${token} `
-            }
         });
         loadTrash();
         loadDocuments();
@@ -440,20 +436,14 @@ export function Documents() {
 
     async function permanentDelete(id: number) {
         if (!window.confirm('Permanently delete this document? This cannot be undone.')) return;
-        await fetch(`http://localhost:3000/contentforms/${id}/permanent`, {
+        await api(`http://localhost:3000/contentforms/${id}/permanent`, {
             method: 'DELETE',
-            headers: {
-                "Authorization": `Bearer ${token} `
-            }
         });
         loadTrash();
     }
 
     function loadDocuments() {
-        fetch('http://localhost:3000/contentforms', {
-            headers: {
-                "Authorization": `Bearer ${token} `
-            }
+        api('http://localhost:3000/contentforms', {
         })
             .then(res => res.json())
             .then(data => {
@@ -478,10 +468,7 @@ export function Documents() {
 
     useEffect(() => {
         loadDocuments();
-        fetch('http://localhost:3000/employees', {
-            headers: {
-                "Authorization": `Bearer ${token} `
-            }})
+        api('http://localhost:3000/employees')
             .then(res => res.json())
             .then((data: Employee[]) => setEmployees(data));
     }, []);
@@ -557,10 +544,7 @@ export function Documents() {
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
         formPayload.append('file', addFile);
-        await fetch('http://localhost:3000/contentforms', { method: 'POST',
-            headers: {
-                "Authorization": `Bearer ${token} `
-            },
+        await api('http://localhost:3000/contentforms', { method: 'POST',
             body: formPayload });
         setAddOpen(false); setAddFile(null);
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? persona ?? '' : '', date_modified: today, expiration_date: '', content_type: '', status: '' });
@@ -589,11 +573,8 @@ export function Documents() {
             formPayload.append('status', sf.status);
             formPayload.append('file', sf.file);
 
-            await fetch('http://localhost:3000/contentforms', {
+            await api('http://localhost:3000/contentforms', {
                 method: 'POST',
-                headers: {
-                    "Authorization": `Bearer ${token} `
-                },
                 body: formPayload
             });
         }
@@ -605,7 +586,7 @@ export function Documents() {
     }
 
     function openEdit(doc: ContentForm) {
-        fetch(`http://localhost:3000/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `}
+        api(`http://localhost:3000/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json'}
             , body: JSON.stringify({ username }) })
             .then(res => {
                 if (res.status === 423) { res.json().then(data => alert(data.error)); return; }
@@ -628,26 +609,19 @@ export function Documents() {
             formPayload.append('status', editData.status);
             formPayload.append('file', editFile); // Attach the new file
 
-            await fetch(`http://localhost:3000/contentforms/${editId}`, {
+            await api(`http://localhost:3000/contentforms/${editId}`, {
                 method: 'PUT',
-                headers: {
-                    "Authorization": `Bearer ${token} `
-                },
                 body: formPayload
             });
         } else {
-            await fetch(`http://localhost:3000/contentforms/${editId}`, {
+            await api(`http://localhost:3000/contentforms/${editId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `
-                },
                 body: JSON.stringify(editData)
             });
         }
 
-        await fetch(`http://localhost:3000/contentforms/${editId}/checkin`, {
+        await api(`http://localhost:3000/contentforms/${editId}/checkin`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `
-            },
             body: JSON.stringify({ username })
         });
         setEditFile(null);
@@ -657,17 +631,14 @@ export function Documents() {
     }
 
     function closeEdit() {
-        if (editId) fetch(`http://localhost:3000/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `
+        if (editId) api(`http://localhost:3000/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json',
             }, body: JSON.stringify({ username }) });
         setEditOpen(false);
     }
 
     async function handleDelete() {
         if (!deleteId) return;
-        await fetch(`http://localhost:3000/contentforms/${deleteId}/softdelete`, { method: 'PATCH',
-        headers: {
-            "Authorization": `Bearer ${token} `
-        }
+        await api(`http://localhost:3000/contentforms/${deleteId}/softdelete`, { method: 'PATCH',
         });
         setDeleteOpen(false);
         setSelectedIds(prev => prev.filter(id => id !== deleteId));
@@ -676,9 +647,9 @@ export function Documents() {
     }
 
     async function toggleFavorite(doc: ContentForm) {
-        await fetch(`http://localhost:3000/contentforms/${doc.id}/favorite`, {
+        await api(`http://localhost:3000/contentforms/${doc.id}/favorite`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `
+            headers: { 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ is_favorite: !doc.is_favorite }) });
         loadDocuments();
@@ -689,9 +660,9 @@ export function Documents() {
         await Promise.all(ids.map(id => {
             const doc = documents.find(d => d.id === id && d.is_favorite);
             if (!doc) return Promise.resolve();
-            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, {
+            return api(`http://localhost:3000/contentforms/${id}/favorite`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `
+                headers: { 'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ is_favorite: false }) });
         }));
@@ -704,9 +675,9 @@ export function Documents() {
         await Promise.all(ids.map(id => {
             const doc = documents.find(d => d.id === id && !d.is_favorite);
             if (!doc) return Promise.resolve();
-            return fetch(`http://localhost:3000/contentforms/${id}/favorite`, {
+            return api(`http://localhost:3000/contentforms/${id}/favorite`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${token} `
+                headers: { 'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ is_favorite: true })
             });
@@ -907,7 +878,7 @@ export function Documents() {
                             <Button color="red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => fetch(`http://localhost:3000/contentforms/${id}/softdelete`, { method: 'PATCH', headers: {"Authorization": `Bearer ${token} `} })));
+                                await Promise.all(ids.map(id => api(`http://localhost:3000/contentforms/${id}/softdelete`, { method: 'PATCH',})));
                                 setSelectedIds([]); setSelectedFavIds([]); loadDocuments();
                             }}>Delete Selected</Button>
                         </Group>
@@ -982,12 +953,12 @@ export function Documents() {
                                 <Group gap="xs">
                                     <Text size="sm" c="dimmed">{trashSelected.length} selected</Text>
                                     <Button size="xs" variant="outline" color="green" onClick={async () => {
-                                        await Promise.all(trashSelected.map(id => fetch(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH', headers: {"Authorization": `Bearer ${token} `} })));
+                                        await Promise.all(trashSelected.map(id => api(`http://localhost:3000/contentforms/${id}/restore`, { method: 'PATCH',})));
                                         setTrashSelected([]); loadTrash(); loadDocuments();
                                     }}>Restore Selected</Button>
                                     <Button size="xs" color="red" onClick={async () => {
                                         if (!window.confirm(`Permanently delete ${trashSelected.length} documents?`)) return;
-                                        await Promise.all(trashSelected.map(id => fetch(`http://localhost:3000/contentforms/${id}/permanent`, { method: 'DELETE', headers: {"Authorization": `Bearer ${token}` } })));
+                                        await Promise.all(trashSelected.map(id => api(`http://localhost:3000/contentforms/${id}/permanent`, { method: 'DELETE',})));
                                         setTrashSelected([]); loadTrash();
                                     }}>Delete Selected</Button>
                                 </Group>
