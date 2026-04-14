@@ -72,7 +72,7 @@ app.use(morgan('dev'));
 app.post('/api/auth/login', checkJWT, async (req, res) => {
     try {
         console.log("Body =", req.body);
-        console.log("Payload =", req.auth.payload);
+        console.log("Payload =", req.auth!.payload);
         console.log("=================================================Here1");
         const auth0Id  = req.auth!.payload.sub;
         const username = req.auth!.payload['name'] as string;
@@ -114,13 +114,15 @@ app.get('/', (req, res) => {
     res.sendStatus(200);
 });
 
-app.get('/employees', async (req, res) => {
+app.get('/employees', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const employees = await prisma.employee.findMany();
     console.log('Employee Data:', employees);
     res.json(employees);
 });
 
 app.get('/contentforms', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false}
     });
@@ -153,6 +155,7 @@ app.post('/getEmployee', checkJWT, async (req, res) => {
 
 //update employee takes the current username and then optionally any data that want to be changed
 app.patch('/updateEmployee', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const token = await getManagementToken();
     const {username,newUsername,newPassword,persona, first_name, last_name} = req.body;
 
@@ -249,7 +252,7 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
         const createRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${token}`,
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -260,13 +263,6 @@ app.post('/addEmployee', checkJWT, async (req, res) => {
                 email_verified: true,
             }),
         });
-
-        if (!auth0User.user_id) {
-            if (auth0User.statusCode === 409) {
-                return res.status(409).json({error: 'Username already exists'});
-            }
-            return res.status(500).json({error: 'Failed to create Auth0 user', details: auth0User});
-        }
 
         if (persona.trim() == 'Admin'){
 
@@ -318,7 +314,7 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
         const {name} = req.params;
 
         const user = await prisma.employee.findUnique({
-            where: { username:name }
+            where: { username: name }
         });
 
         if (!user) {
@@ -329,7 +325,7 @@ app.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
             {
                 method:  'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
+                headers: {},
             }
         );
 
@@ -421,7 +417,8 @@ app.post('/updateContentForm', checkJWT, async (req, res) => {
 });
 
 // the emid shoudld be the logged in user
-app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
+app.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const {empid} = req.body;
         const file = req.file;
@@ -468,7 +465,8 @@ app.post('/addFileToBucket', upload.single('file'), async (req, res) => {
 });
 
 
-app.post('/contentforms', upload.single('file'), async (req, res) => {
+app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
@@ -533,21 +531,6 @@ app.post('/contentforms', upload.single('file'), async (req, res) => {
     }
 });
 
-app.post('/employee_manage', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
-
-    try {
-        const {username, edits, employee, priority, email, comments} = req.body;
-        const employeeManage = await prisma.employee_manage.create({
-            data: {username, edits, employee, priority, email, comments}
-        });
-        res.json(employeeManage);
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Error creating employee management request');
-    }
-});
-
 app.delete('/deleteContentForm/:id', checkJWT, async (req, res)=> {
     const auth0Id = req.auth!.payload.sub as string;
 
@@ -594,8 +577,8 @@ app.get('/contentforms/admin', checkJWT, async (req, res) => {
 
     try {
         const [underwriterForms, businessAnalystForms] = await Promise.all([
-            prisma.contentform.findMany({where: {persona: 'Underwriter'}}),
-            prisma.contentform.findMany({where: {persona: 'Business Analyst'}})
+            prisma.contentform.findMany({where: {persona: {has: 'Underwriter'}}}),
+            prisma.contentform.findMany({where: {persona: {has: 'Business Analyst'}}})
         ]);
         res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
     } catch (error) {
@@ -610,14 +593,14 @@ app.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
     try {
         if (persona === 'Admin') {
             const contentForm = await prisma.contentform.findMany({
-                where: {persona: {in: ['Underwriter', 'Business Analyst']}},
+                where: {persona: {hasSome: ['Underwriter', 'Business Analyst']}},
                 select: {[field]: true}
             });
             const links = contentForm.map(item => item[field])
             res.json(links);
         } else {
             const contentForms = await prisma.contentform.findMany({
-                where: {persona: persona},
+                where: {persona: {has: persona}},
                 select: {[field]: true}
             });
             const links = contentForms.map(item => item[field])
@@ -628,7 +611,8 @@ app.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
     }
 });
 
-app.get('/contentforms/filter/:persona/:file_type', async (req, res) => {
+app.get('/contentforms/filter/:persona/:file_type', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const {persona, file_type} = req.params;
     try {
         const where: any = {};
@@ -703,7 +687,8 @@ app.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
     }
 });
 
-app.get('/contentforms/:id', async (req, res) => {
+app.get('/contentforms/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const id = parseInt(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
@@ -716,7 +701,8 @@ app.get('/contentforms/:id', async (req, res) => {
     }
 });
 
-app.post('/contentforms/:id/checkout', async (req, res) => {
+app.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
     const {username} = req.body;
     if (!username) {
@@ -735,7 +721,8 @@ app.post('/contentforms/:id/checkout', async (req, res) => {
     return res.status(200).json({message: 'Document checked out'});
 });
 
-app.post('/contentforms/:id/checkin', async (req, res) => {
+app.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
     const {username} = req.body;
 
@@ -751,7 +738,8 @@ app.post('/contentforms/:id/checkin', async (req, res) => {
     return res.status(200).json({message: 'Document checked in'});
 });
 
-app.get('/contentforms/:id/checkout_status', async (req, res) => {
+app.get('/contentforms/:id/checkout_status', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
 
     if (!checkOutMem[id]) {
@@ -764,7 +752,8 @@ app.get('/contentforms/:id/checkout_status', async (req, res) => {
     });
 })
 
-app.get('/contentforms/checkout/all', async (req, res) => {
+app.get('/contentforms/checkout/all', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     try {
         const checkedOutId = Object.keys(checkOutMem).map(Number);
         if (checkedOutId.length === 0) {
@@ -785,7 +774,8 @@ app.get('/contentforms/checkout/all', async (req, res) => {
     }
 });
 
-app.put('/contentforms/:id', upload.single('file'), async (req, res) => {
+app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
     console.log('PUT body:', req.body);
     console.log('PUT file:', req.file?.originalname);
 
@@ -874,6 +864,7 @@ app.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
+
 app.get('/ba-files', async (req, res) => {
     const { data, error } = await supabase
         .from('ba_files_with_size')
