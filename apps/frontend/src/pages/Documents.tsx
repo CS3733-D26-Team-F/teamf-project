@@ -1019,8 +1019,6 @@ export function Documents() {
                             ? <Box>
                                 <input ref={fileInputRef} type="file"
                                        onChange={e => setAddFile(e.target.files?.[0] ?? null)}/>
-                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document
-                                    details.</Text>
                             </Box>
                             : <TextInput label="URL" placeholder="https://example.com" value={addUrl}
                                          onChange={e => setAddUrl(e.target.value)}/>
