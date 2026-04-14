@@ -533,7 +533,10 @@ export function Documents() {
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
-        if (filterType.length > 0) result = result.filter(d => filterType.map(t => t.toLowerCase()).includes(getExt(d.url)));
+        if (filterType.length > 0) result = result.filter(d => {
+            if (filterType.includes('link') && getFileType(d.url) === 'Link') return true;
+            return filterType.map(t => t.toLowerCase()).includes(getExt(d.url));
+        });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
 
         if (sortField) {
@@ -943,7 +946,7 @@ export function Documents() {
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv']} clearable />
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
