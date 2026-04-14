@@ -249,7 +249,7 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
 
 interface RowCallbacks {
     persona: string | null;
-    onView: (url: string, label: string, id: number) => void;
+    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
     onFavorite: (doc: ContentForm) => void;
     onDownload: (url: string, name: string) => void;
     onEdit: (doc: ContentForm) => void;
@@ -266,7 +266,7 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     const isUrl = getFileType(doc.url) === 'Link';
     return (
-        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id)}>
+        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
@@ -326,6 +326,7 @@ interface DocCardProps extends RowCallbacks {
 
 function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
+    const isUrl = getFileType(doc.url) === 'Link';
     return (
         <div
             style={{
@@ -334,7 +335,7 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 transition: 'box-shadow 0.15s', overflow: 'hidden',
                 border: isSelected ? '2px solid var(--color-fresh-sky, #3b82f6)' : '2px solid transparent',
             }}
-            onClick={() => onView(doc.url, doc.name, doc.id)}
+            onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}
         >
             <DocThumbnail url={doc.url} />
 
@@ -730,7 +731,12 @@ export function Documents() {
         }
     }
 
-    function openViewer(url: string, label: string, id: number) {
+    function openViewer(url: string, label: string, id: number, isUrl: boolean) {
+        if (isUrl) {
+            recordView(id);
+            window.open(url, '_blank');
+            return;
+        }
         recordView(id);
         setViewerUrl(url);
         setViewerLabel(label);
@@ -814,7 +820,7 @@ export function Documents() {
                             {recentDocs.map(doc => (
                                 <div
                                     key={doc.id}
-                                    onClick={() => openViewer(doc.url, doc.name, doc.id)}
+                                    onClick={() => openViewer(doc.url, doc.name, doc.id, (getFileType(doc.url) === 'Link'))}
                                     style={{
                                         minWidth: 160, maxWidth: 160, background: 'white', borderRadius: 8,
                                         padding: '10px 12px', cursor: 'pointer', flexShrink: 0,
