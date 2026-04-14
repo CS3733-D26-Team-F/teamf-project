@@ -65,7 +65,7 @@ export function Profile() {
                 width={150}>
                     <Menu.Target>
                         <Button rightSection={<IconChevronDown size={18} />} pr={20} variant="filled" color="primary">
-                        <img
+                        <img id="profile-picture"
                             src={profilePicture ?? placeholderProfilePicture}
                             alt="Profile"
                             onError={(event) => {
