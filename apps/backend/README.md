@@ -9,33 +9,19 @@ Set-Location .\apps\backend
 $env:DATABASE_URL="<your-postgres-connection-string>"
 npm run dev
 ```
+For API Calls:
+- Use api("{$DOMAIN}/call) **not** fetch for authentification purposes
 
 Backend starts at:
 - http://localhost:3000
 
-API endpoints:
+Main API endpoints:
+- http://localhost:3000/api/auth/login
 - http://localhost:3000/employees
-- http://localhost:3000/employee_manage
 - http://localhost:3000/contentforms
 
-Testing login function: 
-- make sure server is running ^
-- open up postman 
-- Set method from "GET" to "POST"
-- url is: http://localhost:3000/login
-- make sure under URL: 
-  - set to body,
-  - param is raw
-  - Text is JSON
-    - run command in space below: 
-      - {
-        "username": "testingtesting",
-        "password": "wpiiscool"
-        }
-- Test username or password for different error prints!
-
 ## Database Correlations
-Employee:
+Main Employee:
 - username (unique, VARCHAR(50))
 - password (VARCHAR(20))
 - persona (VARCAR(20), CHECK ('Admin', 'Underwriter', 'Business Analyst'))
@@ -44,22 +30,46 @@ Employee:
 Admin
 - adid (foreign key only, nothing else unique right now)
 
-Functions
+Basic Functions
+- "/api/auth/login" is the login call
+- "/api/auth/me" pulls up the logged in profile
+- "api/auth/logout" is a placeholder for any logout functionality
+- "/employees" gets all the employee data
+- "/contentforms" gets all the non-soft deleted content forms
+- "/getEmployee" posts a single employee
+- "/updateEmployee" patch updates an employee's data in both the supabase and auth0
 - "/addEmployee" adds a new employee
-- "/login" does the login check based on username and password
 - "/deleteEmployee/:username" deletes an employee based on the username (replace :username with the name in question)
-- "/employee" displays the list of employees
-- "/contentforms" as a get lists the content form data
-- "/getEmployee" displays a singular employee
-- "/updateEmployee" updates the employee information
-- "/employee_manage" as a post enters data for the employee manage form
-- "/contentforms" as a post enters data for the content form
-- "/deleteContentForm/:name" deletes an existing content form based on its name
-- "/updateContentForm" updates a content form when prompted with the name of the form
-- "/updateTheme" updates the theme for the employee
-- "/contentforms/persona/:persona" retrieves all the content forms of a certain persona
-- "/contentforms/persona/:persona/:field" retrieves a list of values in the field of a type of content form (all names, urls, etc.)
-
+- "/employees/:empid/profile-picture" updates an employee's picture
+- "/updateTheme" updates the theme toggle
+- "/updateContentForm" updates a content form
+- "/addFileToBucket" adds a file to the appropriate bucket for content
+- "/contentforms" post updates files in the buckets
+- "/deleteContentForm/:id" deletes a content from (hard)
+- "/contentforms/persona/:persona" gets the persona(s) of a content form
+- "/contentforms/admin" gets all the contentforms for admin
+- "/contentforms/persona/:persona/:field" gets a field of a forms based on a persona
+- "/contentforms/filter/:persona/:file_type" gets the file type
+- "/contentforms/trash" gets the trash (soft deleted files)
+- "/contentforms/:id/softdelete" is the soft delete
+- "/contentforms/:id/restore" removes the soft delete of a form
+- "/contentforms/:id/permanent" ensures full hard deletion
+- "/contentforms/autoexpire" auto-expires any forms that are set to expire
+- "/contentforms/archived" gets all forms that are archived
+- "/contentforms/expired" gets all the expired content forms
+- "/contentforms/:id/status" gets all the forms of a status
+- "/contentforms/:id" retrieves forms by id
+- "/contentforms/:id/checkout" checks out forms based on id
+- "/contentforms/:id/checkin" checks in forms
+- "/contentforms/:id/checkout_status" displays whether a form is checked out
+- "/contentforms/checkout/all" displays all checked out forms
+- "/contentforms/:id" PUT puts a new file into the content form at that id
+- "/contentforms/employee/:empid" gets all of an employee's content forms
+- "/contentforms/:id/favorite" makes a content form a favorite
+- "/ba-files" is a soon to be implemented view of the ba file size
+- "/uw-files" is a soon to be implemented view of the uw file size
+- "/uw-files/:name" soon to be implemented gets a specific form's file size uw
+- "/ba-files/:name" soon to be implemented gets a specific form's file size ba
 
 ## First-time setup only
 
@@ -73,6 +83,7 @@ If Prisma client looks out of sync:
 
 ```powershell
 Set-Location .\apps\backend
+npx prisma db pull
 npx prisma generate
 ```
 
@@ -82,6 +93,8 @@ Create `apps/backend/.env` and add:
 
 ```dotenv
 DATABASE_URL="<your-postgres-connection-string>"
+DIRECT_URL="<your-postgres-url-string>"
+AUTH0 CALLS
 ```
 
 Then each run is just:

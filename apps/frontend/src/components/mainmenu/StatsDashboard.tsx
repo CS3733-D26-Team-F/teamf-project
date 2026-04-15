@@ -4,7 +4,7 @@ import {
     IconUserPlus,
     IconArrowDownRight,
 } from '@tabler/icons-react';
-import { Group, Paper, SimpleGrid, Text, RingProgress } from '@mantine/core';
+import {Group, Paper, SimpleGrid, Text, RingProgress, Tooltip} from '@mantine/core';
 import classes from './StatsGrid.module.css';
 import {useEffect, useState} from "react";
 import {useApi} from "../api.ts";
@@ -126,7 +126,8 @@ export function StatsDashboard() {
         persona,
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
-        color: ['var(--sapphire)', 'var(--fresh-sky)'][index % 2]
+        color: ['var(--sapphire)', 'var(--fresh-sky)'][index % 2],
+        tooltip: `${persona}: ${count} files`
     }));
 
     //content ring types
@@ -135,6 +136,7 @@ export function StatsDashboard() {
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--yale-blue)', 'var(--fresh-sky)'][index % 2],
+        tooltip: `${type}: ${count} files`
     }));
 
     const statusRingSections = Object.entries(filesByStatus as Record<string, number>).map(([status, count], index) => ({
@@ -142,6 +144,7 @@ export function StatsDashboard() {
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--pale-sky', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--sapphire)', 'var(--neutral-red)', 'var(--light-gray)'][index % 6],
+        tooltip: `${status}: ${count} files`
     }));
 
     const data = [
@@ -150,7 +153,7 @@ export function StatsDashboard() {
             icon: 'clock',
             value: updatedFiles.toString(),
             progress: numFiles > 0 ? (updatedFiles / numFiles) * 100 : 0,
-            color: 'blue'
+            color: 'blue',
         },
         {
             title: 'My Files',
@@ -193,6 +196,8 @@ export function StatsDashboard() {
                         thickness={6}
                         sections={[{ value: stat.progress, color: stat.color }]}
                     />
+
+
                 </Group>
             </Paper>
         );
