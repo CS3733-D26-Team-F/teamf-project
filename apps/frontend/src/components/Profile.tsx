@@ -1,6 +1,6 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from 'react';
-import { Button, Menu, Modal, px, Text } from '@mantine/core';
+import { Button, Menu, Modal, Text } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { DOMAIN } from '../const';

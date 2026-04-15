@@ -5,8 +5,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
 import {Documents} from "./pages/Documents";
-// import { ProtectedRoute } from './components/ProtectedRoute';
-import {MantineProvider} from "@mantine/core";
 import { Archive } from './pages/Archive';
 
 export default function App() {

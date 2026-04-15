@@ -4,10 +4,10 @@ import {
     IconUserPlus,
     IconArrowDownRight,
 } from '@tabler/icons-react';
-import {Group, Paper, SimpleGrid, Text, RingProgress, Tooltip} from '@mantine/core';
+import { Group, Paper, SimpleGrid, Text, RingProgress } from '@mantine/core';
 import classes from './StatsGrid.module.css';
-import {useEffect, useState} from "react";
-import {useApi} from "../api.ts";
+import { useEffect, useState} from "react";
+import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
 
 const icons = {
@@ -17,7 +17,6 @@ const icons = {
     up: IconArrowDownRight,
     down: IconArrowDownRight
 };
-
 
 
 export function StatsDashboard() {
