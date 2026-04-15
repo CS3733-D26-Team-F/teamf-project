@@ -369,7 +369,7 @@ export function Documents() {
                 setIsLoadingUser(false);
             })
             .catch(() => setIsLoadingUser(false));
-    }, [api]);
+    }, []);
 
     useEffect(() => {
         // Auto-expire documents on page load
@@ -379,7 +379,7 @@ export function Documents() {
         api(`${DOMAIN}/employees`)
             .then(res => res.json())
             .then((data: Employee[]) => setEmployees(data));
-    }, [api]);
+    }, []);
 
     // Keep Add/Edit forms synced with persona after it loads
     useEffect(() => {
