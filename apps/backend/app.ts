@@ -94,20 +94,48 @@ app.post('/api/auth/login', checkJWT, async (req, res) => {
         console.log("Body =", req.body);
         console.log("Payload =", req.auth!.payload);
         console.log("=================================================Here1");
-        const auth0Id  = req.auth!.payload.sub;
-        const username = req.auth!.payload['name'] as string;
+        const auth0Id = req.auth!.payload.sub as string;
+        const username =
+            (req.auth!.payload['nickname'] as string | undefined) ||
+            (req.auth!.payload['preferred_username'] as string | undefined) ||
+            (req.auth!.payload['name'] as string | undefined);
 
-        const employee = await prisma.employee.upsert({
-            where:  { auth0Id },
-            update: {
-                username,
-                isLoggedIn: true
-            },
-            create: {
-                auth0Id,
-                username
-            },
-        });
+        if (!username) {
+            return res.status(400).json({ error: 'Missing username in token payload' });
+        }
+
+        let employee = await prisma.employee.findUnique({ where: { auth0Id } });
+
+        if (employee) {
+            employee = await prisma.employee.update({
+                where: { empid: employee.empid },
+                data: {
+                    username,
+                    isLoggedIn: true,
+                },
+            });
+        } else {
+            const employeeByUsername = await prisma.employee.findUnique({ where: { username } });
+
+            if (employeeByUsername) {
+                employee = await prisma.employee.update({
+                    where: { empid: employeeByUsername.empid },
+                    data: {
+                        auth0Id,
+                        isLoggedIn: true,
+                    },
+                });
+            } else {
+                employee = await prisma.employee.create({
+                    data: {
+                        auth0Id,
+                        username,
+                        isLoggedIn: true,
+                    },
+                });
+            }
+        }
+
         res.json({ employee });
         console.log("=================================================Here2");
     } catch (err) {
