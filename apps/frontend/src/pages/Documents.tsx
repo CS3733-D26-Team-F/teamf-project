@@ -18,8 +18,11 @@ import "@iamjariwala/react-doc-viewer/dist/index.css";
 import { DOMAIN } from '../const.ts';
 import {ViewToggle } from "../components/content/ViewToggle.tsx"
 import { PageTitle } from "../components/Title.tsx"
-import {PersonaBadges} from "../components/PersonaBadge.tsx";
+import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
+import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
+import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
+import {OfficePlaceholder} from "../components/content/OfficePlaceholder.tsx";
 //import {token} from "morgan";
 import { useApi } from "../../src/components/api.ts";
 
@@ -60,28 +63,8 @@ type StagedFile = {
     expiration_date: string;
 };
 
-const statusColors: Record<string, string> = {
-    'In Progress': 'var(--color-sapphire',
-    'Internal Review': 'var(--color-yale-blue)',
-    'Client Review': 'blue',
-    'Approved': 'var(--color-fresh-sky)',
-    'Expired': 'var(--color-neutral-red)',
-    'Archived': 'gray',
-};
-
 const THUMBNAIL_H = 140;
 const imageExts = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
-
-const officeMeta: Record<string, { bg: string; color: string; label: string }> = {
-    pdf:  { bg: '#e3f0ff', color: 'var(--color-sapphire)', label: 'PDF'  },
-    docx: { bg: '#d8e9ff', color: 'var(--color-yale-blue)', label: 'DOCX' },
-    doc:  { bg: '#d8e9ff', color: 'var(--color-yale-blue)', label: 'DOC'  },
-    xlsx: { bg: '#e0f7ff', color: 'var(--color-fresh-sky)', label: 'XLSX' },
-    xls:  { bg: '#e0f7ff', color: 'var(--color-fresh-sky)', label: 'XLS'  },
-    csv:  { bg: '#e6faff', color: 'var(--color-fresh-sky-light)', label: 'CSV'  },
-    pptx: { bg: '#f0f6ff', color: 'var(--color-sapphire-light)', label: 'PPTX' },
-    ppt:  { bg: '#f0f6ff', color: 'var(--color-sapphire-light)', label: 'PPT'  },
-};
 
 const persona = localStorage.getItem('persona');
 const titleProp = persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : 'Business Analyst Resources'
@@ -104,33 +87,6 @@ function normalizeUrl(input: string): string {
         return `https://${input}`;
     }
     return input;
-}
-
-function OfficePlaceholder({ ext }: { ext: string }) {
-    const info = officeMeta[ext] ?? { bg: '#f5f5f5', color: '#888', label: ext.toUpperCase() || 'FILE' };
-    return (
-        <div style={{
-            width: '100%', height: THUMBNAIL_H, background: info.bg,
-            borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(0,0,0,0.07)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', gap: 8, userSelect: 'none',
-            overflow: 'hidden', position: 'relative',
-        }}>
-            <div style={{
-                position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-                justifyContent: 'center', padding: '12px 16px', gap: 5, opacity: 0.22,
-            }}>
-                {[90, 70, 85, 60, 75, 55].map((w, i) => (
-                    <div key={i} style={{ height: 4, width: `${w}%`, background: info.color, borderRadius: 2 }} />
-                ))}
-            </div>
-            <div style={{
-                background: info.color, color: 'white', fontWeight: 800,
-                fontSize: 13, letterSpacing: 1.5, padding: '4px 12px',
-                borderRadius: 6, boxShadow: '0 2px 6px rgba(0,0,0,0.18)', zIndex: 1,
-            }}>{info.label}</div>
-        </div>
-    );
 }
 
 function PdfThumbnail({ url }: { url: string }) {
@@ -277,7 +233,7 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
             </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
-            <Table.Td><Badge color={statusColors[doc.status] ?? 'gray'} variant="light">{doc.status}</Badge></Table.Td>
+            <Table.Td><StatusBadge status={doc.status} size="sm" filter={false} /> </Table.Td>
             <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
             <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
             <Table.Td onClick={e => e.stopPropagation()}>
@@ -357,8 +313,8 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
                 <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
                 <Group gap={4} mb={4}>
                     <PersonaBadges personas={doc.persona} />
-                    <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
-                    <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
+                    <StatusBadge status={doc.status} size="xs" filter={false} />
+                    <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
                 </Group>
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
@@ -810,7 +766,11 @@ export function Documents() {
                 {activeFilterCount > 0 && (
                     <Group mb="sm" gap="xs">
                         {filterPersona.map(v => <Badge key={v} variant="filled" color="blue" style={{ cursor: 'pointer' }} onClick={() => setFilterPersona(p => p.filter(x => x !== v))}>Persona: {v} ×</Badge>)}
-                        {filterStatus.map(v => <Badge key={v} variant="filled" color={statusColors[v] ?? 'gray'} style={{ cursor: 'pointer' }} onClick={() => setFilterStatus(p => p.filter(x => x !== v))}>Status: {v} ×</Badge>)}
+                        {filterStatus.map(v => <StatusBadge
+                            status={v}
+                            filter
+                            onRemove={() => setFilterStatus(p => p.filter(x => x !== v))}
+                        />)}
                         {filterType.map(v => <Badge key={v} variant="filled" color="violet" style={{ cursor: 'pointer' }} onClick={() => setFilterType(p => p.filter(x => x !== v))}>Type: {v} ×</Badge>)}
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal" style={{ cursor: 'pointer' }} onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
                         <Badge variant="outline" style={{ cursor: 'pointer' }} onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear all</Badge>
@@ -838,7 +798,7 @@ export function Documents() {
                                     <Text fw={600} size="sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-yale-blue)' }}>
                                         {doc.name}
                                     </Text>
-                                    <Text size="xs" c="dimmed">{getFileType(doc.url)}</Text>
+                                    <FileTypeBadge fileType={getFileType(doc.url)} size="sm"/>
                                     <PersonaBadges personas={doc.persona} />
                                 </div>
                             ))}
@@ -1011,8 +971,8 @@ export function Documents() {
                                                 </Text>
                                                 <Group gap={4} mt={4}>
                                                     <PersonaBadges personas={doc.persona} />
-                                                    <Badge color={statusColors[doc.status] ?? 'gray'} variant="light" size="xs">{doc.status}</Badge>
-                                                    <Badge variant="outline" size="xs">{getFileType(doc.url)}</Badge>
+                                                    <StatusBadge status={doc.status} size="xs" filter={false} />
+                                                    <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
                                                 </Group>
                                             </div>
                                         </Group>
