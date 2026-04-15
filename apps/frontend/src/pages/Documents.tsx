@@ -64,7 +64,7 @@ type StagedFile = {
 };
 
 const persona = localStorage.getItem('persona');
-const titleProp = persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : persona === 'Business Analyst' ? 'Business Analyst Resources' : undefined;
+const titleProp = persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : persona === 'Business Analyst' ? 'Business Analyst Resources' : 'All Documents';
 
 function getExt(url: string) {
     return url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
