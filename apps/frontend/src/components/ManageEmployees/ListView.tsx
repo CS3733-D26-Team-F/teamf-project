@@ -139,7 +139,7 @@ export function EmployeeListView() {
 
             if (hasAccountChanges) {
                 const updateResponse = await api(`${DOMAIN}/updateEmployee`, {
-                    method: 'POST',
+                    method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: editTarget.username,

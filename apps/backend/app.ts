@@ -177,7 +177,7 @@ app.post('/getEmployee', async (req, res) => {
 app.patch('/updateEmployee', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const token = await getManagementToken();
-    const {username,newUsername,newPassword,persona, first_name, last_name} = req.body;
+    const {username,newUsername,password,persona, first_name, last_name, pfp_URL} = req.body;
 
     if (!username) {
         return res.status(400).send('Current username is required');
@@ -189,13 +189,15 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
         persona?: string;
         first_name?: string;
         last_name?: string;
+        pfp_URL?: string;
     } = {};
 
     if (newUsername) updateData.username = newUsername;
-    if (newPassword) updateData.password = newPassword;
+    if (password) updateData.password = password;
     if (persona) updateData.persona = persona;
     if (first_name) updateData.first_name = first_name;
     if (last_name) updateData.last_name = last_name;
+    if (pfp_URL) updateData.pfp_URL = pfp_URL;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send('No fields to update');
@@ -205,105 +207,153 @@ app.patch('/updateEmployee', checkJWT, async (req, res) => {
 
         const employee = await prisma.employee.update({
             where: {username: username},
-            data: updateData
+            data: updateData,
         });
-        
-        // const auth0Updates: any = {};
-        //
-        // if (newPassword) auth0Updates.password = newPassword;
-        // if (newUsername) {
-        //     auth0Updates.username = newUsername;
-        //     auth0Updates.email = `${newUsername}@noemail.internal`;
-        // }
-        //
-        // const updateRes = await fetch(
-        //     `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.auth0Id)}`,
-        //     {
-        //         method: 'PATCH',
-        //         headers: {
-        //             Authorization: `Bearer ${token}`,
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify(auth0Updates),
-        //     }
-        // );
-        //
-        // if (!updateRes.ok) {
-        //     const error = await updateRes.json();
-        //     if (updateRes.status === 409) {
-        //         return res.status(409).json({ error: 'Username already in use' });
-        //     }
-        //     return res.status(500).json({ error: 'Failed to update Auth0 user', details: error });
-        // }
-        //
-        // // if (persona) {
-        // //     const rolesRes = await fetch(
-        // //         `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
-        // //         {
-        // //             headers: {
-        // //                 Authorization: `Bearer ${token}`,
-        // //             },
-        // //         }
-        // //     );
-        // //
-        // //     const roles = await rolesRes.json();
-        // //     const matchedRole = roles.find((r: any) => r.name === persona);
-        // //     const existingRoles = await rolesRes.json();
-        // //
-        // //     if (existingRoles.length > 0) {
-        // //         await fetch(
-        // //             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
-        // //             {
-        // //                 method: 'DELETE',
-        // //                 headers: {
-        // //                     Authorization: `Bearer ${token}`,
-        // //                     'Content-Type': 'application/json',
-        // //                 },
-        // //                 body: JSON.stringify({
-        // //                     roles: existingRoles.map((r: any) => r.id),
-        // //                 }),
-        // //             }
-        // //         );
-        // //     }
-        // //
-        // //     if (matchedRole) {
-        // //         await fetch(
-        // //             `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
-        // //             {
-        // //                 method: 'POST',
-        // //                 headers: {
-        // //                     Authorization: `Bearer ${token}`,
-        // //                     'Content-Type': 'application/json',
-        // //                 },
-        // //                 body: JSON.stringify({
-        // //                     roles: [matchedRole.id],
-        // //                 }),
-        // //             }
-        // //         );
-        // //     }
-        // // }
-        //
-        // if (employee.persona.trim() === 'Admin') {
-        //     await prisma.admin.upsert({
-        //         where: {adid: employee.empid},
-        //         create: {adid: employee.empid},
-        //         update: {}
-        //     });
-        // if (persona.trim() == 'Admin'){
-        //     await prisma.admin.create({
-        //         data: {
-        //             adid: employee.empid
-        //         }
-        //     })
-        // } else {
-        //     await prisma.admin.deleteMany({
-        //         where: {adid: employee.empid},
-        //     });
-        // };
-        // return res.status(200).json({
-        //     message: 'Employee updated',
-        //     data: employee
-        // });
+
+        if (newUsername) {
+            const usernameUpdate = {
+                connection: "Username-Password-Authentication",
+                username: newUsername,
+                //email: `${newUsername}@noemail.internal`
+            };
+
+            const res1 = await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(usernameUpdate),
+                }
+            );
+
+            if (!res1.ok) {
+                const err = await res1.json();
+                console.log("Username update failed:", err);
+                return res.status(500).json({ error: "Failed to update username", details: err });
+            }
+        }
+
+        if (newUsername) {
+            const usernameUpdate = {
+                connection: "Username-Password-Authentication",
+                //username: newUsername,
+                email: `${newUsername}@noemail.internal`,
+                nickname: newUsername
+            };
+
+            const res1 = await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(usernameUpdate),
+                }
+            );
+
+            if (!res1.ok) {
+                const err = await res1.json();
+                console.log("Username update failed:", err);
+                return res.status(500).json({ error: "Failed to update username", details: err });
+            }
+        }
+
+
+        if (password) {
+            const passwordUpdate = {
+                connection: "Username-Password-Authentication",
+                password: password
+            };
+
+            const res2 = await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(employee.auth0Id)}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(passwordUpdate),
+                }
+            );
+
+            if (!res2.ok) {
+                const err = await res2.json();
+                console.log("Password update failed:", err);
+                return res.status(500).json({ error: "Failed to update password", details: err });
+            }
+        }
+
+        if (persona) {
+            const allRolesRes = await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
+                {headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const allRoles = await allRolesRes.json();
+            const matchedRole = allRoles.find((r: any) => r.name === persona);
+
+            const userRolesRes = await fetch(
+                `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+                {headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const userRoles = await userRolesRes.json();
+            if (userRoles.length > 0) {
+                await fetch(
+                    `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+                    {
+                        method: "DELETE",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            roles: userRoles.map((r: any) => r.id)
+                        })
+                    }
+                );
+            };
+
+            if (matchedRole) {
+                await fetch(
+                    `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${employee.auth0Id}/roles`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            roles: [matchedRole.id]
+                        })
+                    }
+                );
+            }
+        };
+
+        if (persona == 'Admin'){
+            await prisma.admin.create({
+                data: {
+                    adid: employee.empid
+                }
+            })
+        } else {
+            await prisma.admin.deleteMany({
+                where: {adid: employee.empid},
+            });
+        }
+        return res.status(200).json({
+            message: 'Employee updated',
+            data: employee
+        });
     } catch (error) {
         console.error('updateEmployee error:', error);
         res.status(500).json({error: 'Something went wrong updating employee'});
