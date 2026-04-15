@@ -2,6 +2,8 @@
 
 @custom-variant hover (&:hover);
 
+
+
 @theme {
     --color-white: var(--white);
     --color-light-gray: var(--light-gray);
@@ -78,6 +80,15 @@ header {
                 width: 15rem;
                 height: auto;
             }
+            #profile-picture {
+                width: 2rem;
+                height: 2rem;
+                border-radius: 100%;
+                object-fit: cover;
+                display: block;
+                flex-shrink: 0;
+                clip-path: circle();
+            }
         }
 
         nav {
@@ -116,8 +127,22 @@ header {
                 img {
                     width: 1.5rem;
                     height: 1.5rem;
-                    border-radius: 999px;
+                    border-radius: 50%;
                     object-fit: cover;
+                    display: block;
+                    flex-shrink: 0;
+                }
+
+                #profile-picture {
+                    width: 2rem;
+                    height: 2rem;
+                    border-radius: 100%;
+                    object-fit: contain;
+                    display: block;
+                    flex-shrink: 0;
+                    overflow: hidden;
+                    background-color: var(--color-white);
+                    clip-path: circle();
                 }
             }
         }

@@ -8,6 +8,9 @@ export function ManageEmployeesForm() {
     if (allowedAccess) {
         return (
             <>
+                <title>
+                    Employees - Hanover Insurance
+                </title>
                 <Header />
                 <PageTitle title="Employees"/>
                 <EmployeeListView />
