@@ -8,7 +8,7 @@ import {
 } from '@mantine/core';
 import { IconArchive, IconClock, IconRestore, IconTrash } from '@tabler/icons-react';
 import { DOMAIN } from '../const.ts';
-import {PersonaBadges} from "../components/PersonaBadge.tsx";
+import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import { useApi } from "../../src/components/api.ts";
 
 import { PageTitle } from "../components/Title.tsx"
