@@ -23,7 +23,7 @@ export function PdfThumbnail({ url }: { url: string }) {
 
                 const scaleByWidth = containerW / viewport.width;
                 const scaleByHeight = maxHeight / viewport.height;
-                const scale = Math.min(scaleByWidth, scaleByHeight); // 👈 min, not max
+                const scale = Math.max(scaleByWidth, scaleByHeight);
                 const scaled = page.getViewport({scale});
                 canvas.width = scaled.width;
                 canvas.height = scaled.height;
