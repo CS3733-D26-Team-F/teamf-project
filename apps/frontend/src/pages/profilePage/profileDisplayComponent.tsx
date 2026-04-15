@@ -1,13 +1,46 @@
 import '@mantine/core/styles.css';
 import {
-    Button, Modal, Select, MultiSelect, Group, Text,
-    Badge, Stack, Box, Table, Checkbox, Image,
-    Tooltip
+    Table, Image
 } from '@mantine/core';
+import { useEffect, useState } from 'react';
+import { DOMAIN } from '../../const';
 
 const placeholder = '/default-profile-picture.png';
 
 export function ProfileComponent() {
+    const [profileImage, setProfileImage] = useState<string>(() => (
+        localStorage.getItem('pfp_URL') || localStorage.getItem('profilePicture') || placeholder
+    ));
+
+    useEffect(() => {
+        const username = localStorage.getItem('username');
+        if (!username) {
+            return;
+        }
+
+        fetch(`${DOMAIN}/getEmployee`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username }),
+        })
+            .then((res) => {
+                if (!res.ok) {
+                    return null;
+                }
+                return res.json();
+            })
+            .then((payload) => {
+                const imageUrl = payload?.data?.pfp_URL;
+                if (imageUrl) {
+                    setProfileImage(imageUrl);
+                    localStorage.setItem('pfp_URL', imageUrl);
+                }
+            })
+            .catch(() => {
+                // Keep existing localStorage fallback if the request fails.
+            });
+    }, []);
+
     return (
         <div id="profile-component"
         
@@ -25,7 +58,7 @@ export function ProfileComponent() {
                 </thead>
                 <tbody>
                     <tr>
-                        <td><Image src={localStorage.getItem('pfp_URL') || placeholder} style={{ width: 200, height: 200 }} alt="Profile" /></td>
+                        <td><Image src={profileImage} style={{ width: 200, height: 200 }} alt="Profile" /></td>
                         <td>Email: {localStorage.getItem('email')}</td>
                     </tr>
                     <tr>

@@ -1,11 +1,11 @@
 import { useAuth0 } from "@auth0/auth0-react";
-import {Popover} from "@mantine/core";
-
 import { useEffect, useState } from 'react';
-import { Button, Menu } from '@mantine/core';
+import { Button, Menu, Modal, px, Text } from '@mantine/core';
 import { IconChevronDown } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { DOMAIN } from '../const';
+import { useDisclosure } from "@mantine/hooks";
+import ThemeToggle from "./ThemeToggle";
 
 const placeholderProfilePicture =
     'data:image/svg+xml;charset=UTF-8,' +
@@ -14,39 +14,21 @@ const placeholderProfilePicture =
     );
 
 export function Profile() {
-    const [profilePicture, setProfilePicture] = useState<string | undefined>(
-        localStorage.getItem('pfp_URL') ?? undefined);
-    const { user, isAuthenticated, logout } = useAuth0();
-    const [open, setOpen] = useState(false);
+    const [profilePicture, setProfilePicture] = useState<string | undefined>(() => (
+        localStorage.getItem('pfp_URL') ?? localStorage.getItem('profilePicture') ?? undefined
+    ));
+    const { user, logout } = useAuth0();
+    const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
 
-    return (
-        <Popover opened={open} onChange={setOpen}>
-            <Popover.Target>
-                <div className="profilePopover"
-                     onClick={() => setOpen((o) => !o)}
-                     style={{ cursor: "pointer" }}>
-                    <img src="https://via.placeholder.com/40" alt="Profile" />
-                    <span>{isAuthenticated ? user?.nickname || "Guest" : "Guest"}</span>
-                </div>
-            </Popover.Target>
-
-            <Popover.Dropdown>
-                {isAuthenticated && (
-                    <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })
-                    }>Logout</button>
-                )}
-            </Popover.Dropdown>
-        </Popover>
-    );
     const displayName =
         localStorage.getItem('first_name') && localStorage.getItem('first_name') !== 'undefined'
             ? localStorage.getItem('first_name')
             : localStorage.getItem('username') && localStorage.getItem('username') !== 'undefined'
                 ? localStorage.getItem('username')
-                : 'User';
+                : user?.nickname || 'User';
 
     useEffect(() => {
-        const username = localStorage.getItem('username');
+        const username = localStorage.getItem('username') || user?.nickname;
         
         if (!username) {
             return;
@@ -64,8 +46,27 @@ export function Profile() {
                 return res.json();
             })
             .then((payload) => {
-                const url = payload?.data?.pfp_URL ?? undefined;
+                const employee = payload?.data;
+                if (!employee) {
+                    return;
+                }
+
+                const url = employee.pfp_URL ?? undefined;
                 setProfilePicture(url);
+
+                if (employee.username) {
+                    localStorage.setItem('username', employee.username);
+                }
+                if (employee.first_name) {
+                    localStorage.setItem('first_name', employee.first_name);
+                }
+                if (employee.persona) {
+                    localStorage.setItem('persona', employee.persona);
+                }
+                if (employee.empid) {
+                    localStorage.setItem('empid', String(employee.empid));
+                }
+
                 if (url) {
                     localStorage.setItem('pfp_URL', url);
                 } else {
@@ -76,50 +77,63 @@ export function Profile() {
             .catch(() => {
                 // Keep existing localStorage fallback if the request fails.
             });
-    }, []);
+    }, [user?.nickname]);
+
+    function handleLogout() {
+        localStorage.clear();
+        logout({ logoutParams: { returnTo: window.location.origin } });
+    }
 
     if (localStorage.getItem('persona') !== 'Guest' || localStorage.getItem('username') !== null) {
         return (
-            <div className="profile-link" aria-label="Signed in user" >
-                
-                <Menu
-                transitionProps={{transition: 'pop-top-right'}}
-                position="top-end"
-                width={150}>
-                    <Menu.Target>
-                        <Button rightSection={<IconChevronDown size={18} />} pr={20} variant="filled" color="primary">
-                        <img id="profile-picture"
-                            src={profilePicture ?? placeholderProfilePicture}
-                            alt="Profile"
-                            onError={(event) => {
-                                setProfilePicture(placeholderProfilePicture);
-                                event.currentTarget.src = placeholderProfilePicture;
-                            }}
-                        />
-                        <span><h3>{displayName}</h3></span>
-                        </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                        <span><h3>Username:{localStorage.getItem('username')}</h3></span>
-                        <Menu.Item component="button" >
-                            <Link to="/profilePage" style={{ color: 'var(--color-yale-blue)' }}>Profile</Link>
-                        </Menu.Item>
-                        <Menu.Item component="button" >
-                            <Link to="/settings" style={{ color: 'var(--color-yale-blue)' }}>Settings</Link>
-                        </Menu.Item>
-                        <Menu.Item component="button" onClick={() => logOff() } >
-                            <Link to="/ " style={{ color: 'var(--color-yale-blue)' }}>Logout</Link>
-                        </Menu.Item>
-                    </Menu.Dropdown>
-                </Menu>
-            </div>
+            <>
+                <div className="profile-link" aria-label="Signed in user" >
+                    <Menu transitionProps={{ transition: 'pop-top-right' }} position="top-end" width={190}>
+                        <Menu.Target>
+                            <Button style={{height: '50px'}} rightSection={<IconChevronDown size={18} />} pr={20} variant="filled" color="primary">
+                                <img
+                                    id="profile-picture"
+                                    src={profilePicture ?? placeholderProfilePicture}
+                                    alt="Profile"
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: '50%',
+                                        marginRight: 8,
+                                        objectFit: 'cover',
+                                        objectPosition: 'center',
+                                        display: 'block',
+                                        flexShrink: 1,
+                                        backgroundColor: 'var(--color-white)',
+                                        border: '1px solid var(--color-pale-sky)',
+                                    }}
+                                    onError={(event) => {
+                                        setProfilePicture(placeholderProfilePicture);
+                                        event.currentTarget.src = placeholderProfilePicture;
+                                    }}
+                                />
+                                <span><h3>{displayName}</h3></span>
+                            </Button>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            <Menu.Label>Username: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
+                            <Menu.Item component={Link} to="/profilePage">Profile</Menu.Item>
+                            <Menu.Item onClick={openSettings}>Settings</Menu.Item>
+                            <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
+                        </Menu.Dropdown>
+                    </Menu>
+                </div>
+
+                <Modal
+                    opened={settingsOpened}
+                    onClose={closeSettings}
+                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">Settings</Text>}
+                >
+                    <ThemeToggle />
+                </Modal>
+            </>
         );
     }
 
     return null;
-}
-
-function logOff() {
-    //hardcoded log off function -- clear local storage
-    localStorage.clear();
 }
