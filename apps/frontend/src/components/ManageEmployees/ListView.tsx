@@ -21,12 +21,22 @@ type Employee = {
 }
 
 const personas = ["Admin", "Underwriter", "Business Analyst"];
+const MAX_PROFILE_PICTURE_SIZE = 80 * 1024;
 
 const personaColors: Record<string, string> = {
     "Admin": "var(--color-yale-blue)",
     "Underwriter": "var(--color-sapphire)",
     "Business Analyst": "var(--color-fresh-sky)",
 };
+
+function validateProfilePicture(file: File | null): File | null {
+    if (file && file.size > MAX_PROFILE_PICTURE_SIZE) {
+        window.alert('Profile picture must be 80 KB or smaller.');
+        return null;
+    }
+
+    return file;
+}
 
 export function EmployeeListView() {
     const api = useApi();
@@ -37,6 +47,8 @@ export function EmployeeListView() {
     const [addOpen, setAddOpen] = useState(false);
     const [addPersona, setAddPersona] = useState('');
     const [addData, setAddData] = useState({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null as File | null });
+    const [addSaving, setAddSaving] = useState(false);
+    const [addError, setAddError] = useState('');
 
 
     // Edit modal
@@ -71,46 +83,53 @@ export function EmployeeListView() {
     function openAdd(persona: string) {
         setAddPersona(persona);
         setAddData({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null });
+        setAddError('');
         setAddOpen(true);
     }
 
     async function handleAdd() {
-        await api(`${DOMAIN}/addEmployee`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                username: addData.username,
-                password: addData.password,
-                persona: addPersona,
-                first_name: addData.first_name,
-                last_name: addData.last_name,
-                pfp_URL: addData.pfp_URL ? 'placeholder' : undefined // Placeholder to indicate presence of file
-            })
-        });
+        setAddSaving(true);
+        setAddError('');
 
-        // if (!addResponse.ok) {
-        //     return;
-        // }
-
-        const createdEmployee = await addResponse.json() as { data?: { empid?: number } };
-        const createdEmpId = createdEmployee.data?.empid;
-
-        if (addData.pfp_URL && createdEmpId) {
-            const formData = new FormData();
-            formData.append('file', addData.pfp_URL);
-
-            const uploadResponse = await fetch(`${DOMAIN}/employees/${createdEmpId}/profile-picture`, {
+        try {
+            const addResponse = await api(`${DOMAIN}/addEmployee`, {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: addData.username.trim(),
+                    password: addData.password,
+                    persona: addPersona,
+                    first_name: addData.first_name.trim(),
+                    last_name: addData.last_name.trim(),
+                    pfp_URL: addData.pfp_URL ? 'placeholder' : undefined
+                })
             });
 
-            if (!uploadResponse.ok) {
-                return;
-            }
-        }
+            const createdEmployee = await addResponse.json() as { data?: { empid?: number } };
+            const createdEmpId = createdEmployee.data?.empid;
 
-        setAddOpen(false);
-        loadEmployees();
+            if (addData.pfp_URL && createdEmpId) {
+                const formData = new FormData();
+                formData.append('file', addData.pfp_URL);
+
+                const uploadResponse = await fetch(`${DOMAIN}/employees/${createdEmpId}/profile-picture`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!uploadResponse.ok) {
+                    setAddError('Account was created, but the profile picture upload failed.');
+                    return;
+                }
+            }
+
+            setAddOpen(false);
+            loadEmployees();
+        } catch {
+            setAddError('Could not save account. Please check the fields and try again.');
+        } finally {
+            setAddSaving(false);
+        }
     }
 
     function openEdit(emp: Employee) {
@@ -332,7 +351,7 @@ export function EmployeeListView() {
                             placeholder="Upload a profile picture"
                             accept="image/*"
                             value={addData.pfp_URL}
-                            onChange={file => setAddData({...addData, pfp_URL: file})}
+                            onChange={file => setAddData({...addData, pfp_URL: validateProfilePicture(file)})}
                         />
                     </Box>
 
@@ -342,6 +361,9 @@ export function EmployeeListView() {
                         value={addData.password}
                         onChange={e => setAddData({...addData, password: e.target.value})}
                     />
+                    {addError && (
+                        <Text c="red" size="sm">{addError}</Text>
+                    )}
                     <TextInput
                         label="Employee Author"
                         value={authorUsername}
@@ -357,6 +379,8 @@ export function EmployeeListView() {
                         <Button
                             onClick={handleAdd}
                             className="invert-hover"
+                            loading={addSaving}
+                            disabled={addSaving}
                         >
                             + Save Account
                         </Button>
@@ -394,7 +418,7 @@ export function EmployeeListView() {
                                 placeholder="Upload a new profile picture"
                                 accept="image/*"
                                 value={editData.newPfp_URL}
-                                onChange={file => setEditData({...editData, newPfp_URL: file})}
+                                onChange={file => setEditData({...editData, newPfp_URL: validateProfilePicture(file)})}
                             />
 
                         </Box>
@@ -482,6 +506,13 @@ export function EmployeeListView() {
                                     h="200px"
                                     src={employeeTarget.pfp_URL}
                                     fallbackSrc = "invalid"
+                                    radius="50%"
+                                    style={{
+                                        objectFit: 'cover',
+                                        objectPosition: 'center',
+                                        backgroundColor: 'white',
+                                        border: '1px solid #dee2e6',
+                                    }}
                                     onError={() => setImageLoadError(true)}
                                 />
                             )}
