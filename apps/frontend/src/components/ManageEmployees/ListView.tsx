@@ -112,7 +112,7 @@ export function EmployeeListView() {
                 const formData = new FormData();
                 formData.append('file', addData.pfp_URL);
 
-                const uploadResponse = await fetch(`${DOMAIN}/employees/${createdEmpId}/profile-picture`, {
+                const uploadResponse = await api(`${DOMAIN}/employees/${createdEmpId}/profile-picture`, {
                     method: 'POST',
                     body: formData,
                 });
