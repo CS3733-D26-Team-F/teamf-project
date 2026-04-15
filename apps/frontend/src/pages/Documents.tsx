@@ -22,9 +22,9 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
-import {OfficePlaceholder} from "../components/content/OfficePlaceholder.tsx";
-//import {token} from "morgan";
 import { useApi } from "../../src/components/api.ts";
+import type { SortThProps } from "../components/interfaces/content.tsx"
+import { DocThumbnail} from "../components/content/DocThumbnail.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -63,9 +63,6 @@ type StagedFile = {
     expiration_date: string;
 };
 
-const THUMBNAIL_H = 140;
-const imageExts = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
-
 const persona = localStorage.getItem('persona');
 const titleProp = persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : 'Business Analyst Resources'
 
@@ -87,83 +84,6 @@ function normalizeUrl(input: string): string {
         return `https://${input}`;
     }
     return input;
-}
-
-function PdfThumbnail({ url }: { url: string }) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
-
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            try {
-                const loadingTask = pdfjs.getDocument({ url, withCredentials: false });
-                const pdf = await loadingTask.promise;
-                if (cancelled) return;
-                const page = await pdf.getPage(1);
-                if (cancelled) return;
-                const canvas = canvasRef.current;
-                if (!canvas) return;
-
-                const viewport = page.getViewport({ scale: 1 });
-                const containerW = canvas.parentElement?.offsetWidth ?? 200;
-                const scale = Math.max(containerW / viewport.width, 0.4);
-                const scaled = page.getViewport({ scale });
-                canvas.width = scaled.width;
-                canvas.height = scaled.height;
-
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                await page.render({ canvasContext: ctx, viewport: scaled }).promise;
-                if (!cancelled) setStatus('done');
-            } catch {
-                if (!cancelled) setStatus('error');
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [url]);
-
-    if (status === 'error') return <OfficePlaceholder ext="pdf" />;
-
-    return (
-        <div style={{
-            width: '100%', height: THUMBNAIL_H,
-            borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(0,0,0,0.07)',
-            overflow: 'hidden', background: '#f8f8f8',
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        }}>
-            {status === 'loading' && (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <style>{`@keyframes _pdfspin { to { transform: rotate(360deg); } }`}</style>
-                    <div style={{ width: 22, height: 22, border: '3px solid #ddd', borderTopColor: '#e53e3e', borderRadius: '50%', animation: '_pdfspin 0.8s linear infinite' }} />
-                </div>
-            )}
-            <canvas ref={canvasRef} style={{ width: '100%', height: 'auto', display: status === 'done' ? 'block' : 'none' }} />
-        </div>
-    );
-}
-
-function DocThumbnail({ url }: { url: string }) {
-    const ext = getExt(url);
-    if (ext === 'pdf') return <PdfThumbnail url={url} />;
-    if (imageExts.has(ext)) {
-        return (
-            <div style={{ width: '100%', height: THUMBNAIL_H, borderRadius: '8px 8px 0 0', borderBottom: '1px solid rgba(0,0,0,0.07)', overflow: 'hidden', background: '#f0f0f0' }}>
-                <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
-                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            </div>
-        );
-    }
-    return <OfficePlaceholder ext={ext} />;
-}
-
-interface SortThProps {
-    field: keyof ContentForm;
-    label: string;
-    icon: React.ReactNode;
-    onToggle: (f: keyof ContentForm) => void;
-    currentField: keyof ContentForm | null;
-    currentDir: 'asc' | 'desc';
 }
 
 function SortTh({ field, label, icon, onToggle, currentField, currentDir }: SortThProps) {
@@ -563,7 +483,6 @@ export function Documents() {
         setAddOpen(false); setAddFile(null); setAddUrl('');
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
-        if (uploadMode === 'file') {}
     }
 
     //does not support bulk urls (for now)

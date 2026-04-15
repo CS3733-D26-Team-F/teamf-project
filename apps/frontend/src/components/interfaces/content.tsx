@@ -22,3 +22,12 @@ export interface RowCallbacks {
     onEdit: (doc: ContentForm) => void;
     onDelete: (id: number) => void;
 }
+
+export interface SortThProps {
+    field: keyof ContentForm;
+    label: string;
+    icon: React.ReactNode;
+    onToggle: (f: keyof ContentForm) => void;
+    currentField: keyof ContentForm | null;
+    currentDir: 'asc' | 'desc';
+}
