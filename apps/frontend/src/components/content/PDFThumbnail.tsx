@@ -30,7 +30,7 @@ export function PdfThumbnail({ url }: { url: string }) {
 
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
-                await page.render({canvasContext: ctx, viewport: scaled, canvas: canvas}).promise;
+                await page.render({canvasContext: ctx, viewport: scaled}).promise;
                 if (!cancelled) setStatus('done');
             } catch {
                 if (!cancelled) setStatus('error');
