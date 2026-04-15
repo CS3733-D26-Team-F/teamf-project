@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
-import { SettingsModal } from '../components/SettingsModal';
 import { Profile } from "./Profile.tsx";
 import { usePersona } from "../hooks/usePersona";
 
@@ -28,10 +27,6 @@ export function Header() {
                     <Link to="/archive">Archive</Link>
                 )}
                 <Profile />
-                <SettingsModal />
-
-                
-
             </nav>
         </header>
     );
