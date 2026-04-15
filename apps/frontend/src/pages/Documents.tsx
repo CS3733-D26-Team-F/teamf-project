@@ -28,7 +28,6 @@ import { DocThumbnail} from "../components/content/DocThumbnail.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-
 type ContentForm = {
     id: number;
     name: string;
@@ -62,9 +61,6 @@ type StagedFile = {
     date_modified: string;
     expiration_date: string;
 };
-
-const persona = localStorage.getItem('persona');
-const titleProp = persona === 'Admin' ? 'All Documents' : persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' : persona === 'Business Analyst' ? 'Business Analyst Resources' : 'All Documents';
 
 function getExt(url: string) {
     return url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
@@ -247,9 +243,13 @@ function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDow
 }
 
 export function Documents() {
-    const persona = localStorage.getItem('persona');
+    const api = useApi();
     const username = localStorage.getItem('username');
     const today = new Date().toISOString().split('T')[0];
+
+    // Auth0 Persona State
+    const [persona, setPersona] = useState<string | null>(null);
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
 
     const [documents, setDocuments] = useState<ContentForm[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -274,7 +274,6 @@ export function Documents() {
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
-    const api = useApi();
 
     // ── Recently viewed ──────────────────────────────────────────────────────
     const [recentIds, setRecentIds] = useState<number[]>(() => {
@@ -356,6 +355,42 @@ export function Documents() {
         return matchSearch && matchPersona;
     });
 
+    // Fetch Auth0 Persona
+    useEffect(() => {
+        api(`${DOMAIN}/api/auth/me`)
+            .then(res => {
+                if (!res.ok) throw new Error('Not logged in');
+                return res.json();
+            })
+            .then(data => {
+                if (data.employee && data.employee.persona) {
+                    setPersona(data.employee.persona);
+                }
+                setIsLoadingUser(false);
+            })
+            .catch(() => setIsLoadingUser(false));
+    }, [api]);
+
+    useEffect(() => {
+        // Auto-expire documents on page load
+        api(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' })
+            .catch(() => {}); // silently ignore if endpoint doesn't exist yet
+        loadDocuments();
+        api(`${DOMAIN}/employees`)
+            .then(res => res.json())
+            .then((data: Employee[]) => setEmployees(data));
+    }, [api]);
+
+    // Keep Add/Edit forms synced with persona after it loads
+    useEffect(() => {
+        setAddData(prev => ({
+            ...prev,
+            owner: persona === 'Admin' ? '' : username ?? '',
+            persona: persona !== 'Admin' ? [persona ?? ''] : []
+        }));
+    }, [persona, username]);
+
+
     async function loadTrash() {
         const res = await api(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
@@ -397,16 +432,6 @@ export function Documents() {
         } else { setFavSortField(field); setFavSortDir('asc'); }
     }
 
-    useEffect(() => {
-        // Auto-expire documents on page load
-        api(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' })
-            .catch(() => {}); // silently ignore if endpoint doesn't exist yet
-        loadDocuments();
-        api(`${DOMAIN}/employees`)
-            .then(res => res.json())
-            .then((data: Employee[]) => setEmployees(data));
-    }, []);
-
     const filtered = useMemo(() => {
         let result = [...documents];
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
@@ -436,7 +461,7 @@ export function Documents() {
             });
         }
 
-        return result; // We return the result instead of calling setFiltered
+        return result;
     }, [search, filterPersona, filterStatus, filterType, filterOwner, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
@@ -485,7 +510,6 @@ export function Documents() {
         loadDocuments();
     }
 
-    //does not support bulk urls (for now)
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
         const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
@@ -551,7 +575,6 @@ export function Documents() {
     }
 
     function closeEdit() {
-
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
         setEditOpen(false); setEditUrl(''); setEditUploadMode('file');
     }
@@ -625,9 +648,6 @@ export function Documents() {
         setViewerLabel(label);
     }
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
-    if (!allowedAccess) return <AccessDenied />;
-
     const rowCallbacks: RowCallbacks = {
         persona,
         onView: openViewer,
@@ -637,10 +657,19 @@ export function Documents() {
         onDelete: (id: number) => { setDeleteId(id); setDeleteOpen(true); },
     };
 
-    // Recently viewed docs resolved from current document list
     const recentDocs = recentIds
         .map(id => documents.find(d => d.id === id))
         .filter(Boolean) as ContentForm[];
+
+    const titleProp = persona === 'Admin' ? 'All Documents' :
+        persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' :
+            persona === 'Business Analyst' ? 'Business Analyst Resources' :
+                'Documents';
+
+    if (isLoadingUser) return <div style={{ padding: '20px' }}>Loading Profile...</div>;
+
+    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    if (!allowedAccess) return <AccessDenied />;
 
     return (
         <>
