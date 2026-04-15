@@ -5,8 +5,7 @@ To run:
   - cd apps/frontend
 - In the terminal, run npm run dev
 
-
-
+Further note: use api("{$DOMAIN}/call") for all api calls, not fetch
 
 
 # React + TypeScript + Vite
