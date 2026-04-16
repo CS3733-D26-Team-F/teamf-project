@@ -31,3 +31,33 @@ export interface SortThProps {
     currentField: keyof ContentForm | null;
     currentDir: 'asc' | 'desc';
 }
+
+export interface TableHeadProps {
+    onSort: (f: keyof ContentForm) => void;
+    currentField: keyof ContentForm | null;
+    currentDir: 'asc' | 'desc';
+    onSelectAll: () => void;
+    allChecked: boolean;
+    indeterminate: boolean;
+}
+
+export interface RowCallbacks {
+    persona: string | null;
+    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
+    onFavorite: (doc: ContentForm) => void;
+    onDownload: (url: string, name: string) => void;
+    onEdit: (doc: ContentForm) => void;
+    onDelete: (id: number) => void;
+}
+
+export interface DocRowProps extends RowCallbacks {
+    doc: ContentForm;
+    isSelected: boolean;
+    onSelect: (id: number) => void;
+}
+
+export interface DocCardProps extends RowCallbacks {
+    doc: ContentForm;
+    isSelected: boolean;
+    onSelect: (id: number) => void;
+}

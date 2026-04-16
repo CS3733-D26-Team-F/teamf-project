@@ -23,7 +23,9 @@ import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
 import { useApi } from "../../src/components/api.ts";
-import type { SortThProps } from "../components/interfaces/content.tsx"
+import type { SortThProps, TableHeadProps, RowCallbacks
+, DocRowProps, DocCardProps
+} from "../components/interfaces/content.tsx"
 import { DocThumbnail} from "../components/content/DocThumbnail.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -93,15 +95,6 @@ function SortTh({ field, label, icon, onToggle, currentField, currentDir }: Sort
     );
 }
 
-interface TableHeadProps {
-    onSort: (f: keyof ContentForm) => void;
-    currentField: keyof ContentForm | null;
-    currentDir: 'asc' | 'desc';
-    onSelectAll: () => void;
-    allChecked: boolean;
-    indeterminate: boolean;
-}
-
 function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, indeterminate }: TableHeadProps) {
     return (
         <Table.Thead>
@@ -119,21 +112,6 @@ function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, 
             </Table.Tr>
         </Table.Thead>
     );
-}
-
-interface RowCallbacks {
-    persona: string | null;
-    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
-    onFavorite: (doc: ContentForm) => void;
-    onDownload: (url: string, name: string) => void;
-    onEdit: (doc: ContentForm) => void;
-    onDelete: (id: number) => void;
-}
-
-interface DocRowProps extends RowCallbacks {
-    doc: ContentForm;
-    isSelected: boolean;
-    onSelect: (id: number) => void;
 }
 
 function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
@@ -190,12 +168,6 @@ function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDown
             </Table.Td>
         </Table.Tr>
     );
-}
-
-interface DocCardProps extends RowCallbacks {
-    doc: ContentForm;
-    isSelected: boolean;
-    onSelect: (id: number) => void;
 }
 
 function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
