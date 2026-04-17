@@ -594,7 +594,7 @@ app.post('/updateContentForm', checkJWT, async (req, res) => {
     const {name, newName, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
 
     if (!name) {
-        return res.status(400).send("Name of content is required");
+        return res.status(400).send("Name of Documents is required");
     }
 
     const updateData: {
@@ -732,7 +732,7 @@ app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
             contentUrl = rawUrl;
         }
 
-        // Create the content form record with the supabase URL
+        // Create the Documents form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
                 name: filename,
@@ -757,7 +757,7 @@ app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
 
     } catch (error) {
         console.error('contentform create error:', error);
-        res.status(500).send('Error creating content');
+        res.status(500).send('Error creating Documents');
     }
 });
 
@@ -771,7 +771,7 @@ app.delete('/deleteContentForm/:id', checkJWT, async (req, res)=> {
     });
 
     if (!contentform1) {
-        return res.status(400).send("No content form of this name");
+        return res.status(400).send("No Documents form of this name");
     }
 
     try {

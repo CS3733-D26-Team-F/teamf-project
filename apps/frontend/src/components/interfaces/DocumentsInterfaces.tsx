@@ -14,32 +14,23 @@ export type ContentForm = {
     deleted_at: string | null;
 };
 
-export interface RowCallbacks {
-    persona: string | null;
-    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
-    onFavorite: (doc: ContentForm) => void;
-    onDownload: (url: string, name: string) => void;
-    onEdit: (doc: ContentForm) => void;
-    onDelete: (id: number) => void;
-}
+export type StagedFile = {
+    id: string;
+    file: File;
+    name: string;
+    owner: string;
+    persona: string[];
+    content_type: string;
+    status: string;
+    date_modified: string;
+    expiration_date: string;
+};
 
-export interface SortThProps {
-    field: keyof ContentForm;
-    label: string;
-    icon: React.ReactNode;
-    onToggle: (f: keyof ContentForm) => void;
-    currentField: keyof ContentForm | null;
-    currentDir: 'asc' | 'desc';
-}
-
-export interface TableHeadProps {
-    onSort: (f: keyof ContentForm) => void;
-    currentField: keyof ContentForm | null;
-    currentDir: 'asc' | 'desc';
-    onSelectAll: () => void;
-    allChecked: boolean;
-    indeterminate: boolean;
-}
+export type Employee = {
+    empid: number;
+    username: string;
+    persona: string;
+};
 
 export interface RowCallbacks {
     persona: string | null;
@@ -50,14 +41,11 @@ export interface RowCallbacks {
     onDelete: (id: number) => void;
 }
 
-export interface DocRowProps extends RowCallbacks {
-    doc: ContentForm;
-    isSelected: boolean;
-    onSelect: (id: number) => void;
-}
-
-export interface DocCardProps extends RowCallbacks {
-    doc: ContentForm;
-    isSelected: boolean;
-    onSelect: (id: number) => void;
+export interface RowCallbacks {
+    persona: string | null;
+    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
+    onFavorite: (doc: ContentForm) => void;
+    onDownload: (url: string, name: string) => void;
+    onEdit: (doc: ContentForm) => void;
+    onDelete: (id: number) => void;
 }

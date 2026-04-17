@@ -30,7 +30,7 @@ export function StatsDashboard() {
     const [myOwnedFiles, setMyOwnedFiles] = useState(0);
     //number files that are expiring soon
     const [expiringSoon, setExpiringSoon] = useState(0);
-    //number of files of each content type
+    //number of files of each Documents type
     const[filesByContentType, setFilesByContentType] = useState({});
     //number of files of each status type
     const[filesByStatus, setFilesByStatus] = useState({});
@@ -99,7 +99,7 @@ export function StatsDashboard() {
             //my owned files
             const myFiles = myPersonaFiles.filter(f=> f.empid === myEmpid);
             setMyOwnedFiles(myFiles.length);
-            //content types
+            //Documents types
             const contentTypeCount: Record<string, number> ={};
             myPersonaFiles.forEach(f=>{
                 const type = f.content_type;
@@ -129,7 +129,7 @@ export function StatsDashboard() {
         tooltip: `${persona}: ${count} files`
     }));
 
-    //content ring types
+    //Documents ring types
     const ringSections = Object.entries(filesByContentType as Record<string, number>).map(([type, count], index) => ({
         type,
         count,
