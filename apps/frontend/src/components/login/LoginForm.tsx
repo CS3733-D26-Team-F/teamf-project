@@ -113,21 +113,21 @@ function setElementDisplay(id: string, value: string) {
 }
 
 async function displayAdmin(){
-    setElementDisplay('manage-Documents', '');
+    setElementDisplay('manage-content', '');
     setElementDisplay('manage-employees', '');
     setElementDisplay('business-analyst', 'block');
     setElementDisplay('core-commercial-underwriter', 'block');
 }
 
 async function displayUnderwriter(){
-    setElementDisplay('manage-Documents', '');
+    setElementDisplay('manage-content', '');
     setElementDisplay('manage-employees', 'block');
     setElementDisplay('business-analyst', 'block');
     setElementDisplay('core-commercial-underwriter', '');
 }
 
 async function displayBusinessAnalyst(){
-    setElementDisplay('manage-Documents', 'block');
+    setElementDisplay('manage-content', 'block');
     setElementDisplay('manage-employees', 'block');
     setElementDisplay('business-analyst', '');
     setElementDisplay('core-commercial-underwriter', 'block');

@@ -1,4 +1,4 @@
-/* Functions that are reused often in the Documents.tsx Page */
+/* Functions that are reused often in the content.tsx Page */
 
 export function getExt(url: string) {
     return url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';

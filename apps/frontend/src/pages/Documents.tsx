@@ -15,20 +15,20 @@ import {
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
 import { DOMAIN } from '../const.ts';
-import {ViewToggle } from "../components/Documents/ViewToggle.tsx"
+import {ViewToggle } from "../components/content/ViewToggle.tsx"
 import { PageTitle } from "../components/Title.tsx"
 import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
-import {ConfirmModal} from "../components/Documents/ConfirmModal"
+import {ConfirmModal} from "../components/content/ConfirmModal"
 import { useApi } from "../../src/components/api.ts";
 import type { RowCallbacks
 , StagedFile, ContentForm, Employee
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import { getExt, getFileType, normalizeUrl } from "../components/Documents/Functions.tsx";
-import { DocCard } from "../components/Documents/DocCard.tsx";
-import { TableHead } from "../components/Documents/TableHead.tsx";
-import { DocRow } from "../components/Documents/DocRow.tsx";
+import { getExt, getFileType, normalizeUrl } from "../components/content/Functions.tsx";
+import { DocCard } from "../components/content/DocCard.tsx";
+import { TableHead } from "../components/content/TableHead.tsx";
+import { DocRow } from "../components/content/DocRow.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -451,7 +451,7 @@ export function Documents() {
         .map(id => documents.find(d => d.id === id))
         .filter(Boolean) as ContentForm[];
 
-    const titleProp = persona === 'Admin' ? 'All Documents' :
+    const titleProp = persona === 'Admin' ? 'All content' :
         persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' :
             persona === 'Business Analyst' ? 'Business Analyst Resources' :
                 'Documents';
