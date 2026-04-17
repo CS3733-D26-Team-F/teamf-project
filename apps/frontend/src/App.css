@@ -15,6 +15,12 @@
     --color-sapphire: var(--sapphire);
     --color-sapphire-light: var(--sapphire-light);
     --color-pacific-blue: var(--pacific-blue);
+
+    --color-admin: var(--color-yale-blue);
+    --color-underwriter: var(--color-sapphire);
+    --color-businessAnalyst: var(--color-fresh-sky);
+    --color-actuarialAnalyst: var(--color-sapphire-light);
+    --color-exlOperations: var(--color-fresh-sky-light);
 }
 
 :root {
