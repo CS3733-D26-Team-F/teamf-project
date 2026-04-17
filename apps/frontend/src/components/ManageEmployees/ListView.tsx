@@ -20,7 +20,7 @@ type Employee = {
     pfp_URL?: string | null;
 }
 
-const personas = ["Admin", "Underwriter", "Business Analyst"];
+const personas = ["Admin", "Underwriter", "Business Analyst", "Actuarial Analyst", "EXL Operations"];
 const MAX_PROFILE_PICTURE_SIZE = 80 * 1024;
 
 const personaColors: Record<string, string> = {
