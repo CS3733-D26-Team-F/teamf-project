@@ -223,6 +223,11 @@ export function Documents() {
         } else { setFavSortField(field); setFavSortDir('asc'); }
     }
 
+    const fileTypeOptions = useMemo(
+        () => [...new Set(documents.map(d => getFileType(d.url)))].sort(),
+        [documents]
+    );
+
     const filtered = useMemo(() => {
         let result = [...documents];
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
@@ -300,6 +305,8 @@ export function Documents() {
         setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
         loadDocuments();
     }
+
+
 
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
@@ -408,6 +415,9 @@ export function Documents() {
         }));
         setSelectedFavIds([]); setSelectedIds([]); loadDocuments();
     }
+
+
+
 
     function toggleSelect(id: number) { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
     function toggleFavSelect(id: number) { setSelectedFavIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
@@ -650,7 +660,7 @@ export function Documents() {
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} searchable clearable />  
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
