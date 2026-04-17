@@ -1349,7 +1349,7 @@ app.post('/assigntag', checkJWT, async(req, res) => {
     }
 });
 
-app.get('/grabbytag/:name', checkJWT, async(req, res) => {
+app.get('/grabtaggedforms/:name', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const name = req.params.name;
 
@@ -1380,6 +1380,40 @@ app.get('/grabbytag/:name', checkJWT, async(req, res) => {
 
     } catch (error) {
         res.status(500).json({ error: 'Cannot find forms with this tag' });
+    }
+})
+
+app.get('/grabformtags/:name', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const name = req.params.name;
+
+    const form = await prisma.contentform.findFirst({
+        where: { name: name }
+    });
+
+    if (!form) {
+        return res.status(400).json('No Tag by This Name');
+    }
+
+    try {
+        const join = await prisma.jointagscontent.findMany({
+            where: {id: form.id}
+        });
+
+        const tagged = join.map(tagid => tagid.metid);
+
+        console.log(tagged);
+
+        const tags= await prisma.metatags.findMany({
+            where: {
+                id: { in: tagged }
+            }
+        })
+
+        return res.status(200).json({data: tags});
+
+    } catch (error) {
+        res.status(500).json({ error: 'Cannot find tags for this form' });
     }
 })
 
