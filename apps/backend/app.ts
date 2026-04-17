@@ -1283,7 +1283,116 @@ app.get('/ba-files/:name', async(req, res) => {
         return res.status(500).json({ error: 'Cannot find file' })
     }
     res.json(data)
+});
+
+app.post('/newtag', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const { name } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: 'Must name the tag' })
+    };
+
+    try {
+
+        const newTag = await prisma.metatags.create({
+            data: {
+                tag_name: name
+            },
+        });
+
+
+        return res.status(200).json({
+            message: 'new tag added',
+            data: newTag
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Cannot add a tag' });
+    }
+});
+
+app.post('/assigntag', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const idInt = Number(req.body.id);
+    const metidInt = Number(req.body.metid);
+
+    const form = await prisma.contentform.findUnique({
+        where: { id: idInt }
+    });
+
+    const tag = await prisma.metatags.findUnique({
+        where: { metid: metidInt }
+    });
+
+    if (!form) {
+        return res.status(400).json({ error: 'Form not found' });
+    }
+
+    if (!tag) {
+        return res.status(400).json({ error: 'Tag not found' });
+    }
+
+    try {
+
+        const assignTag = await prisma.jointagscontent.create({
+            data: {
+                id: form.id,
+                metid: tag.metid
+            },
+        });
+
+        if (assignTag){
+            return res.status(200).json('Tag assigned');
+        }
+    } catch (error) {
+        return res.status(500).json({error});
+    }
+});
+
+app.delete('/unassigntag', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const idInt = Number(req.body.id);
+    const metidInt = Number(req.body.metid);
+
+    try {
+        const removeTag = await prisma.jointagscontent.deleteMany({
+            where: {
+                id: idInt,
+                metid: metidInt
+            }
+        })
+
+        if (removeTag) {
+            return res.status(200).json({message: 'Tag removed', data: removeTag});
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Cannot remove a tag' });
+    }
 })
+
+app.delete('/deletetag/:name', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const { name } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: 'Must include the tag' })
+    };
+
+    try {
+
+        const deletedTag = await prisma.metatags.delete({
+            where: { tag_name: name }
+        });
+
+
+        return res.status(200).json({
+            message: 'tag deleted',
+            data: deletedTag
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Cannot remove a tag' });
+    }
+});
 
 app.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
