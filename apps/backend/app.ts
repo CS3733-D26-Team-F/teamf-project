@@ -1349,6 +1349,40 @@ app.post('/assigntag', checkJWT, async(req, res) => {
     }
 });
 
+app.get('/grabbytag/:name', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const name = req.params.name;
+
+    const tag = await prisma.metatags.findFirst({
+        where: { tag_name: name }
+    });
+
+    if (!tag) {
+        return res.status(400).json('No Tag by This Name');
+    }
+
+    try {
+        const join = await prisma.jointagscontent.findMany({
+            where: {metid: tag.metid}
+        });
+
+        const tagged = join.map(formid => formid.id);
+
+        console.log(tagged);
+
+        const forms= await prisma.contentform.findMany({
+            where: {
+                id: { in: tagged }
+            }
+        })
+
+        return res.status(200).json({data: forms});
+
+    } catch (error) {
+        res.status(500).json({ error: 'Cannot find forms with this tag' });
+    }
+})
+
 app.delete('/unassigntag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const idInt = Number(req.body.id);

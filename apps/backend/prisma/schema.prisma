@@ -55,7 +55,7 @@ model admin {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model metatags {
   metid           Int               @id @default(autoincrement())
-  tag_name        String?           @unique @db.VarChar(50)
+  tag_name        String            @unique @db.VarChar(50)
   jointagscontent jointagscontent[]
 }
 
