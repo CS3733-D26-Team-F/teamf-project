@@ -1406,7 +1406,7 @@ app.get('/grabformtags/:name', checkJWT, async(req, res) => {
 
         const tags= await prisma.metatags.findMany({
             where: {
-                id: { in: tagged }
+                metid: { in: tagged }
             }
         })
 
