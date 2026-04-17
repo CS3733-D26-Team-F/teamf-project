@@ -67,11 +67,16 @@ function getExt(url: string) {
 }
 
 function getFileType(url: string) {
+
     const ext = getExt(url).toUpperCase();
-    if (!ext || !['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'CSV', 'PPTX', 'PPT', 'PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'SVG', 'TXT'].includes(ext)) {
-        return 'Link';
-    }
-    return ext;
+    
+    const fileTypesUnique = [ext].filter((v, i, a) => v && a.indexOf(v) === i);
+
+    console.log('Determined file types:', fileTypesUnique);
+    if (!fileTypesUnique.length) {
+            return 'Link';
+        }
+        return fileTypesUnique.join(', ');
 }
 
 function normalizeUrl(input: string): string {
@@ -859,7 +864,7 @@ export function Documents() {
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} searchable clearable />  
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => { setFilterPersona([]); setFilterStatus([]); setFilterType([]); setFilterOwner([]); }}>Clear All</Button>
