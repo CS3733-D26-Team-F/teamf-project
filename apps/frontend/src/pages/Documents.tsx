@@ -29,11 +29,12 @@ import { getExt, getFileType, normalizeUrl } from "../components/content/Functio
 import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
+import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function Documents() {
-    const roles = ['Underwriter', 'Business Analyst', 'Actuarial Analyst', 'EXL Operations']
+    const roles = allPersonas
 
     const api = useApi();
     const username = localStorage.getItem('username');

@@ -8,6 +8,7 @@ import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/ico
 import { DOMAIN } from '../../const';
 //import {useAuth0} from "@auth0/auth0-react";
 import { useApi } from "../api.ts";
+import {allPersonas} from "./personas.tsx";
 
 type Employee = {
     empid: number;
@@ -20,15 +21,15 @@ type Employee = {
     pfp_URL?: string | null;
 }
 
-const personas = ["Admin", "Underwriter", "Business Analyst", "Actuarial Analyst", "EXL Operations"];
+const personas = allPersonas;
 const MAX_PROFILE_PICTURE_SIZE = 80 * 1024;
 
 const personaColors: Record<string, string> = {
-    "Admin": "var(--color-yale-blue)",
-    "Underwriter": "var(--color-sapphire)",
-    "Business Analyst": "var(--color-fresh-sky)",
-    "Actuarial Analyst": "var(--color-sapphire-light)",
-    "EXL Operations": "var(--color-fresh-sky-light)",
+    "Admin": "var(--color-admin)",
+    "Underwriter": "var(--color-underwriter)",
+    "Business Analyst": "var(--color-businessAnalyst)",
+    "Actuarial Analyst": "var(--color-actuarialAnalyst)",
+    "EXL Operations": "var(--color-exlOperations)",
 };
 
 function validateProfilePicture(file: File | null): File | null {

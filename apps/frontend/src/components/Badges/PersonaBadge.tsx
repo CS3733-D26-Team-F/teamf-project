@@ -12,10 +12,10 @@ export function PersonaBadges({ personas }: PersonaBadgesProps) {
                     key={p}
                     variant="light"
                     color={
-                        p === 'Underwriter' ? 'var(--color-sapphire)' :
-                        p === 'Business Analyst' ?'var(--color-fresh-sky)' :
-                        p === 'Actuarial Analyst' ? 'var(--color-sapphire-light)' :
-                        p === 'EXL Operations' ? 'var(--color-fresh-sky-light)' :
+                        p === 'Underwriter' ? 'var(--color-underwriter)' :
+                        p === 'Business Analyst' ?'var(--color-businessAnalyst)' :
+                        p === 'Actuarial Analyst' ? 'var(--color-actuarialAnalyst)' :
+                        p === 'EXL Operations' ? 'var(--color-exlOperations)' :
                         'var(color-neutral-red)'}
                     size="sm"
                 >
