@@ -9,6 +9,8 @@ export function Header() {
     const isAdmin = personaHook === 'Admin';
     const isUnderwriter = personaHook === 'Underwriter';
     const isBusinessAnalyst = personaHook === 'Business Analyst';
+    const isActuarialAnalyst = personaHook === 'Actuarial Analyst';
+    const isEXLOperations = personaHook === 'EXL Operations';
 
     return (
         <header className="main-header">
@@ -20,10 +22,10 @@ export function Header() {
             <nav className="menu-links">
                 <Link to="/menu">Home</Link>
                 {isAdmin && <Link to="/manageemployees">Employees</Link>}
-                {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
+                {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
                     <Link to="/documents">Documents</Link>
                     )}
-                {(isAdmin || isUnderwriter || isBusinessAnalyst) && (
+                {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
                     <Link to="/archive">Archive</Link>
                 )}
                 <Profile />
