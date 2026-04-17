@@ -27,6 +27,8 @@ const personaColors: Record<string, string> = {
     "Admin": "var(--color-yale-blue)",
     "Underwriter": "var(--color-sapphire)",
     "Business Analyst": "var(--color-fresh-sky)",
+    "Actuarial Analyst": "var(--color-sapphire-light)",
+    "EXL Operations": "var(--color-fresh-sky-light)",
 };
 
 function validateProfilePicture(file: File | null): File | null {

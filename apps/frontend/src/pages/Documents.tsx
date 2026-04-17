@@ -456,11 +456,13 @@ export function Documents() {
     const titleProp = persona === 'Admin' ? 'All content' :
         persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' :
             persona === 'Business Analyst' ? 'Business Analyst Resources' :
-                'Documents';
+                persona === 'Actuarial Analyst' ? 'Actuarial Analyst Resources' :
+                    persona === 'EXL Operations' ? 'EXL Operations Resources' :
+                        'Documents';
 
     if (isLoadingUser) return <div style={{ padding: '20px' }}>Loading Profile...</div>;
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied />;
 
     return (
