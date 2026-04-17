@@ -207,7 +207,7 @@ export function Documents() {
             .then(res => res.json())
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
-                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? [])];
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
                 setDocuments(flat);
             });
     }
@@ -481,7 +481,7 @@ export function Documents() {
 
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
-                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
+                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations') && (
                             <>
                                 <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} className="invert-hover">
                                     Add Document
