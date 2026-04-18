@@ -9,22 +9,23 @@ datasource db {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model contentform {
-  id                Int       @id @default(autoincrement())
-  name              String    @unique @db.VarChar(100)
-  url               String    @unique @db.VarChar(2083)
-  owner             String?   @db.VarChar(50)
-  persona           String[]  @db.VarChar
-  date_modified     DateTime  @db.Date
-  expiration_date   DateTime  @db.Date
-  content_type      String    @db.VarChar(50)
-  status            String    @db.VarChar(50)
+  id                Int               @id @default(autoincrement())
+  name              String            @unique @db.VarChar(100)
+  url               String            @unique @db.VarChar(2083)
+  owner             String?           @db.VarChar(50)
+  persona           String[]          @db.VarChar
+  date_modified     DateTime          @db.Date
+  expiration_date   DateTime          @db.Date
+  content_type      String            @db.VarChar(50)
+  status            String            @db.VarChar(50)
   empid             Int?
-  is_favorite       Boolean   @default(false)
-  deleted_at        DateTime? @db.Date
-  is_deleted        Boolean   @default(false)
-  checkout_username String?   @db.VarChar
-  checkout_date     DateTime? @db.Timestamptz(6)
-  employee          employee? @relation(fields: [empid], references: [empid])
+  is_favorite       Boolean           @default(false)
+  deleted_at        DateTime?         @db.Date
+  is_deleted        Boolean           @default(false)
+  checkout_username String?           @db.VarChar
+  checkout_date     DateTime?         @db.Timestamptz(6)
+  employee          employee?         @relation(fields: [empid], references: [empid])
+  jointagscontent   jointagscontent[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -49,4 +50,21 @@ model employee {
 model admin {
   adid     Int      @id
   employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model metatags {
+  metid           Int               @id @default(autoincrement())
+  tag_name        String            @unique @db.VarChar(50)
+  jointagscontent jointagscontent[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model jointagscontent {
+  id          Int
+  metid       Int
+  contentform contentform @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "join_meta_content_id_fkey")
+  metatags    metatags    @relation(fields: [metid], references: [metid], onDelete: Cascade, onUpdate: NoAction, map: "join_meta_content_metid_fkey")
+
+  @@id([id, metid], map: "join_meta_content_pkey")
 }

@@ -806,11 +806,13 @@ app.get('/contentforms/admin', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
     try {
-        const [underwriterForms, businessAnalystForms] = await Promise.all([
+        const [underwriterForms, businessAnalystForms, actuarialAnalystForms, exlOperationsForms] = await Promise.all([
             prisma.contentform.findMany({ where: { persona: { has: 'Underwriter' } } }),
             prisma.contentform.findMany({ where: { persona: { has: 'Business Analyst' } } }),
+            prisma.contentform.findMany({ where: { persona: { has: 'Actuarial Analyst' } } }),
+            prisma.contentform.findMany({ where: { persona: { has: 'EXL Operations' } } }),
         ]);
-        res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms});
+        res.json({Underwriter: underwriterForms, BusinessAnalyst: businessAnalystForms, ActuarialAnalyst: actuarialAnalystForms, EXLOperations: exlOperationsForms});
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -823,7 +825,7 @@ app.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
     try {
         if (persona === 'Admin') {
             const contentForm = await prisma.contentform.findMany({
-                where: { persona: { hasSome: ['Underwriter', 'Business Analyst'] } },
+                where: { persona: { hasSome: ['Underwriter', 'Business Analyst', 'Actuarial Analyst', 'EXL Operations'] } },
                 select: {[field]: true}
             });
             const links = contentForm.map(item => item[field])
@@ -847,7 +849,7 @@ app.get('/contentforms/filter/:persona/:file_type', checkJWT, async (req, res) =
     try {
         const where: any = {};
         if (persona === 'Admin') {
-            where.persona = {in: ['Underwriter', 'Business Analyst']};
+            where.persona = {in: ['Underwriter', 'Business Analyst', 'Actuarial Analyst', 'EXL Operations']};
         } else {
             where.persona = persona;
         }

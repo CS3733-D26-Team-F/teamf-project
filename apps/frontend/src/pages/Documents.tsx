@@ -9,9 +9,8 @@ import {
     Tooltip, SegmentedControl
 } from '@mantine/core';
 import {
-    IconSearch, IconPlus, IconEdit, IconTrash,
-    IconDownload, IconFilter, IconStar, IconStarFilled,
-    IconClock, IconArrowsSort, IconExternalLink
+    IconSearch, IconPlus, IconTrash,
+    IconFilter, IconClock
 } from '@tabler/icons-react';
 import DocViewer, { DocViewerRenderers } from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -23,226 +22,20 @@ import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
 import { useApi } from "../../src/components/api.ts";
-import type { SortThProps } from "../components/interfaces/content.tsx"
-import { DocThumbnail} from "../components/content/DocThumbnail.tsx";
+import type { RowCallbacks
+, StagedFile, ContentForm, Employee
+} from "../components/interfaces/DocumentsInterfaces.tsx"
+import { getExt, getFileType, normalizeUrl } from "../components/content/Functions.tsx";
+import { DocCard } from "../components/content/DocCard.tsx";
+import { TableHead } from "../components/content/TableHead.tsx";
+import { DocRow } from "../components/content/DocRow.tsx";
+import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-type ContentForm = {
-    id: number;
-    name: string;
-    file_name: string;
-    url: string;
-    owner: string;
-    persona: string[];
-    date_modified: string;
-    expiration_date: string;
-    content_type: string;
-    status: string;
-    is_favorite: boolean;
-    is_deleted: boolean;
-    deleted_at: string | null;
-};
-
-type Employee = {
-    empid: number;
-    username: string;
-    persona: string;
-};
-
-type StagedFile = {
-    id: string;
-    file: File;
-    name: string;
-    owner: string;
-    persona: string[];
-    content_type: string;
-    status: string;
-    date_modified: string;
-    expiration_date: string;
-};
-
-function getExt(url: string) {
-    return url.split('?')[0].split('.').pop()?.toLowerCase() ?? '';
-}
-
-function getFileType(url: string) {
-    const ext = getExt(url).toUpperCase();
-    if (!ext || !['PDF', 'DOCX', 'DOC', 'XLSX', 'XLS', 'CSV', 'PPTX', 'PPT', 'PNG', 'JPG', 'JPEG', 'GIF', 'WEBP', 'SVG', 'TXT'].includes(ext)) {
-        return 'Link';
-    }
-    return ext;
-}
-
-function normalizeUrl(input: string): string {
-    if (!input) return input;
-    if (!/^https?:\/\//i.test(input)) {
-        return `https://${input}`;
-    }
-    return input;
-}
-
-function SortTh({ field, label, icon, onToggle, currentField, currentDir }: SortThProps) {
-    return (
-        <Table.Th onClick={() => onToggle(field)} style={{ cursor: 'pointer' }}>
-            <Group gap={4} wrap="nowrap" align="center" style={{ flexDirection: 'row' }}>
-                <span>{label}</span>
-                <span>{currentField === field ? (currentDir === 'asc' ? '↑' : '↓') : icon}</span>
-            </Group>
-        </Table.Th>
-    );
-}
-
-interface TableHeadProps {
-    onSort: (f: keyof ContentForm) => void;
-    currentField: keyof ContentForm | null;
-    currentDir: 'asc' | 'desc';
-    onSelectAll: () => void;
-    allChecked: boolean;
-    indeterminate: boolean;
-}
-
-function TableHead({ onSort, currentField, currentDir, onSelectAll, allChecked, indeterminate }: TableHeadProps) {
-    return (
-        <Table.Thead>
-            <Table.Tr>
-                <Table.Th w={40}><Checkbox checked={allChecked} indeterminate={indeterminate} onChange={onSelectAll} /></Table.Th>
-                <SortTh field="name" label="Document Name" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="file_name" label="Document Type" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="persona" label="Persona" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="owner" label="Owner" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="content_type" label="Content Type" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="status" label="Status" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="date_modified" label="Date Modified" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="expiration_date" label="Expiration" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <Table.Th>Actions</Table.Th>
-            </Table.Tr>
-        </Table.Thead>
-    );
-}
-
-interface RowCallbacks {
-    persona: string | null;
-    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
-    onFavorite: (doc: ContentForm) => void;
-    onDownload: (url: string, name: string) => void;
-    onEdit: (doc: ContentForm) => void;
-    onDelete: (id: number) => void;
-}
-
-interface DocRowProps extends RowCallbacks {
-    doc: ContentForm;
-    isSelected: boolean;
-    onSelect: (id: number) => void;
-}
-
-function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocRowProps) {
-    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
-    const isUrl = getFileType(doc.url) === 'Link';
-    return (
-        <Table.Tr style={{ cursor: 'pointer' }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
-            <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} /></Table.Td>
-            <Table.Td fw={500}>{doc.name}</Table.Td>
-            <Table.Td>{getFileType(doc.url)}</Table.Td>
-            <Table.Td>
-                <PersonaBadges personas={doc.persona} />
-            </Table.Td>
-            <Table.Td>{doc.owner}</Table.Td>
-            <Table.Td>{doc.content_type}</Table.Td>
-            <Table.Td><StatusBadge status={doc.status} size="sm" filter={false} /> </Table.Td>
-            <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
-            <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
-            <Table.Td onClick={e => e.stopPropagation()}>
-                <Group gap="xs">
-                    <Tooltip label={doc.is_favorite ? 'Unfavorite' : 'Favorite'}>
-                        <ActionIcon variant="subtle" color="yellow" onClick={() => onFavorite(doc)}>
-                            {doc.is_favorite ? <IconStarFilled size={16} /> : <IconStar size={16} />}
-                        </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label={isUrl ? "Open URL" : "Download"}>
-                        {isUrl ? (
-                            <ActionIcon
-                                variant="subtle"
-                                onClick={() => window.open(doc.url, '_blank')}
-                            >
-                                <IconExternalLink size={16} />
-                            </ActionIcon>
-                        ) : (
-                            <ActionIcon
-                                variant="subtle"
-                                onClick={() => onDownload(doc.url, doc.name)}
-                            >
-                                <IconDownload size={16} />
-                            </ActionIcon>
-                        )}
-                    </Tooltip>
-                    {canModify && (
-                        <Tooltip label="Edit">
-                            <ActionIcon variant="subtle" onClick={() => onEdit(doc)}><IconEdit size={16} /></ActionIcon>
-                        </Tooltip>
-                    )}
-                    {canModify && (
-                        <Tooltip label="Delete">
-                            <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onDelete(doc.id)}><IconTrash size={16} /></ActionIcon>
-                        </Tooltip>
-                    )}
-                </Group>
-            </Table.Td>
-        </Table.Tr>
-    );
-}
-
-interface DocCardProps extends RowCallbacks {
-    doc: ContentForm;
-    isSelected: boolean;
-    onSelect: (id: number) => void;
-}
-
-function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
-    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
-    const isUrl = getFileType(doc.url) === 'Link';
-    return (
-        <div
-            style={{
-                position: 'relative', background: 'white', borderRadius: 12,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.1)', cursor: 'pointer',
-                transition: 'box-shadow 0.15s', overflow: 'hidden',
-                border: isSelected ? '2px solid var(--color-fresh-sky, #3b82f6)' : '2px solid transparent',
-            }}
-            onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}
-        >
-            <DocThumbnail url={doc.url} />
-
-            <div style={{ position: 'absolute', top: 8, left: 8 }} onClick={e => e.stopPropagation()}>
-                <Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} />
-            </div>
-            <div style={{ position: 'absolute', top: 6, right: 6 }} onClick={e => e.stopPropagation()}>
-                <ActionIcon variant="filled" color={doc.is_favorite ? 'yellow' : 'gray'} size="sm" onClick={() => onFavorite(doc)}>
-                    {doc.is_favorite ? <IconStarFilled size={14} /> : <IconStar size={14} />}
-                </ActionIcon>
-            </div>
-
-            <div style={{ padding: '10px 12px 8px' }}>
-                <Text fw={700} size="sm" mb={2} style={{ color: 'var(--color-yale-blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {doc.name}
-                </Text>
-                <Text size="xs" c="dimmed" mb={4}>{doc.owner}</Text>
-                <Group gap={4} mb={4}>
-                    <PersonaBadges personas={doc.persona} />
-                    <StatusBadge status={doc.status} size="xs" filter={false} />
-                    <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
-                </Group>
-                <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
-                    <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
-                    {canModify && <ActionIcon variant="subtle" size="sm" onClick={() => onEdit(doc)}><IconEdit size={14} /></ActionIcon>}
-                    {canModify && <ActionIcon variant="subtle" color="var(--color-neutral-red)" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
-                </Group>
-            </div>
-        </div>
-    );
-}
-
 export function Documents() {
+    const roles = allPersonas
+
     const api = useApi();
     const username = localStorage.getItem('username');
     const today = new Date().toISOString().split('T')[0];
@@ -415,7 +208,7 @@ export function Documents() {
             .then(res => res.json())
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
-                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? [])];
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
                 setDocuments(flat);
             });
     }
@@ -661,14 +454,16 @@ export function Documents() {
         .map(id => documents.find(d => d.id === id))
         .filter(Boolean) as ContentForm[];
 
-    const titleProp = persona === 'Admin' ? 'All Documents' :
+    const titleProp = persona === 'Admin' ? 'All content' :
         persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' :
             persona === 'Business Analyst' ? 'Business Analyst Resources' :
-                'Documents';
+                persona === 'Actuarial Analyst' ? 'Actuarial Analyst Resources' :
+                    persona === 'EXL Operations' ? 'EXL Operations Resources' :
+                        'Documents';
 
     if (isLoadingUser) return <div style={{ padding: '20px' }}>Loading Profile...</div>;
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied />;
 
     return (
@@ -687,7 +482,7 @@ export function Documents() {
 
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
-                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
+                        {persona !== null && (
                             <>
                                 <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} className="invert-hover">
                                     Add Document
@@ -857,7 +652,7 @@ export function Documents() {
             {/* filter modal */}
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
-                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
+                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
                     <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
@@ -873,7 +668,7 @@ export function Documents() {
                 <Stack gap="sm">
                     <Group gap="sm">
                         <TextInput placeholder="Search by name or owner..." leftSection={<IconSearch size={16} />} value={trashSearch} onChange={e => setTrashSearch(e.target.value)} style={{ flex: 1 }} />
-                        <Select placeholder="Filter by persona" clearable value={trashPersonaFilter} onChange={val => setTrashPersonaFilter(val ?? '')} data={['Underwriter', 'Business Analyst']} w={180} />
+                        <Select placeholder="Filter by persona" clearable value={trashPersonaFilter} onChange={val => setTrashPersonaFilter(val ?? '')} data={roles} w={180} />
                     </Group>
                     {filteredTrash.length > 0 && (
                         <Group justify="space-between">
@@ -969,7 +764,7 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -1015,7 +810,7 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type} onChange={val => setEditData({...editData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -1080,7 +875,7 @@ export function Documents() {
                                                     ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
                                                     : <TextInput value={staged.owner} readOnly />}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={['Underwriter', 'Business Analyst']} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
+                                            <Table.Td><MultiSelect data={roles} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
                                             <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
                                             <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>

@@ -11,6 +11,8 @@ export function Header() {
     const isAdmin = personaHook === 'Admin';
     const isUnderwriter = personaHook === 'Underwriter';
     const isBusinessAnalyst = personaHook === 'Business Analyst';
+    const isActuarialAnalyst = personaHook === 'Actuarial Analyst';
+    const isEXLOperations = personaHook === 'EXL Operations';
 
     return (
         <>
@@ -26,17 +28,17 @@ export function Header() {
                         <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
                     </Link>
                 </div>
-                <nav className="menu-links">
-                    <Link to="/menu">Home</Link>
-                    {isAdmin && <Link to="/manageemployees">Employees</Link>}
-                    {(isAdmin || isBusinessAnalyst || isUnderwriter) && (
-                        <Link to="/documents">Documents</Link>
-                        )}
-                    {(isAdmin || isUnderwriter || isBusinessAnalyst) && (
-                        <Link to="/archive">Archive</Link>
-                    )}
-                    <Profile />
-                </nav>
+                  <nav className="menu-links">
+                     <Link to="/menu">Home</Link>
+                      {isAdmin && <Link to="/manageemployees">Employees</Link>}
+                      {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
+                          <Link to="/documents">Documents</Link>
+                          )}
+                    {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
+                          <Link to="/archive">Archive</Link>
+                )}
+                <Profile />
+              </nav>
             </header>
         </>
     );

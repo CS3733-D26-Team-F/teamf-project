@@ -130,7 +130,7 @@ export function Archive() {
         loadArchived();
     }
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    const allowedAccess = persona !== null;
     if (!allowedAccess) return <AccessDenied />;
 
     return (
