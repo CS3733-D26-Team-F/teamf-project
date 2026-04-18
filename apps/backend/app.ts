@@ -591,7 +591,7 @@ app.post('/updateTheme', checkJWT, async (req, res) => {
 app.post('/updateContentForm', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
-    const {name, newName, url, owner, persona, date_modified, expiration_date, content_type, status} = req.body;
+    const {name, newName, url, owner, persona, date_modified, expiration_date, content_type, status, review_date} = req.body;
 
     if (!name) {
         return res.status(400).send("Name of content is required");
@@ -606,6 +606,7 @@ app.post('/updateContentForm', checkJWT, async (req, res) => {
         expiration_date?: string;
         content_type?: string;
         status?: string;
+        review_date?: string;
     } = {};
 
     if (newName) updateData.name = newName;
@@ -616,6 +617,7 @@ app.post('/updateContentForm', checkJWT, async (req, res) => {
     if (expiration_date) updateData.expiration_date = expiration_date;
     if (content_type) updateData.content_type = content_type;
     if (status) updateData.status = status;
+    if (review_date) updateData.review_date = review_date;
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send("No fields to update");
@@ -689,7 +691,7 @@ app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
     console.log("Here")
     try {
         console.log('backend received', req.body);
-        const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
+        const {filename, ownerUsername, date_modified, expiration_date, review_date, content_type, status} = req.body;
         const file = req.file;
         const rawUrl = req.body.url;
         const expiration = new Date(req.body.expiration_date);
@@ -753,7 +755,8 @@ app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
                 status,
                 employee: {
                     connect: {username: ownerUsername}
-                }
+                },
+                review_date: new Date(review_date)
             }
         });
 
@@ -1148,7 +1151,7 @@ app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) =
 
     try {
         const id = parseInt(req.params.id.toString());
-        const { name, ownerUsername, owner, date_modified, expiration_date, content_type, status } = req.body;
+        const { name, ownerUsername, owner, date_modified, expiration_date, review_date, content_type, status } = req.body;
         const resolvedOwner = ownerUsername ?? owner;
         console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
         const rawPersona = req.body.persona;
@@ -1162,7 +1165,8 @@ app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) =
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
-            employee: { connect: { username: resolvedOwner } }
+            employee: { connect: { username: resolvedOwner } },
+            review_date: review_date ? new Date(review_date) : null
         };
 
         if (req.file) {

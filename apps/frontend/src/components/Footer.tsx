@@ -32,6 +32,17 @@ export function Footer() {
             <div className={classes.wrapper} key={group.title}>
                 <Text className={classes.title}><b>{group.title}</b></Text>
                 {links}
+                <Group gap={0} className={classes.social} justify="flex-end" wrap="nowrap">
+                    <ActionIcon component="a" size="lg" color="white" variant="subtle" aria-label="LinkedIn" href='https://www.linkedin.com/company/the-hanover-insurance-group'>
+                        <IconBrandLinkedin size={18} stroke={1.5} />
+                    </ActionIcon>
+                    <ActionIcon component="a" size="lg" color="white" variant="subtle" aria-label="Facebook" href='https://www.facebook.com/hanoverinsurance/'>
+                        <IconBrandFacebook size={18} stroke={1.5} />
+                    </ActionIcon>
+                    <ActionIcon component="a" size="lg" color="white" variant="subtle" aria-label="Instagram" href='https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fthe.hanover%2F&is_from_rle'>
+                        <IconBrandInstagram size={18} stroke={1.5} />
+                    </ActionIcon>
+                </Group>
             </div>
         );
     });
@@ -50,22 +61,7 @@ export function Footer() {
                 <div className={classes.groups}>{groups}</div>
             </Container>
             <Container className={classes.afterFooter} >
-                <Text size="sm" c="white">
-                    This website has been created for WPI’s CS 3733 Software
-                    Engineering as a class project and is not in use by Hanover Insurance.
-                </Text>
 
-                <Group gap={0} className={classes.social} justify="flex-end" wrap="nowrap">
-                    <ActionIcon component="a" size="lg" color="white" variant="subtle" aria-label="LinkedIn" href='https://www.linkedin.com/company/the-hanover-insurance-group'>
-                        <IconBrandLinkedin size={18} stroke={1.5} />
-                    </ActionIcon>
-                    <ActionIcon component="a" size="lg" color="white" variant="subtle" aria-label="Facebook" href='https://www.facebook.com/hanoverinsurance/'>
-                        <IconBrandFacebook size={18} stroke={1.5} />
-                    </ActionIcon>
-                    <ActionIcon component="a" size="lg" color="white" variant="subtle" aria-label="Instagram" href='https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fthe.hanover%2F&is_from_rle'>
-                        <IconBrandInstagram size={18} stroke={1.5} />
-                    </ActionIcon>
-                </Group>
             </Container>
         </footer>
     );
