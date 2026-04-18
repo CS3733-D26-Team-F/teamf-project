@@ -16,12 +16,6 @@ export function Header() {
 
     return (
         <>
-            <header>
-                <Text size="sm" c="white" ta="center">
-                    This website has been created for WPI’s CS 3733 Software
-                    Engineering as a class project and is not in use by Hanover Insurance.
-                </Text>
-            </header>
             <header className="main-header">
                 <div className="logo">
                     <Link to="/">
@@ -39,6 +33,12 @@ export function Header() {
                 )}
                 <Profile />
               </nav>
+            </header>
+            <header>
+                <Text size="sm" c="white" ta="center">
+                    This website has been created for WPI’s CS 3733 Software
+                    Engineering as a class project and is not in use by Hanover Insurance.
+                </Text>
             </header>
         </>
     );
