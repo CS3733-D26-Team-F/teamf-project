@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import { Profile } from "./Profile.tsx";
 import { usePersona } from "../hooks/usePersona";
+import { IconBell } from "@tabler/icons-react";
 
 export function Header() {
     const personaHook = usePersona();
@@ -27,6 +28,9 @@ export function Header() {
                     <Link to="/archive">Archive</Link>
                 )}
                 <Profile />
+                <Link to="/notifications">
+                    <IconBell size={32} />
+                </Link>
             </nav>
         </header>
     );
