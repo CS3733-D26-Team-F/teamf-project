@@ -482,7 +482,7 @@ export function Documents() {
 
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
-                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations') && (
+                        {persona !== null && (
                             <>
                                 <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} className="invert-hover">
                                     Add Document
