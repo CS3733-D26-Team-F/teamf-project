@@ -30,7 +30,6 @@ import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
-
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function Documents() {
@@ -297,10 +296,18 @@ export function Documents() {
         } else {
             formPayload.append('url', normalizeUrl(addUrl));
         }
-        await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
-        setAddOpen(false); setAddFile(null); setAddUrl('');
-        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
-        loadDocuments();
+        try {
+            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            setAddOpen(false); setAddFile(null); setAddUrl('');
+            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
+            loadDocuments();
+        } catch (err: any) {
+            if (err.status === 409) {
+                alert(`Error: ${err.message}`);
+            } else {
+                throw err;
+            }
+        }
     }
 
     async function handleBulkAdd() {
@@ -317,7 +324,16 @@ export function Documents() {
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
             formPayload.append('file', sf.file);
-            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            try {
+                await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            } catch (err: any) {
+                if (err.status === 409) {
+                    alert(`Error: ${err.message}`);
+                    return;
+                } else {
+                    throw err;
+                }
+            }
         }
         setBulkOpen(false); setStagedFiles([]); loadDocuments();
     }
@@ -764,7 +780,8 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={roles.filter((role) => role !== 'Admin')}
+                                 disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />

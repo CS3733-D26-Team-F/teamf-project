@@ -686,11 +686,19 @@ app.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res) =
 
 app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
+    console.log("Here")
     try {
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, content_type, status} = req.body;
         const file = req.file;
         const rawUrl = req.body.url;
+        const expiration = new Date(req.body.expiration_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (expiration < today && req.body.status !== "Expired") {
+            return res.status(409).json({ error: "Document is expired" });
+        }
 
         if (!file && !rawUrl) {
             return res.status(400).json({error: 'File or URL is required'});
