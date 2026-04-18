@@ -29,10 +29,13 @@ import { getExt, getFileType, normalizeUrl } from "../components/content/Functio
 import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
+import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function Documents() {
+    const roles = allPersonas
+
     const api = useApi();
     const username = localStorage.getItem('username');
     const today = new Date().toISOString().split('T')[0];
@@ -206,7 +209,7 @@ export function Documents() {
             .then(res => res.json())
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
-                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? [])];
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
                 setDocuments(flat);
             });
     }
@@ -465,11 +468,13 @@ export function Documents() {
     const titleProp = persona === 'Admin' ? 'All content' :
         persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' :
             persona === 'Business Analyst' ? 'Business Analyst Resources' :
-                'Documents';
+                persona === 'Actuarial Analyst' ? 'Actuarial Analyst Resources' :
+                    persona === 'EXL Operations' ? 'EXL Operations Resources' :
+                        'Documents';
 
     if (isLoadingUser) return <div style={{ padding: '20px' }}>Loading Profile...</div>;
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst';
+    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied />;
 
     return (
@@ -488,7 +493,7 @@ export function Documents() {
 
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
-                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
+                        {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations') && (
                             <>
                                 <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} className="invert-hover">
                                     Add Document
@@ -658,7 +663,7 @@ export function Documents() {
             {/* filter modal */}
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
-                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={['Underwriter', 'Business Analyst']} clearable />
+                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
                     <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
@@ -674,7 +679,7 @@ export function Documents() {
                 <Stack gap="sm">
                     <Group gap="sm">
                         <TextInput placeholder="Search by name or owner..." leftSection={<IconSearch size={16} />} value={trashSearch} onChange={e => setTrashSearch(e.target.value)} style={{ flex: 1 }} />
-                        <Select placeholder="Filter by persona" clearable value={trashPersonaFilter} onChange={val => setTrashPersonaFilter(val ?? '')} data={['Underwriter', 'Business Analyst']} w={180} />
+                        <Select placeholder="Filter by persona" clearable value={trashPersonaFilter} onChange={val => setTrashPersonaFilter(val ?? '')} data={roles} w={180} />
                     </Group>
                     {filteredTrash.length > 0 && (
                         <Group justify="space-between">
@@ -770,7 +775,7 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -816,7 +821,7 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val})} data={['Underwriter', 'Business Analyst']} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type} onChange={val => setEditData({...editData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -881,7 +886,7 @@ export function Documents() {
                                                     ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
                                                     : <TextInput value={staged.owner} readOnly />}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={['Underwriter', 'Business Analyst']} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
+                                            <Table.Td><MultiSelect data={roles} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
                                             <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
                                             <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>

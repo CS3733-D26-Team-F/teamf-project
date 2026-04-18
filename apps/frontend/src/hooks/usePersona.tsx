@@ -1,9 +1,9 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 
-type Persona = "Admin" | "Business Analyst" | "Underwriter" | null;
+type Persona = "Admin" | "Business Analyst" | "Underwriter" | "Actuarial Analyst" | "EXL Operations" | null;
 
-const PERSONA_VALUES: Exclude<Persona, null>[] = ["Admin", "Business Analyst", "Underwriter"];
+const PERSONA_VALUES: Exclude<Persona, null>[] = ["Admin", "Business Analyst", "Underwriter", "Actuarial Analyst", "EXL Operations"];
 
 function asPersona(value: string | null): Persona {
     if (value && PERSONA_VALUES.includes(value as Exclude<Persona, null>)) {
@@ -21,6 +21,12 @@ function derivePersonaFromRoles(roles: string[]): Persona {
     }
     if (roles.includes("Underwriter")) {
         return "Underwriter";
+    }
+    if (roles.includes("Actuarial Analyst")) {
+        return "Actuarial Analyst";
+    }
+    if (roles.includes("EXL Operations")) {
+        return "EXL Operations";
     }
     return null;
 }
