@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import { Profile } from "./Profile.tsx";
 import { usePersona } from "../hooks/usePersona";
-import { ActionIcon, Container, Group, Text } from '@mantine/core';
-import classes from "../FooterLinks.module.css";
+import { Text } from '@mantine/core';
 
 export function Header() {
     const personaHook = usePersona();

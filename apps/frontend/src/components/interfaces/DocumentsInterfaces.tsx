@@ -13,6 +13,7 @@ export type ContentForm = {
     is_favorite: boolean;
     is_deleted: boolean;
     deleted_at: string | null;
+    jointagscontent: string[];
 };
 
 export type StagedFile = {

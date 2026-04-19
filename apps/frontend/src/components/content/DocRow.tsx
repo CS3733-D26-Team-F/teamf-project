@@ -25,6 +25,7 @@ export function DocRow({ doc, isSelected, persona, onSelect, onView, onFavorite,
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
             <Table.Td><StatusBadge status={doc.status} size="sm" filter={false} /> </Table.Td>
+            <Table.Td>{doc.id} {doc.jointagscontent}</Table.Td>
             <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
             <Table.Td>{doc.review_date?.split('T')[0]}</Table.Td>
             <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>

@@ -209,6 +209,26 @@ export function Documents() {
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+
+                //Also load docuemnt tags
+                for(const doc of flat) {
+                    api(`${DOMAIN}/grabformtags/${doc.name}`)
+                        .then(res => res.json())
+                        .then(tagData => {
+                            //const tags = tagData.data;
+                            if (tagData.data.length > 0 ) {
+                                //Tags are id and tag_name, we only want name
+                                const tagNames = [];
+                                for (const tag of tagData.data) {
+                                    tagNames.push(tag.tag_name)
+                                }
+                                doc.jointagscontent = tagNames
+                                console.log(doc.name, doc.id, tagNames)
+                            }
+
+                    });
+                }
+
                 setDocuments(flat);
             });
     }
