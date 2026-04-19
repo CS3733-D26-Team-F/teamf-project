@@ -45,11 +45,7 @@ export function normalizeUrl(input: string): string {
     return input;
 }
 
-/**
- * Determines which viewer/renderer to use for a document URL.
- * @param url - The document URL or file path
- * @returns 'docviewer' for documents/images, 'player' for media, null to download/open externally
- */
+
 export function pickRenderer(url: string): 'docviewer' | 'player' | null {
     const ext = getExt(url).toUpperCase();
     
