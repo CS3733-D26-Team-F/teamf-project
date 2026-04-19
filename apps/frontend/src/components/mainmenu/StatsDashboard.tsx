@@ -9,7 +9,7 @@ import classes from './StatsGrid.module.css';
 import { useEffect, useState} from "react";
 import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
-
+import {useTranslation} from "react-i18next";
 const icons = {
     user: IconUserPlus,
     clock: IconClock,
@@ -34,6 +34,8 @@ export function StatsDashboard() {
     const[filesByContentType, setFilesByContentType] = useState({});
     //number of files of each status type
     const[filesByStatus, setFilesByStatus] = useState({});
+
+    const {t} = useTranslation();
 
     const api = useApi();
 
@@ -115,7 +117,7 @@ export function StatsDashboard() {
             });
 
             setFilesByStatus(statusCount);
-            console.log("statusCount:", statusCount);
+
         };
         getStatsData();
     }, []);
@@ -148,21 +150,21 @@ export function StatsDashboard() {
 
     const data = [
         {
-            title: 'Updated within the last month',
+            title: t('updated_last_month'),
             icon: 'clock',
             value: updatedFiles.toString(),
             progress: numFiles > 0 ? (updatedFiles / numFiles) * 100 : 0,
             color: 'blue',
         },
         {
-            title: 'My Files',
+            title: t('my_files'),
             icon: 'file',
             value: myOwnedFiles.toString(),
             progress: numFiles > 0 ? (myOwnedFiles / numFiles) * 100 : 0,
             color: 'var(--fresh-sky-light)'
         },
         {
-            title: 'Persona Files Expiring Soon',
+            title: t('persona_files_expiring'),
             icon: 'clock',
             value: expiringSoon.toString(),
             progress: numFiles > 0 ? (expiringSoon / numFiles) * 100 : 0,
@@ -206,7 +208,7 @@ export function StatsDashboard() {
             <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
                 <Paper withBorder p="md" radius="md" style={{ height: '100%' }}>
                     <Text size="xs" c="dimmed" fw='bold'>
-                        MY PERSONA FILES
+                        {t('my_files')}
                     </Text>
 
                     <Group align="flex-start" justify="center" mt="md" gap="xl">
@@ -239,7 +241,7 @@ export function StatsDashboard() {
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="xl">
                 <Paper withBorder p="md" radius="md"  style={{ height: '100%'}} >
                     <Text fw={700} size="lg" mb="md">
-                        Content Types
+                        {t('content_types')}
                     </Text>
                     <Group align="flex-start" justify="center" mt="md">
                         <RingProgress
@@ -268,7 +270,7 @@ export function StatsDashboard() {
                 </Paper>
                 <Paper withBorder p="md" radius="md" style={{ height: '100%' }} >
                     <Text fw={700} size="lg" mb="md">
-                        Document Statuses
+                        {t('document_statuses')}
                     </Text>
                     <Group align="flex-start" justify="center" mt="md" gap="xl">
                         <RingProgress
