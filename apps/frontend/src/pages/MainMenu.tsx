@@ -7,7 +7,7 @@ export function MainMenu() {
             return (
             <>
                 <title>
-                    Home - Hanover Insurance
+                    t('page_title_home')
                 </title>
                 <Header />
                 <Hero />

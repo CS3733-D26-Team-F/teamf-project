@@ -2,20 +2,23 @@ import { IconBrandInstagram, IconBrandFacebook, IconBrandLinkedin } from '@table
 import { ActionIcon, Container, Group, Text } from '@mantine/core';
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import classes from '../FooterLinks.module.css';
+import {useTranslation} from "react-i18next";
 
-const data = [
-    {
-        title: 'Learn More',
-        links: [
-            { label: 'Our Website', link: 'https://www.hanover.com/' },
-            { label: 'Connect on LinkedIn', link: 'https://www.linkedin.com/company/the-hanover-insurance-group' },
-            { label: 'Facebook', link: 'https://www.facebook.com/hanoverinsurance/' },
-            { label: 'Instagram', link: 'https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fthe.hanover%2F&is_from_rle' },
-        ],
-    },
-];
 
 export function Footer() {
+    const {t} = useTranslation();
+    const data = [
+        {
+            title: t('learn_more'),
+            links: [
+                { label: t('our_website'), link: 'https://www.hanover.com/' },
+                { label: t('connect_linkedin'), link: 'https://www.linkedin.com/company/the-hanover-insurance-group' },
+                { label: t('facebook'), link: 'https://www.facebook.com/hanoverinsurance/' },
+                { label: t('instagram'), link: 'https://www.instagram.com/accounts/login/?next=https%3A%2F%2Fwww.instagram.com%2Fthe.hanover%2F&is_from_rle' },
+            ],
+        },
+    ];
+
     const groups = data.map((group) => {
         const links = group.links.map((link, index) => (
             <Text<'a'>

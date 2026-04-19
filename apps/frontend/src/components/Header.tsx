@@ -5,9 +5,11 @@ import { usePersona } from "../hooks/usePersona";
 import { Chatbot } from "./Chatbot.tsx";
 import { ActionIcon, Container, Group, Text } from '@mantine/core';
 import classes from "../FooterLinks.module.css";
+import {useTranslation} from "react-i18next";
 
 export function Header() {
     const personaHook = usePersona();
+    const {t} = useTranslation();
 
     const isAdmin = personaHook === 'Admin';
     const isUnderwriter = personaHook === 'Underwriter';
@@ -24,13 +26,13 @@ export function Header() {
                     </Link>
                 </div>
                   <nav className="menu-links">
-                     <Link to="/menu">Home</Link>
-                      {isAdmin && <Link to="/manageemployees">Employees</Link>}
+                     <Link to="/menu">{t('home')}</Link>
+                      {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
                       {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
-                          <Link to="/documents">Documents</Link>
+                          <Link to="/documents">{t('documents')}</Link>
                           )}
                     {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
-                          <Link to="/archive">Archive</Link>
+                          <Link to="/archive">{t('archive')}</Link>
                 )}
                 <Profile />
               </nav>
@@ -38,8 +40,7 @@ export function Header() {
             </header>
             <header>
                 <Text size="sm" c="white" ta="center">
-                    This website has been created for WPI’s CS 3733 Software
-                    Engineering as a class project and is not in use by Hanover Insurance.
+                    {t('disclaimer')}
                 </Text>
             </header>
         </>

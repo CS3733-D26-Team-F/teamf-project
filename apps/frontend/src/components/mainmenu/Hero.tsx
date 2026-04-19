@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import LoginModal from '../login/LoginModal';
 import {useAuth0} from "@auth0/auth0-react";
+import {useTranslation} from "react-i18next";
 
 const modules = import.meta.glob<{ default : string}>(
     "../../../public/carousel/*.png",
@@ -10,6 +11,7 @@ const images = Object.values(modules).map((mod) => mod.default);
 
 export function Hero() {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const {t} = useTranslation();
 
     const { isAuthenticated, user } = useAuth0();
 
@@ -42,13 +44,13 @@ export function Hero() {
 
                     {isAuthenticated ? (
                         <div className="content">
-                            <h1>Welcome, {user?.nickname}!</h1>
-                            <p>Welcome to your personal dashboard</p>
+                            <h1>{t('welcome')}, {user?.nickname}!</h1>
+                            <p>{t('dashboard_subtitle')}</p>
                         </div>
                     ) : (
                         <div className="content">
-                            <h1>Welcome to iBank!</h1>
-                            <p>We are committed to providing our customers with the best insurance products and services.</p>
+                            <h1>{t('welcome_message')}</h1>
+                            <p>{t('welcome_message_subtitle')}</p>
                             <LoginModal />
                         </div>
                     )}

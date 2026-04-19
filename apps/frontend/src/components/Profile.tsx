@@ -117,10 +117,10 @@ export function Profile() {
                             </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                            <Menu.Label>Username: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
-                            <Menu.Item component={Link} to="/profilePage">Profile</Menu.Item>
-                            <Menu.Item onClick={openSettings}>Settings</Menu.Item>
-                            <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
+                            <Menu.Label>{t('username')}: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
+                            <Menu.Item component={Link} to="/profilePage">{t('profile')}</Menu.Item>
+                            <Menu.Item onClick={openSettings}>{t('settings')}</Menu.Item>
+                            <Menu.Item onClick={handleLogout}>{t('logout')}</Menu.Item>
                         </Menu.Dropdown>
                     </Menu>
                 </div>
@@ -128,7 +128,7 @@ export function Profile() {
                 <Modal
                     opened={settingsOpened}
                     onClose={closeSettings}
-                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">Settings</Text>}
+                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">{t('settings')}</Text>}
                 >
                     <ThemeToggle />
                 </Modal>

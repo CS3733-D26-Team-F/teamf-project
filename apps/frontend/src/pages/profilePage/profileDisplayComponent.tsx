@@ -4,10 +4,14 @@ import {
 } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { DOMAIN } from '../../const';
+import { useTranslation } from 'react-i18next';
+
 
 const placeholder = '/default-profile-picture.png';
 
+
 export function ProfileComponent() {
+    const { t } = useTranslation();
     const [profileImage, setProfileImage] = useState<string>(() => (
         localStorage.getItem('pfp_URL') || localStorage.getItem('profilePicture') || placeholder
     ));
@@ -51,19 +55,19 @@ export function ProfileComponent() {
                 
                 <thead id="profile-header" style={{ padding: '20px' }}>
                     <tr>
-                        <th>User: {localStorage.getItem('first_name')}</th>
-                        <th>Role: {localStorage.getItem('persona')}</th>
+                        <th>{t('user')}: {localStorage.getItem('first_name')}</th>
+                        <th>{t('role')}: {localStorage.getItem('persona')}</th>
 
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><Image src={profileImage} style={{ width: 200, height: 200 }} alt="Profile" /></td>
-                        <td>Email: {localStorage.getItem('email')}</td>
+                        <td>{t ('email')}: {localStorage.getItem('email')}</td>
                     </tr>
                     <tr>
-                        <td>Username: {localStorage.getItem('username')}</td>
-                        <td>Employee ID: {localStorage.getItem('empid')}</td>
+                        <td>{t ('username')}: {localStorage.getItem('username')}</td>
+                        <td>{t ('employee_id')}: {localStorage.getItem('empid')}</td>
                     </tr>
                 </tbody>
 
