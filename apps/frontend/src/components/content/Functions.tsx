@@ -1,3 +1,4 @@
+
 /* Functions that are reused often in the content.tsx Page */
 
 export function getExt(url: string) {
@@ -25,6 +26,7 @@ export function getFileType(url: string) {
     // Check if it's a website URL by common TLDs
     const websitePattern = /^(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(com|edu|org|net|gov|mil|io|co|us|uk|ca|de|fr|au|in)(?:[\\/\?#]|$)/i;
     
+    
     if (websitePattern.test(normalized)) {
         return 'LINK';
     }
@@ -43,3 +45,26 @@ export function normalizeUrl(input: string): string {
     return input;
 }
 
+/**
+ * Determines which viewer/renderer to use for a document URL.
+ * @param url - The document URL or file path
+ * @returns 'docviewer' for documents/images, 'player' for media, null to download/open externally
+ */
+export function pickRenderer(url: string): 'docviewer' | 'player' | null {
+    const ext = getExt(url).toUpperCase();
+    
+    // Media files → use ReactPlayer for audio/video
+    if (['MP3', 'MP4', 'AVI', 'MOV', 'WMV', 'FLV', 'M4A', 'M4V', 'WEBM', 'OGG', 'WAV'].includes(ext)) {
+        return 'player';
+    }
+    
+    // Documents, PDFs, images, presentations → use DocViewer
+    if (['PDF', 'DOC', 'DOCX', 'XLS', 'XLSX', 'CSV', 'TXT', 
+         'PNG', 'JPG', 'JPEG', 'GIF', 'BMP', 'TIFF', 'TIF', 'SVG', 'WEBP',
+         'PPT', 'PPTX', 'JSON', 'XML', 'HTML', 'HTM'].includes(ext)) {
+        return 'docviewer';
+    }
+    
+    // Links, archives, unknown → download or open externally
+    return null;
+}

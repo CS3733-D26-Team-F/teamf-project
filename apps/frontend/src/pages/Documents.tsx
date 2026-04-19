@@ -25,11 +25,14 @@ import { useApi } from "../../src/components/api.ts";
 import type { RowCallbacks
 , StagedFile, ContentForm, Employee
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import { getExt, getFileType, normalizeUrl } from "../components/content/Functions.tsx";
+import { getExt, getFileType, normalizeUrl, pickRenderer } from "../components/content/Functions.tsx";
 import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+
+
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -442,11 +445,13 @@ export function Documents() {
     }
 
     function openViewer(url: string, label: string, id: number, isUrl: boolean) {
-        if (isUrl) {
+        // If it's explicitly a web URL or pickRenderer says to open externally, open in new tab
+        if (isUrl || !pickRenderer(url)) {
             recordView(id);
             window.open(url, '_blank');
             return;
         }
+        // Otherwise, open in modal viewer (has an inline renderer)
         recordView(id);
         setViewerUrl(url);
         setViewerLabel(label);
@@ -645,7 +650,7 @@ export function Documents() {
                 )}
             </Box>
 
-            {/* doc viewer */}
+            {/* file viewer */}
             {viewerUrl && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 1000 }} onClick={() => setViewerUrl(null)}>
                     <div className="bg-white rounded-xl shadow-xl w-4/5 flex flex-col overflow-hidden" style={{ height: '80vh' }} onClick={e => e.stopPropagation()}>
@@ -654,7 +659,24 @@ export function Documents() {
                             <button onClick={() => setViewerUrl(null)} className="text-gray-500 hover:text-gray-800 text-xl font-bold">✕</button>
                         </div>
                         <div className="flex-1 overflow-auto">
-                            <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                            {pickRenderer(viewerUrl ?? '') === 'docviewer' && (
+                                <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                            )}
+                            {pickRenderer(viewerUrl ?? '') === 'player' && (
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: '#000', padding: '20px' }}>
+                                    {['MP3', 'M4A', 'WAV', 'OGG'].includes(getExt(viewerUrl ?? '').toUpperCase()) ? (
+                                        <audio controls style={{ width: '100%', maxWidth: '600px' }}>
+                                            <source src={viewerUrl} />
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    ) : (
+                                        <video controls style={{ width: '100%', height: '100%', maxHeight: '100%', objectFit: 'contain' }}>
+                                            <source src={viewerUrl} />
+                                            Your browser does not support the video element.
+                                        </video>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
