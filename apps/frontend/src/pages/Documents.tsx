@@ -30,7 +30,6 @@ import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
-
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function Documents() {
@@ -87,7 +86,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -102,6 +101,7 @@ export function Documents() {
             content_type: '',
             status: '',
             date_modified: today,
+            review_date: '',
             expiration_date: ''
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
@@ -126,7 +126,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -280,7 +280,7 @@ export function Documents() {
     async function handleAdd() {
         if (uploadMode === 'file' && !addFile) { alert('Please upload a file.'); return; }
         if (uploadMode === 'url' && !addUrl) { alert('Please enter a URL.'); return; }
-        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.content_type || !addData.status) {
+        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.review_date || !addData.content_type || !addData.status) {
             alert('Please fill in all fields.'); return;
         }
         const formPayload = new FormData();
@@ -289,6 +289,7 @@ export function Documents() {
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
+        formPayload.append('review_date', addData.review_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
 
@@ -297,9 +298,21 @@ export function Documents() {
         } else {
             formPayload.append('url', normalizeUrl(addUrl));
         }
+        try {
+            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            setAddOpen(false); setAddFile(null); setAddUrl('');
+            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '' });
+            loadDocuments();
+        } catch (err: any) {
+            if (err.status === 409) {
+                alert(`Error: ${err.message}`);
+            } else {
+                throw err;
+            }
+        }
         await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         setAddOpen(false); setAddFile(null); setAddUrl('');
-        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', content_type: '', status: '' });
+        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '' });
         loadDocuments();
     }
 
@@ -314,6 +327,7 @@ export function Documents() {
             formPayload.append('persona', JSON.stringify(sf.persona));
             formPayload.append('date_modified', sf.date_modified);
             formPayload.append('expiration_date', sf.expiration_date);
+            formPayload.append('review_date', sf.review_date);
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
             formPayload.append('file', sf.file);
@@ -331,7 +345,7 @@ export function Documents() {
                     name: doc.name, owner: doc.owner,
                     persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],
                     date_modified: today, expiration_date: doc.expiration_date?.split('T')[0] ?? '',
-                    content_type: doc.content_type, status: doc.status
+                    review_date: doc.review_date?.split('T')[0] ?? '', content_type: doc.content_type, status: doc.status
                 });
                 setEditOpen(true);
             });
@@ -346,6 +360,7 @@ export function Documents() {
             formPayload.append('persona', JSON.stringify(editData.persona));
             formPayload.append('date_modified', editData.date_modified);
             formPayload.append('expiration_date', editData.expiration_date);
+            formPayload.append('review_date', editData.review_date);
             formPayload.append('content_type', editData.content_type);
             formPayload.append('status', editData.status);
             formPayload.append('file', editFile);
@@ -764,7 +779,8 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={addData.owner} onChange={val => setAddData({...addData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={addData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={addData.persona} onChange={val => setAddData({...addData, persona: val})} data={roles.filter((role) => role !== 'Admin')}
+                                 disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
@@ -773,6 +789,8 @@ export function Documents() {
                     <Group grow>
                         <TextInput label="Last Modified Date" type="date" value={addData.date_modified} onChange={e => setAddData({...addData, date_modified: e.target.value})} />
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date} onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
+                        <TextInput label="Review Date" type="date" value={addData.review_date} onChange={e => setAddData({...addData, review_date: e.target.value})} />
+
                     </Group>
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel Changes</Button>
@@ -819,6 +837,7 @@ export function Documents() {
                     <Group grow>
                         <TextInput label="Last Modified Date" type="date" value={editData.date_modified} onChange={e => setEditData({...editData, date_modified: e.target.value})} />
                         <TextInput label="Expiration Date" type="date" value={editData.expiration_date} onChange={e => setEditData({...editData, expiration_date: e.target.value})} />
+                        <TextInput label="Review Date" type="date" value={editData.review_date} onChange={e => setEditData({...editData, review_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
@@ -882,6 +901,7 @@ export function Documents() {
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
                                                     <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
+                                                    <TextInput type="date" label="Expires" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
                                                 </Stack>
                                             </Table.Td>
                                             <Table.Td><ActionIcon color="var(--color-neutral-red)" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
