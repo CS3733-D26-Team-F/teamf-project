@@ -1299,6 +1299,13 @@ app.get('/ba-files/:name', async(req, res) => {
     res.json(data)
 });
 
+app.get('/getTags', async (req, res) => {
+    const tags = await prisma.metatags.findMany();
+    console.log('Tags: ', tags);
+    //res.json(tags);
+    return res.status(200).json({data: tags})
+});
+
 app.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const { name } = req.body;

@@ -23,7 +23,7 @@ import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
 import { useApi } from "../../src/components/api.ts";
 import type { RowCallbacks
-, StagedFile, ContentForm, Employee
+, StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
 import { getExt, getFileType, normalizeUrl } from "../components/content/Functions.tsx";
 import { DocCard } from "../components/content/DocCard.tsx";
@@ -47,6 +47,7 @@ export function Documents() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [createdTags, setCreatedTags] = useState<Metatag[]>([]);
 
     const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -86,7 +87,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -233,6 +234,17 @@ export function Documents() {
             });
     }
 
+    function loadTags() {
+        api(`${DOMAIN}/getTags`)
+            //.then(res => res.json())
+            .then(data => {
+                console.log("All tags", data);
+                console.log(data.json());
+                //setCreatedTags(data);
+        });
+    }
+    //loadTags()
+
     function toggleSort(field: keyof ContentForm) {
         if (sortField === field) {
             if (sortDir === 'asc') setSortDir('desc'); else { setSortField(null); setSortDir('asc'); }
@@ -321,7 +333,26 @@ export function Documents() {
         try {
             await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
             setAddOpen(false); setAddFile(null); setAddUrl('');
-            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '' });
+            //add any tags to the file before closing edit
+            if (addData.jointagscontent.length > 0) {
+                console.log(addData.jointagscontent);
+                const tagPayload = new FormData();
+                //get Document id for the just created doc
+                loadDocuments()
+                let docID = 0;
+                for (const doc of documents) {
+                    if (doc.name == addData.name) {
+                        docID = doc.id;
+                        console.log("Equality?", doc.name, addData.name)
+                    }
+                }
+                console.log(addData.name, docID, addData.jointagscontent)
+                tagPayload.append('idInt', docID.toString());
+                tagPayload.append('metidInt', "2");
+                console.log(tagPayload);
+                await api(`${DOMAIN}/assigntag`, { method: 'POST', body: tagPayload });
+            }
+            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
             loadDocuments();
         } catch (err: any) {
             if (err.status === 409) {
@@ -330,10 +361,6 @@ export function Documents() {
                 throw err;
             }
         }
-        await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
-        setAddOpen(false); setAddFile(null); setAddUrl('');
-        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '' });
-        loadDocuments();
     }
 
     async function handleBulkAdd() {
@@ -807,7 +834,7 @@ export function Documents() {
                         <Select label="Document Status" value={addData.status} onChange={val => setAddData({...addData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} />
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={addData.date_modified} onChange={e => setAddData({...addData, date_modified: e.target.value})} />
+                        <MultiSelect label="Tags" value={addData.jointagscontent} onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={['Other']}  />
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date} onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
                         <TextInput label="Review Date" type="date" value={addData.review_date} onChange={e => setAddData({...addData, review_date: e.target.value})} />
 

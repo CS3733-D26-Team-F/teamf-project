@@ -35,6 +35,11 @@ export type Employee = {
     persona: string;
 };
 
+export type Metatag = {
+    id: number;
+    tag_name: string;
+};
+
 export interface RowCallbacks {
     persona: string | null;
     onView: (url: string, label: string, id: number, isUrl: boolean) => void;
