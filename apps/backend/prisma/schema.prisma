@@ -24,6 +24,7 @@ model contentform {
   is_deleted        Boolean           @default(false)
   checkout_username String?           @db.VarChar
   checkout_date     DateTime?         @db.Timestamptz(6)
+  review_date       DateTime?         @db.Date
   employee          employee?         @relation(fields: [empid], references: [empid])
   jointagscontent   jointagscontent[]
 }
