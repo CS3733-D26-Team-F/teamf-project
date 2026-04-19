@@ -29,6 +29,7 @@ import { getExt, getFileType, normalizeUrl } from "../components/content/Functio
 import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
+import { FilledButton } from '../components/Buttons/FilledButton.tsx';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -479,17 +480,17 @@ export function Documents() {
                     <Group gap="sm">
                         {(persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst') && (
                             <>
-                                <Button leftSection={<IconPlus size={16} />} onClick={() => setAddOpen(true)} className="invert-hover">
+                                <FilledButton leftSection="plus" onClick={() => setAddOpen(true)} >
                                     Add Document
-                                </Button>
-                                <Button variant="default" leftSection={<IconPlus size={16} />} onClick={() => setBulkOpen(true)} className="invert-hover">
+                                </FilledButton>
+                                <FilledButton leftSection="plus" onClick={() => setBulkOpen(true)}>
                                     Bulk Upload
-                                </Button>
+                                </FilledButton>
                             </>
                         )}
-                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'} color={activeFilterCount > 0 ? 'blue' : undefined} leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)} className="invert-hover">
+                        <FilledButton leftSection={<IconFilter size={16} />} onClick={() => setFilterOpen(true)}>
                             Filter by{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-                        </Button>
+                        </FilledButton>
                         {persona === 'Admin' && (
                             <Button leftSection={<IconTrash size={16} />} className="invert-hover-red" variant="outline" onClick={() => { loadTrash(); setTrashOpen(true); }}>
                                 Trash
