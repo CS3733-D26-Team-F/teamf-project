@@ -92,6 +92,7 @@ export function Documents() {
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
     const [addError, setAddError] = useState<string>('');
+    const [editError, setEditError] = useState<string>('');
 
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
@@ -310,32 +311,41 @@ export function Documents() {
     }
 
     async function handleBulkAdd() {
-        if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
-        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
+        // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
+        // const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
+        // if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
         for (const sf of stagedFiles) {
-            const formPayload = new FormData();
-            formPayload.append('filename', sf.name);
-            formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', JSON.stringify(sf.persona));
-            formPayload.append('date_modified', sf.date_modified);
-            formPayload.append('expiration_date', sf.expiration_date);
-            formPayload.append('review_date', sf.review_date);
-            formPayload.append('content_type', sf.content_type);
-            formPayload.append('status', sf.status);
-            formPayload.append('file', sf.file);
-            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            try {
+                const formPayload = new FormData();
+                formPayload.append('filename', sf.name);
+                formPayload.append('ownerUsername', sf.owner);
+                formPayload.append('persona', JSON.stringify(sf.persona));
+                formPayload.append('date_modified', sf.date_modified);
+                formPayload.append('expiration_date', sf.expiration_date);
+                formPayload.append('review_date', sf.review_date);
+                formPayload.append('content_type', sf.content_type);
+                formPayload.append('status', sf.status);
+                formPayload.append('file', sf.file);
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message)
+                } else {
+                    throw err;
+                }
+                return;
+            }
         }
         setBulkOpen(false); setStagedFiles([]); loadDocuments();
     }
 
     async function handleSaveClick() {
         const expiration = new Date(editData.expiration_date);
+        const review = new Date(editData.review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired')) {
-            alert('Error: Document is expired, please check the expiration date and file status');
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
             return;
         }
 
@@ -384,12 +394,12 @@ export function Documents() {
                 });
             }
         } catch (err: any) {
-                if (err.status === 409) {
-                    alert(`Error: ${err.message}`);
-                    return;
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setEditError(err.message)
                 } else {
                     throw err;
                 }
+                return;
             }
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
@@ -399,7 +409,7 @@ export function Documents() {
 
     function closeEdit() {
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-        setEditOpen(false); setEditUrl(''); setEditUploadMode('file');
+        setEditOpen(false); setEditUrl(''); setEditUploadMode('file'); setEditError('');
     }
 
     async function handleDelete() {
@@ -683,7 +693,7 @@ export function Documents() {
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
-                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
+                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved']} clearable />
                     <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
@@ -767,7 +777,7 @@ export function Documents() {
             </Modal>
 
             {/* add modal */}
-            <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
+            <Modal opened={addOpen} onClose={() => {setAddOpen(false); setAddError('');}} title="Add New Document" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={addData.name} onChange={e => setAddData({...addData, name: e.target.value})} />
@@ -807,11 +817,11 @@ export function Documents() {
                         <TextInput label="Review Date" type="date" value={addData.review_date} onChange={e => setAddData({...addData, review_date: e.target.value})} />
 
                     </Group>
-                    {addError && (
-                        <ErrorMessage message={addError} />
-                    )}
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel Changes</Button>
+                        {addError && (
+                            <ErrorMessage message={addError} />
+                        )}
+                        <Button className="invert-hover-outline" onClick={() => {setAddOpen(false); setAddError('');}} >✕ Cancel Changes</Button>
                         <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
                     </Group>
                 </Stack>
@@ -846,11 +856,11 @@ export function Documents() {
                     {persona === 'Admin'
                         ? <Select label="Name of Content Owner" value={editData.owner} onChange={val => setEditData({...editData, owner: val ?? ''})} data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} />
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly />}
-                    <MultiSelect label="Job Position" value={editData.persona} onChange={val => setEditData({...editData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
+                    <MultiSelect label="Job Position" value={editData.persona.filter(p => p !== 'Admin')} onChange={val => setEditData({...editData, persona: val})} data={roles} disabled={persona !== 'Admin'} />
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type} onChange={val => setEditData({...editData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
-                        <Select label="Document Status" value={editData.status} onChange={val => setEditData({...editData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} />
+                        <Select label="Document Status" value={editData.status} onChange={val => setEditData({...editData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved']} />
                     </Group>
                     <Group grow>
                         <TextInput label="Last Modified Date" type="date" value={editData.date_modified} onChange={e => setEditData({...editData, date_modified: e.target.value})} />
@@ -858,6 +868,9 @@ export function Documents() {
                         <TextInput label="Review Date" type="date" value={editData.review_date} onChange={e => setEditData({...editData, review_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
+                        {editError && (
+                            <ErrorMessage message={editError} />
+                        )}
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
                         <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
@@ -883,7 +896,7 @@ export function Documents() {
             />
 
             {/* bulk upload modal */}
-            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
                         <Text size="sm" fw={500} mb={4}>Add Files</Text>
@@ -912,14 +925,14 @@ export function Documents() {
                                                     ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
                                                     : <TextInput value={staged.owner} readOnly />}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
                                             <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
-                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
+                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
                                                     <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
-                                                    <TextInput type="date" label="Expires" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
+                                                    <TextInput type="date" label="Review Date" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
                                                 </Stack>
                                             </Table.Td>
                                             <Table.Td><ActionIcon color="var(--color-neutral-red)" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon></Table.Td>
@@ -930,7 +943,10 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); }}>✕ Cancel</Button>
+                        {addError && (
+                            <ErrorMessage message={addError} />
+                        )}
+                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }}>✕ Cancel</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
                             + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
                         </Button>

@@ -1166,7 +1166,6 @@ app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) =
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
         const expiration = new Date(req.body.expiration_date);
-        const review = new Date(req.body.review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
