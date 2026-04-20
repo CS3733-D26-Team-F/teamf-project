@@ -397,27 +397,16 @@ export function Documents() {
             });
             loadDocuments();
         } catch (err: any) {
+            console.log('err.status:', err.status);
+            console.log('err.message:', err.message);
+            console.log('err.body:', err.body);
             if (err.status === 409 || err.status === 400 || err.status === 406) {
                 setAddError(err.message)
+                return;
             } else {
                 throw err;
             }
         }
-        await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-        setAddOpen(false);
-        setAddFile(null);
-        setAddUrl('');
-        setAddData({
-            name: '',
-            owner: persona === 'Admin' ? '' : username ?? '',
-            persona: persona !== 'Admin' ? [persona ?? ''] : [],
-            date_modified: today,
-            expiration_date: '',
-            review_date: '',
-            content_type: '',
-            status: ''
-        });
-        loadDocuments();
     }
 
     async function handleBulkAdd() {
@@ -524,34 +513,37 @@ export function Documents() {
                 formPayload.append('content_type', editData.content_type);
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
-                await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+                await api(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
             } else if (editUploadMode === 'url' && editUrl) {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
+                    body: JSON.stringify({ ...editData, url: normalizeUrl(editUrl) })
                 });
-
             } else {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(editData)
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editData)
                 });
             }
-            await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
-            });
-            setEditFile(null);
-            setConfirmSaveOpen(false);
-            setEditOpen(false);
-            loadDocuments();
         } catch (err: any) {
-                if (err.status === 409 || err.status === 400 || err.status === 406) {
-                    setEditError(err.message)
-                } else {
-                    throw err;
-                }
-                return;
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setEditError(err.message);
+                console.log("error: ", editError)
+            } else {
+                throw err;
             }
+            return;
         }
+
+        await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
+        });
+        setEditFile(null);
+        setConfirmSaveOpen(false);
+        setEditOpen(false);
+        setEditError('');
+        loadDocuments();
+    }
 
 
     function closeEdit() {
@@ -1145,9 +1137,7 @@ export function Documents() {
                                 data={['Reference', 'Workflow']}/>
                         <Select label="Document Status" value={addData.status}
                                 onChange={val => setAddData({...addData, status: val ?? ''})}
-                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
-                        <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
-                        <Select label="Document Status" value={addData.status} onChange={val => setAddData({...addData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} />
+                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']}/>
                     </Group>
                     <Group grow>
                         <TextInput label="Last Modified Date" type="date" value={addData.date_modified}
@@ -1159,8 +1149,6 @@ export function Documents() {
 
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel
-                            Changes</Button>
                         {addError && (
                             <ErrorMessage message={addError} />
                         )}
@@ -1228,8 +1216,6 @@ export function Documents() {
                             <ErrorMessage message={editError} />
                         )}
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)} className="invert-hover">✓ Save
-                            Changes</Button>
                         <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
