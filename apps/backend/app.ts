@@ -44,7 +44,7 @@ const checkJWT = auth({
 app.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const { name } = req.body;
-
+    console.log("new tag name", name)
     if (!name) {
         return res.status(400).json({ error: 'Must name the tag' })
     };
@@ -198,7 +198,7 @@ app.delete('/unassigntag', checkJWT, async(req, res) => {
     }
 })
 
-app.delete('/deletetag/:name', checkJWT, async(req, res) => {
+app.delete('/deletetag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const { name } = req.body;
 

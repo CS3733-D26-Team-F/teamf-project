@@ -30,6 +30,7 @@ import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import {ManageTags} from "../components/content/ManageTags.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -190,6 +191,8 @@ export function Documents() {
         const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
+
+    const [advancedTagsOpen, setAdvancedTagsOpen] = useState(false);
 
     // Fetch Auth0 Persona
     useEffect(() => {
@@ -1250,13 +1253,15 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <MultiSelect label="Tags" value={editData.jointagscontent}
-                                   onChange={val => setAddData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
-                        <TextInput label="Expiration Date" type="date" value={addData.expiration_date} 
+                        <Stack>
+                            <MultiSelect label="Tags" value={editData.jointagscontent}
+                                         onChange={val => setAddData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                            <Button style={{ height: '10px', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                        </Stack>
+                        <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
                         <TextInput label="Review Date" type="date" value={addData.review_date} 
                                    onChange={e => setAddData({...addData, review_date: e.target.value})} />
-
                     </Group>
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel
@@ -1326,6 +1331,20 @@ export function Documents() {
                     </Group>
                 </Stack>
             </Modal>
+
+            {/* Advanced tag management (create and delete) tags modal */}
+            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)} title="Advanced Tag Management" size="lg">
+                <Stack>
+                    <ManageTags/>
+                    <Group justify="flex-end" mt="md">
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAdvancedTagsOpen(false);
+                            loadTags();
+                        }}> Done </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
 
             <ConfirmModal
                 opened={confirmSaveOpen}
