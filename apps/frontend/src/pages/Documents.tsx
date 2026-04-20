@@ -30,6 +30,7 @@ import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import { Error as ErrorMessage } from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -134,6 +135,8 @@ export function Documents() {
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    const [addError, setAddError] = useState<string>('');
+    const [editError, setEditError] = useState<string>('');
 
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
@@ -341,7 +344,7 @@ export function Documents() {
     }
 
     const filtered = useMemo(() => {
-        let result = [...documents];
+        let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
@@ -403,18 +406,6 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
     async function handleAdd() {
-        if (uploadMode === 'file' && !addFile) {
-            alert('Please upload a file.');
-            return;
-        }
-        if (uploadMode === 'url' && !addUrl) {
-            alert('Please enter a URL.');
-            return;
-        }
-        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.review_date || !addData.content_type || !addData.status) {
-            alert('Please fill in all fields.');
-            return;
-        }
         const formPayload = new FormData();
         formPayload.append('filename', addData.name);
         formPayload.append('ownerUsername', addData.owner);
@@ -462,8 +453,12 @@ export function Documents() {
             setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
             loadDocuments();
         } catch (err: any) {
-            if (err.status === 409) {
-                alert(`Error: ${err.message}`);
+            console.log('err.status:', err.status);
+            console.log('err.message:', err.message);
+            console.log('err.body:', err.body);
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setAddError(err.message)
+                return;
             } else {
                 throw err;
             }
@@ -471,6 +466,9 @@ export function Documents() {
     }
 
     async function handleBulkAdd() {
+        // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
+        // const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
+        // if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
         if (stagedFiles.length === 0) {
             alert('Please upload at least one file.');
             return;
@@ -481,6 +479,26 @@ export function Documents() {
             return;
         }
         for (const sf of stagedFiles) {
+            try {
+                const formPayload = new FormData();
+                formPayload.append('filename', sf.name);
+                formPayload.append('ownerUsername', sf.owner);
+                formPayload.append('persona', JSON.stringify(sf.persona));
+                formPayload.append('date_modified', sf.date_modified);
+                formPayload.append('expiration_date', sf.expiration_date);
+                formPayload.append('review_date', sf.review_date);
+                formPayload.append('content_type', sf.content_type);
+                formPayload.append('status', sf.status);
+                formPayload.append('file', sf.file);
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message)
+                } else {
+                    throw err;
+                }
+                return;
+            }
             const formPayload = new FormData();
             formPayload.append('filename', sf.name);
             formPayload.append('ownerUsername', sf.owner);
@@ -496,6 +514,19 @@ export function Documents() {
         setBulkOpen(false);
         setStagedFiles([]);
         loadDocuments();
+    }
+
+    async function handleSaveClick() {
+        const expiration = new Date(editData.expiration_date);
+        const review = new Date(editData.review_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
+            return;
+        }
+
+        setConfirmSaveOpen(true);
     }
 
     function openEdit(doc: ContentForm) {
@@ -527,29 +558,40 @@ export function Documents() {
 
     async function handleEdit() {
         if (!editId) return;
-        if (editFile) {
-            const formPayload = new FormData();
-            formPayload.append('filename', editData.name);
-            formPayload.append('ownerUsername', editData.owner);
-            formPayload.append('persona', JSON.stringify(editData.persona));
-            formPayload.append('date_modified', editData.date_modified);
-            formPayload.append('expiration_date', editData.expiration_date);
-            formPayload.append('review_date', editData.review_date);
-            formPayload.append('content_type', editData.content_type);
-            formPayload.append('status', editData.status);
-            formPayload.append('file', editFile);
-            await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
-        } else if (editUploadMode === 'url' && editUrl) {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
-            });
-
-        } else {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(editData)
-            });
+        try {
+            if (editFile) {
+                const formPayload = new FormData();
+                formPayload.append('filename', editData.name);
+                formPayload.append('ownerUsername', editData.owner);
+                formPayload.append('persona', JSON.stringify(editData.persona));
+                formPayload.append('date_modified', editData.date_modified);
+                formPayload.append('expiration_date', editData.expiration_date);
+                formPayload.append('review_date', editData.review_date);
+                formPayload.append('content_type', editData.content_type);
+                formPayload.append('status', editData.status);
+                formPayload.append('file', editFile);
+                await api(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
+            } else if (editUploadMode === 'url' && editUrl) {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...editData, url: normalizeUrl(editUrl) })
+                });
+            } else {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editData)
+                });
+            }
+        } catch (err: any) {
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setEditError(err.message);
+                console.log("error: ", editError)
+            } else {
+                throw err;
+            }
+            return;
         }
+
         //add/remove any tags to the file before closing edit
 
         //get Document id for what we are editing
@@ -623,15 +665,19 @@ export function Documents() {
 
         //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
         setEditFile(null);
         setConfirmSaveOpen(false);
         setEditOpen(false);
+        setEditError('');
         loadDocuments();
     }
 
+
     function closeEdit() {
+        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+        setEditOpen(false); setEditUrl(''); setEditUploadMode('file'); setEditError('');
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1070,6 +1116,10 @@ export function Documents() {
                                      label: 'Available'
                                  }, {value: 'checked_out', label: 'Checked Out'},]}
                                  clearable/>
+                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
+                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved']} clearable />
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
+                    <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
@@ -1175,7 +1225,7 @@ export function Documents() {
             </Modal>
 
             {/* add modal */}
-            <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
+            <Modal opened={addOpen} onClose={() => {setAddOpen(false); setAddError('');}} title="Add New Document" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={addData.name}
@@ -1221,7 +1271,7 @@ export function Documents() {
                                 data={['Reference', 'Workflow']}/>
                         <Select label="Document Status" value={addData.status}
                                 onChange={val => setAddData({...addData, status: val ?? ''})}
-                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
+                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']}/>
                     </Group>
                     <Group grow>
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
@@ -1230,8 +1280,10 @@ export function Documents() {
                                    onChange={e => setAddData({...addData, review_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel
-                            Changes</Button>
+                        {addError && (
+                            <ErrorMessage message={addError} />
+                        )}
+                        <Button className="invert-hover-outline" onClick={() => {setAddOpen(false); setAddError('');}} >✕ Cancel Changes</Button>
                         <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
                     </Group>
                 </Stack>
@@ -1294,9 +1346,11 @@ export function Documents() {
                                    onChange={e => setEditData({...editData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
+                        {editError && (
+                            <ErrorMessage message={editError} />
+                        )}
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)} className="invert-hover">✓ Save
-                            Changes</Button>
+                        <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1338,6 +1392,7 @@ export function Documents() {
                 setBulkOpen(false);
                 setStagedFiles([]);
             }} title="Bulk Upload" size="1200px">
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
                         <Text size="sm" fw={500} mb={4}>Add Files</Text>
@@ -1383,8 +1438,14 @@ export function Documents() {
                                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
+                                            <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
+                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
+                                                    <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
+                                                    <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
+                                                    <TextInput type="date" label="Review Date" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
                                                     <TextInput type="date" label="Modified" size="xs"
                                                                value={staged.date_modified}
                                                                onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
@@ -1406,16 +1467,13 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => {
-                            setBulkOpen(false);
-                            setStagedFiles([]);
-                        }}>✕ Cancel</Button>
-                        <Button onClick={handleBulkAdd} className="invert-hover"
-                                disabled={stagedFiles.length === 0}>
+                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }}>✕ Cancel</Button>
+                        <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
                             + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
                         </Button>
                     </Group>
                 </Stack>
+            </Modal>
             </Modal>
         </>
     );
