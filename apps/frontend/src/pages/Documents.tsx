@@ -32,6 +32,7 @@ import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 
+
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function Documents() {
@@ -327,7 +328,7 @@ export function Documents() {
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => {
-            if (filterType.includes('link') && getFileType(d.url) === 'Link') return true;
+            if (filterType.includes('LINK') && getFileType(d.url) === 'LINK') return true;
             return filterType.map(t => t.toLowerCase()).includes(getExt(d.url));
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
@@ -954,7 +955,24 @@ export function Documents() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-auto">
-                            <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                            {pickRenderer(viewerUrl ?? '') === 'docviewer' && (
+                                <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                            )}
+                            {pickRenderer(viewerUrl ?? '') === 'player' && (
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: '#000', padding: '20px' }}>
+                                    {['MP3', 'M4A', 'WAV', 'OGG'].includes(getExt(viewerUrl ?? '').toUpperCase()) ? (
+                                        <audio controls style={{ width: '100%', maxWidth: '600px' }}>
+                                            <source src={viewerUrl} />
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    ) : (
+                                        <video controls style={{ width: '100%', height: '100%', maxHeight: '100%', objectFit: 'contain' }}>
+                                            <source src={viewerUrl} />
+                                            Your browser does not support the video element.
+                                        </video>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -965,7 +983,7 @@ export function Documents() {
                 <Stack>
                     <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
                     <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
