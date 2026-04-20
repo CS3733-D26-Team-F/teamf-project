@@ -59,6 +59,10 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         return res.status(409).send({error: "Expiration date should be in the future"})
     }
 
+    if (status === 'Expired' && expiration > today) {
+        return res.status(409).send({error: "Expiration date or Status should be edited"})
+    }
+
     const updateData: {
         name?: string;
         url?: string;
