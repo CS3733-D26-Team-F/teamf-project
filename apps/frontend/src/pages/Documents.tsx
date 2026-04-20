@@ -62,6 +62,7 @@ export function Documents() {
     const [filterOwner, setFilterOwner] = useState<string[]>([]);
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
+    const [filterTags, setFilterTags] = useState<string[]>([]);
 
     const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length;
 
@@ -305,12 +306,8 @@ export function Documents() {
 
     function loadTags() {
         api(`${DOMAIN}/getTags`)
-            .then(res => {
-                const toreturn =  res.json()
-                return toreturn
-            })
+            .then(res => res.json())
             .then(data => {
-                console.log("tags", data.data)
                 setCreatedTags(data.data);
             }).catch(err => console.log("Error was", err));
     }
@@ -368,6 +365,12 @@ export function Documents() {
             if (filterCheckout.includes ('checked_out')) result = result.filter (d => !! checkedOutMap[d.id]);
             if (filterCheckout.includes ('avilable')) result = result.filter (d => ! checkedOutMap[d.id]);
         }
+        //TODO
+        //if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
+        if (filterTags.length > 0) {
+            console.log("filtering")
+        }
+        if (filterTags.length > 0) result = result.filter(d => (d.jointagscontent ?? []).some(p => filterTags.includes(p)));
 
         if (sortField) {
             result.sort((a, b) => {
@@ -391,7 +394,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, checkedOutMap, documents, sortField, sortDir, persona]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, filterTags, checkedOutMap, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => d.is_favorite);
@@ -1135,8 +1138,9 @@ export function Documents() {
                                  onChange={setFilterStatus}
                                  data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                  clearable/>
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
-                    
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType}
+                                 onChange={setFilterType} data={fileTypeOptions}
+                                 searchable clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner}
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
@@ -1147,6 +1151,9 @@ export function Documents() {
                                      label: 'Available'
                                  }, {value: 'checked_out', label: 'Checked Out'},]}
                                  clearable/>
+                    <MultiSelect label="Content Tags" placeholder="Any Tags" value={filterTags}
+                                 onChange={setFilterTags} data={getArrayTags()}
+                                 clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
