@@ -21,10 +21,9 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
-import {useApi} from "../../src/components/api.ts";
-import type {
-    RowCallbacks
-    , StagedFile, ContentForm, Employee
+import { useApi } from "../../src/components/api.ts";
+import type { RowCallbacks
+, StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
 import {getExt, getFileType, normalizeUrl} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
@@ -32,6 +31,7 @@ import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import { Error as ErrorMessage } from "../components/content/Error.tsx"
+import {ManageTags} from "../components/content/ManageTags.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -50,6 +50,7 @@ export function Documents() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [createdTags, setCreatedTags] = useState<Metatag[]>([]);
 
     const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -130,7 +131,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -172,7 +173,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -193,6 +194,8 @@ export function Documents() {
         const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
+
+    const [advancedTagsOpen, setAdvancedTagsOpen] = useState(false);
 
     // Fetch Auth0 Persona
     useEffect(() => {
@@ -274,8 +277,46 @@ export function Documents() {
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+
+                //Also load docuemnt tags
+                for(const doc of flat) {
+                    api(`${DOMAIN}/grabformtags/${doc.name}`)
+                        .then(res => res.json())
+                        .then(tagData => {
+                            //const tags = tagData.data;
+                            if (tagData.data.length > 0 ) {
+                                //Tags are id and tag_name, we only want name
+                                const tagNames = [];
+                                for (const tag of tagData.data) {
+                                    tagNames.push(tag.tag_name)
+                                }
+                                doc.jointagscontent = tagNames
+                            }
+
+                    });
+                }
+
                 setDocuments(flat);
+                loadTags()
             });
+    }
+
+    function loadTags() {
+        api(`${DOMAIN}/getTags`)
+            .then(res => res.json())
+            .then(data => {
+                setCreatedTags(data.data);
+            });
+    }
+
+    //To display tags in multi select they have to be a list of strings
+    //So take the list of tags with id and name and get just the name
+    function getArrayTags() {
+        const tags: string[] = [];
+        for (const tag of createdTags){
+            tags.push(tag.tag_name);
+        }
+        return tags;
     }
 
     function toggleSort(field: keyof ContentForm) {
@@ -381,20 +422,35 @@ export function Documents() {
             formPayload.append('url', normalizeUrl(addUrl));
         }
         try {
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-            setAddOpen(false);
-            setAddFile(null);
-            setAddUrl('');
-            setAddData({
-                name: '',
-                owner: persona === 'Admin' ? '' : username ?? '',
-                persona: persona !== 'Admin' ? [persona ?? ''] : [],
-                date_modified: today,
-                review_date: '',
-                expiration_date: '',
-                content_type: '',
-                status: ''
-            });
+            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            setAddOpen(false); setAddFile(null); setAddUrl('');
+            //add any tags to the file before closing add
+            if (addData.jointagscontent.length > 0) {
+                //get Document id for the just created doc
+                const flat = await api(`${DOMAIN}/contentforms`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                            [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                        return newFlat;
+                });
+                let docID = 0;
+                for (const doc of flat) {
+                    if (doc.name === addData.name) {
+                        docID = doc.id;
+                    }
+                }
+                for (const tagToAdd of addData.jointagscontent) {
+                    let tagID = 0;
+                    for (const tag of createdTags) {
+                        if (tag.tag_name === tagToAdd) {
+                            tagID = tag.metid;
+                        }
+                    }
+                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:tagID}) });
+                }
+            }
+            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
             loadDocuments();
         } catch (err: any) {
             console.log('err.status:', err.status);
@@ -493,7 +549,8 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
-                    status: doc.status
+                    status: doc.status,
+                    jointagscontent: doc.jointagscontent
                 });
                 setEditOpen(true);
             });
@@ -535,6 +592,78 @@ export function Documents() {
             return;
         }
 
+        //add/remove any tags to the file before closing edit
+
+        //get Document id for what we are editing
+        const flat = await api(`${DOMAIN}/contentforms`)
+            .then(res => res.json())
+            .then(data => {
+                const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                return newFlat;
+            });
+        let docID = 0;
+        const docTags: string[] = [];
+        for (const doc of flat) {
+            if (doc.name === editData.name) {
+                docID = doc.id;
+                //Also get what tags it had originally so we know what to remove/add
+                await api(`${DOMAIN}/grabformtags/${doc.name}`)
+                    .then(res => res.json())
+                    .then(tagData => {
+                        if (tagData.data.length > 0 ) {
+                            //Tags are id and tag_name, we only want name
+                            for (const tag of tagData.data) {
+                                docTags.push(tag.tag_name)
+                            }
+                        }
+
+                    });
+            }
+        }
+        //make sure jointagscontent is not undefined
+        const toEdit: string[] = (editData.jointagscontent ?? []);
+
+        //sets are faster
+        const wantedTags = new Set(toEdit)
+        const currentTags = new Set(docTags);
+
+        //Find what tags to remove
+        const tagsToRemove = docTags.filter(tag => !wantedTags.has(tag));
+        //Find what tags to add
+        const tagsToAdd = toEdit.filter(tag => !currentTags.has(tag));
+
+        //add needed tags
+        for (const tagToAdd of tagsToAdd) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToAdd) {
+                    tagID = tag.metid;
+                }
+            }
+            await api(`${DOMAIN}/assigntag`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
+            });
+        }
+
+        //remove needed tags
+        for (const tagToRemove of tagsToRemove) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToRemove) {
+                    tagID = tag.metid;
+                }
+            }
+            await api(`${DOMAIN}/unassigntag`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
+            });
+        }
+
+        //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
@@ -1130,6 +1259,11 @@ export function Documents() {
                                  onChange={val => setAddData({...addData, persona: val})}
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type}
@@ -1140,13 +1274,10 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={addData.date_modified}
-                                   onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
-                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
-                        <TextInput label="Review Date" type="date" value={addData.review_date}
-                                   onChange={e => setAddData({...addData, review_date: e.target.value})}/>
-
+                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
+                        <TextInput label="Review Date" type="date" value={addData.review_date} 
+                                   onChange={e => setAddData({...addData, review_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {addError && (
@@ -1194,6 +1325,11 @@ export function Documents() {
                     <MultiSelect label="Job Position" value={editData.persona}
                                  onChange={val => setEditData({...editData, persona: val})} data={roles}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect w="75%" label="Tags" value={editData.jointagscontent}
+                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type}
@@ -1204,8 +1340,6 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={editData.date_modified}
-                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
                         <TextInput label="Expiration Date" type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                         <TextInput label="Review Date" type="date" value={editData.review_date}
@@ -1220,6 +1354,20 @@ export function Documents() {
                     </Group>
                 </Stack>
             </Modal>
+
+            {/* Advanced tag management (create and delete) tags modal */}
+            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)} title="Advanced Tag Management" size="lg">
+                <Stack>
+                    <ManageTags/>
+                    <Group justify="flex-end" mt="md">
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAdvancedTagsOpen(false);
+                            loadTags();
+                        }}> Done </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
 
             <ConfirmModal
                 opened={confirmSaveOpen}

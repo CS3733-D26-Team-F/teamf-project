@@ -19,11 +19,6 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-
-app.get ('/', (req, res) => {
-    res.status(200);
-})
-
 app.use('/', employeeRoutes);
 app.use('/', chatRoutes);
 app.use('/', contentRoutes);
@@ -33,5 +28,7 @@ app.use('/', loginRoutes);
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+
+
 
 export default app;
