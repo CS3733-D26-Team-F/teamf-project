@@ -305,10 +305,14 @@ export function Documents() {
 
     function loadTags() {
         api(`${DOMAIN}/getTags`)
-            .then(res => res.json())
+            .then(res => {
+                const toreturn =  res.json()
+                return toreturn
+            })
             .then(data => {
+                console.log("tags", data.data)
                 setCreatedTags(data.data);
-            });
+            }).catch(err => console.log("Error was", err));
     }
 
     //To display tags in multi select they have to be a list of strings
