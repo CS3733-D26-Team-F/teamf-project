@@ -231,19 +231,30 @@ export function Documents() {
                 }
 
                 setDocuments(flat);
+                loadTags()
             });
     }
 
     function loadTags() {
         api(`${DOMAIN}/getTags`)
-            //.then(res => res.json())
+            .then(res => res.json())
             .then(data => {
-                console.log("All tags", data);
-                console.log(data.json());
-                //setCreatedTags(data);
-        });
+                console.log("All tags", data, typeof data);
+                console.log("data.data", data.data, typeof data.data);
+                setCreatedTags(data.data);
+
+            });
     }
-    //loadTags()
+
+    //To display tags in multi select they have to be a list of strings
+    //So take the list of tags with id and name and get just the name
+    function getArrayTags() {
+        const tags: string[] = [];
+        for (const tag of createdTags){
+            tags.push(tag.tag_name);
+        }
+        return tags;
+    }
 
     function toggleSort(field: keyof ContentForm) {
         if (sortField === field) {
@@ -351,14 +362,16 @@ export function Documents() {
                         console.log("ID", docID, doc.name, addData.name)
                     }
                 }
-                console.log(addData.name, docID, addData.jointagscontent)
-                try {
-                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:"2"}) });
-                }
-                catch (error) {
-                    console.log("ERROR", error);
-                    console.log(error.status)
-                    console.log(error.body)
+                for (const tagToAdd of addData.jointagscontent) {
+                    let tagID = 0;
+                    for (const tag of createdTags) {
+                        if (tag.tag_name === tagToAdd) {
+                            console.log("tag stuff", tagToAdd, tag, tag.tag_name, tag.metid)
+                            tagID = tag.metid;
+                        }
+                    }
+                    console.log(addData.name, docID, tagID)
+                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:tagID}) });
                 }
             }
             setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
@@ -843,7 +856,7 @@ export function Documents() {
                         <Select label="Document Status" value={addData.status} onChange={val => setAddData({...addData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} />
                     </Group>
                     <Group grow>
-                        <MultiSelect label="Tags" value={addData.jointagscontent} onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={['Other']}  />
+                        <MultiSelect label="Tags" value={addData.jointagscontent} onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date} onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
                         <TextInput label="Review Date" type="date" value={addData.review_date} onChange={e => setAddData({...addData, review_date: e.target.value})} />
 

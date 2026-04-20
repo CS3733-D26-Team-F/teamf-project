@@ -36,7 +36,7 @@ export type Employee = {
 };
 
 export type Metatag = {
-    id: number;
+    metid: number;
     tag_name: string;
 };
 
