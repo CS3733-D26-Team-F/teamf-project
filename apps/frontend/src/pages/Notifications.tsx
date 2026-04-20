@@ -1,17 +1,22 @@
 import { Box, Button, Group, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Header } from "../components/Header";
 import { PageTitle } from '../components/Title.tsx';
-import { useState } from "react";
-import { IconSearch, IconUser } from "@tabler/icons-react";
+import { useState, useEffect } from "react";
+import { IconSearch } from "@tabler/icons-react";
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { FilledButton } from "../components/Buttons/FilledButton.tsx";
+import { DOMAIN } from "../const";
 
-function Notification() {
-    let exampleContent = "";
-    for (let i = 0; i < 20; i++)
-        exampleContent += "Lorem ipsum dolor sit amet. ";
+interface NotificationProps {
+    title: string;
+    message: string;
+    send_date: string | Date
+    notid: number;
+    importance: number | null;
+}
 
+function Notification({ title, message, send_date, importance: _importance }: NotificationProps) {
     const [opened, { open, close }] = useDisclosure(false);
     return (
         <Box
@@ -21,7 +26,8 @@ function Notification() {
                 borderRadius: 8,
                 padding: 16,
                 background: 'white'
-        }}>
+            }}
+        >
             {/* Notification Title */}
             <Group 
                 justify="space-between"
@@ -35,7 +41,7 @@ function Notification() {
                         size="xl" 
                         c="var(--color-yale-blue)"
                     >
-                        Notification Title
+                        {title}
                     </Text>
 
                     <Text
@@ -43,7 +49,7 @@ function Notification() {
                         size="md"
                         c="var(--color-light-gray)"
                     >
-                        04/21/26
+                        {send_date.toString()}
                     </Text>
                 </Group>
 
@@ -52,7 +58,7 @@ function Notification() {
                         View Notification
                     </FilledButton>
 
-                    <Button variant="default" onClick={open}>
+                    <Button variant="default" onClick={() => {}}>
                         Mark as Read
                     </Button>
                 </Group>
@@ -61,6 +67,7 @@ function Notification() {
             <Modal
                 opened={opened}
                 onClose={close}
+                size="xl"
                 title={
                     <Group>
                         <Title
@@ -68,21 +75,21 @@ function Notification() {
                             size="md"
                             c="var(--color-yale-blue)"
                         >
-                            Notification Title
+                            {title}
                         </Title>
                         <Text
                             fw={400}
                             size="md"
                             c="var(--color-light-gray)"
                         >
-                            04/21/26
+                            {send_date.toString()}
                         </Text>
                     </Group>
                 }
                 centered
             >
                 <Stack>
-                    {exampleContent}
+                    {message}
                 </Stack>
             </Modal>
 
@@ -91,7 +98,7 @@ function Notification() {
                borderRadius: 6,
                padding: '8px 12px'
             }}>
-                {exampleContent}
+                {message}
             </Text>
         </Box>
     );
@@ -99,6 +106,37 @@ function Notification() {
 
 export function Notifications() {
     const [search, setSearch] = useState('');
+    const [notifications, setNotifications] = useState<NotificationProps[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const response = await fetch(`${DOMAIN}/notifications`, {
+                    credentials: 'include',
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setNotifications(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch notifications:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchNotifications();
+    }, []);
+
+    const filteredNotifications = notifications.filter(n =>
+        n.title.toLowerCase().includes(search.toLowerCase()) ||
+        n.message.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const formatDate = (date: string | Date) => {
+        const d = new Date(date);
+        return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+    };
 
     return (
         <>
@@ -114,9 +152,21 @@ export function Notifications() {
                 />
 
                 <Stack>
-                    <Notification />
-                    <Notification />
-                    <Notification />
+                    {loading 
+                        ? (<Text>Loading notifications...</Text>)
+                        : filteredNotifications.length === 0 
+                            ? (<Text>No notifications found.</Text>) 
+                            : (filteredNotifications.map((notification) => (
+                                <Notification
+                                    key={notification.notid}
+                                    notid={notification.notid}
+                                    title={notification.title}
+                                    message={notification.message}
+                                    send_date={formatDate(notification.send_date)}
+                                    importance={notification.importance}
+                                />
+                            ))
+                        )}
                 </Stack>
             </Box>
         </>
