@@ -324,7 +324,7 @@ export function Documents() {
         formPayload.append('review_date', addData.review_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
-
+        console.log("Real form", formPayload);
         if(addFile) {
             formPayload.append('file', addFile);
         } else {
@@ -336,21 +336,33 @@ export function Documents() {
             //add any tags to the file before closing edit
             if (addData.jointagscontent.length > 0) {
                 console.log(addData.jointagscontent);
-                const tagPayload = new FormData();
                 //get Document id for the just created doc
-                loadDocuments()
+                const flat = await api(`${DOMAIN}/contentforms`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                            [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                        return newFlat;
+                });
                 let docID = 0;
-                for (const doc of documents) {
-                    if (doc.name == addData.name) {
+                for (const doc of flat) {
+                    if (doc.name === addData.name) {
                         docID = doc.id;
-                        console.log("Equality?", doc.name, addData.name)
+                        console.log("ID", docID, doc.name, addData.name)
                     }
                 }
                 console.log(addData.name, docID, addData.jointagscontent)
+                const tagPayload = new FormData();
                 tagPayload.append('idInt', docID.toString());
                 tagPayload.append('metidInt', "2");
                 console.log(tagPayload);
-                await api(`${DOMAIN}/assigntag`, { method: 'POST', body: tagPayload });
+                try {
+                    await api(`${DOMAIN}/assigntag`, {method: 'POST', body: tagPayload});
+                }
+                catch (error) {
+                    console.log("ERROR", error);
+                    console.log(error.toString())
+                }
             }
             setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
             loadDocuments();

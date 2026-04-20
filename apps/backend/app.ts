@@ -1333,9 +1333,11 @@ app.post('/newtag', checkJWT, async(req, res) => {
 });
 
 app.post('/assigntag', checkJWT, async(req, res) => {
+    console.log("Made it here!")
     const auth0Id = req.auth!.payload.sub as string;
     const idInt = Number(req.body.id);
     const metidInt = Number(req.body.metid);
+    console.log("Backend Recived", idInt, metidInt)
 
     const form = await prisma.contentform.findUnique({
         where: { id: idInt }
