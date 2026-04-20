@@ -304,7 +304,6 @@ export function Documents() {
                                     tagNames.push(tag.tag_name)
                                 }
                                 doc.jointagscontent = tagNames
-                                console.log(doc.name, doc.id, tagNames)
                             }
 
                     });
@@ -316,14 +315,10 @@ export function Documents() {
     }
 
     function loadTags() {
-        console.log("loadTags called")
         api(`${DOMAIN}/getTags`)
             .then(res => res.json())
             .then(data => {
-                console.log("All tags", data, typeof data);
-                console.log("data.data", data.data, typeof data.data);
                 setCreatedTags(data.data);
-
             });
     }
 
@@ -456,7 +451,6 @@ export function Documents() {
             setAddOpen(false); setAddFile(null); setAddUrl('');
             //add any tags to the file before closing add
             if (addData.jointagscontent.length > 0) {
-                console.log(addData.jointagscontent);
                 //get Document id for the just created doc
                 const flat = await api(`${DOMAIN}/contentforms`)
                     .then(res => res.json())
@@ -469,18 +463,15 @@ export function Documents() {
                 for (const doc of flat) {
                     if (doc.name === addData.name) {
                         docID = doc.id;
-                        console.log("ID", docID, doc.name, addData.name)
                     }
                 }
                 for (const tagToAdd of addData.jointagscontent) {
                     let tagID = 0;
                     for (const tag of createdTags) {
                         if (tag.tag_name === tagToAdd) {
-                            console.log("tag stuff", tagToAdd, tag, tag.tag_name, tag.metid)
                             tagID = tag.metid;
                         }
                     }
-                    console.log(addData.name, docID, tagID)
                     await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:tagID}) });
                 }
             }
@@ -576,7 +567,7 @@ export function Documents() {
             });
         }
         //add/remove any tags to the file before closing edit
-        console.log(editData.jointagscontent);
+
         //get Document id for what we are editing
         const flat = await api(`${DOMAIN}/contentforms`)
             .then(res => res.json())
@@ -590,12 +581,10 @@ export function Documents() {
         for (const doc of flat) {
             if (doc.name === editData.name) {
                 docID = doc.id;
-                console.log("name", doc.name)
                 //Also get what tags it had originally so we know what to remove/add
                 await api(`${DOMAIN}/grabformtags/${doc.name}`)
                     .then(res => res.json())
                     .then(tagData => {
-                        console.log("tagData", tagData);
                         if (tagData.data.length > 0 ) {
                             //Tags are id and tag_name, we only want name
                             for (const tag of tagData.data) {
@@ -606,24 +595,17 @@ export function Documents() {
                     });
             }
         }
-        console.log("What tags exist currently", docTags);
-
-        //make sure jointagsconent is not undefined
+        //make sure jointagscontent is not undefined
         const toEdit: string[] = (editData.jointagscontent ?? []);
+
         //sets are faster
         const wantedTags = new Set(toEdit)
         const currentTags = new Set(docTags);
-
-        console.log("wantedTags", wantedTags);
-        console.log("currentTags", currentTags);
 
         //Find what tags to remove
         const tagsToRemove = docTags.filter(tag => !wantedTags.has(tag));
         //Find what tags to add
         const tagsToAdd = toEdit.filter(tag => !currentTags.has(tag));
-
-        console.log("toRemove", tagsToRemove);
-        console.log("toAdd", tagsToAdd);
 
         //add needed tags
         for (const tagToAdd of tagsToAdd) {

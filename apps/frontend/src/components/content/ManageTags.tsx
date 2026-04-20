@@ -14,13 +14,11 @@ export function ManageTags() {
 
 
     async function runCreateTag() {
-        console.log("add", createTag);
         await api(`${DOMAIN}/newtag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: createTag}) });
         setCreateTag("");
     }
 
     async function runDeleteTag() {
-        console.log("del", deleteTag)
         await api(`${DOMAIN}/deletetag`, {method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: deleteTag}) });
         setDeleteTag("");
     }

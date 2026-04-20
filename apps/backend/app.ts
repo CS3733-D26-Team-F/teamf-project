@@ -44,7 +44,6 @@ const checkJWT = auth({
 app.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const { name } = req.body;
-    console.log("new tag name", name)
     if (!name) {
         return res.status(400).json({ error: 'Must name the tag' })
     };
@@ -68,13 +67,9 @@ app.post('/newtag', checkJWT, async(req, res) => {
 });
 
 app.post('/assigntag', checkJWT, async(req, res) => {
-    console.log("Made it here!")
     const auth0Id = req.auth!.payload.sub as string;
-    console.log("req", req)
-    console.log("req.body", req.body)
     const idInt = Number(req.body.id);
     const metidInt = Number(req.body.metid);
-    console.log("Backend Recived", idInt, metidInt)
 
     const form = await prisma.contentform.findUnique({
         where: { id: idInt }
@@ -128,8 +123,6 @@ app.get('/grabtaggedforms/:name', checkJWT, async(req, res) => {
 
         const tagged = join.map(formid => formid.id);
 
-        console.log(tagged);
-
         const forms= await prisma.contentform.findMany({
             where: {
                 id: { in: tagged }
@@ -161,8 +154,6 @@ app.get('/grabformtags/:name', checkJWT, async(req, res) => {
         });
 
         const tagged = join.map(tagid => tagid.metid);
-
-        console.log(tagged);
 
         const tags= await prisma.metatags.findMany({
             where: {
@@ -222,11 +213,8 @@ app.delete('/deletetag', checkJWT, async(req, res) => {
     }
 });
 app.get('/getTags', async (req, res) => {
-    console.log("get Tags called in backend")
     const tags = await prisma.metatags.findMany();
-    console.log('Tags: ', tags);
-    //res.json(tags);
-    //return res.status(200).json({data: tags})
+
     return res.json({data: tags})
 });
 
