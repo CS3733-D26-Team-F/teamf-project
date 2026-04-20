@@ -25,13 +25,14 @@ import { useApi } from "../../src/components/api.ts";
 import type { RowCallbacks
 , StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import {getExt, getFileType, normalizeUrl} from "../components/content/Functions.tsx";
+import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import { Error as ErrorMessage } from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -159,6 +160,7 @@ export function Documents() {
             item.id === id ? {...item, [field]: value} : item
         ));
     }
+    
 
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
@@ -343,13 +345,18 @@ export function Documents() {
         }
     }
 
+    const fileTypeOptions = useMemo(
+        () => [...new Set(documents.map(d => getFileType(d.url)))].sort(),
+        [documents]
+    );
+
     const filtered = useMemo(() => {
         let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => {
-            if (filterType.includes('link') && getFileType(d.url) === 'Link') return true;
+            if (filterType.includes('LINK') && getFileType(d.url) === 'LINK') return true;
             return filterType.map(t => t.toLowerCase()).includes(getExt(d.url));
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
@@ -464,6 +471,8 @@ export function Documents() {
             }
         }
     }
+
+
 
     async function handleBulkAdd() {
         // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
@@ -737,6 +746,9 @@ export function Documents() {
         loadDocuments();
     }
 
+
+
+
     function toggleSelect(id: number) {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     }
@@ -769,11 +781,13 @@ export function Documents() {
     }
 
     function openViewer(url: string, label: string, id: number, isUrl: boolean) {
-        if (isUrl) {
+        // If it's explicitly a web URL or pickRenderer says to open externally, open in new tab
+        if (isUrl || !pickRenderer(url)) {
             recordView(id);
             window.open(url, '_blank');
             return;
         }
+        // Otherwise, open in modal viewer (has an inline renderer)
         recordView(id);
         setViewerUrl(url);
         setViewerLabel(label);
@@ -1071,7 +1085,7 @@ export function Documents() {
                 )}
             </Box>
 
-            {/* doc viewer */}
+            {/* file viewer */}
             {viewerUrl && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
                      style={{zIndex: 1000}} onClick={() => setViewerUrl(null)}>
@@ -1085,9 +1099,24 @@ export function Documents() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-auto">
-                            <DocViewer documents={[{uri: viewerUrl, fileName: viewerLabel}]}
-                                       pluginRenderers={DocViewerRenderers}
-                                       style={{height: '100%', minHeight: '600px'}}/>
+                            {pickRenderer(viewerUrl ?? '') === 'docviewer' && (
+                                <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                            )}
+                            {pickRenderer(viewerUrl ?? '') === 'player' && (
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: '#000', padding: '20px' }}>
+                                    {['MP3', 'M4A', 'WAV', 'OGG'].includes(getExt(viewerUrl ?? '').toUpperCase()) ? (
+                                        <audio controls style={{ width: '100%', maxWidth: '600px' }}>
+                                            <source src={viewerUrl} />
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    ) : (
+                                        <video controls style={{ width: '100%', height: '100%', maxHeight: '100%', objectFit: 'contain' }}>
+                                            <source src={viewerUrl} />
+                                            Your browser does not support the video element.
+                                        </video>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1102,10 +1131,8 @@ export function Documents() {
                                  onChange={setFilterStatus}
                                  data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                  clearable/>
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType}
-                                 onChange={setFilterType}
-                                 data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png', 'jpg', 'txt', 'link']}
-                                 clearable/>
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
+                    
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner}
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
@@ -1116,10 +1143,6 @@ export function Documents() {
                                      label: 'Available'
                                  }, {value: 'checked_out', label: 'Checked Out'},]}
                                  clearable/>
-                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
-                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved']} clearable />
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png','jpg', 'txt', 'link']} clearable />
-                    <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
