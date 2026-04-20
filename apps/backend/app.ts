@@ -688,22 +688,30 @@ app.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res) =
 
 app.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    console.log("Here")
     try {
         console.log('backend received', req.body);
         const {filename, ownerUsername, date_modified, expiration_date, review_date, content_type, status} = req.body;
         const file = req.file;
         const rawUrl = req.body.url;
         const expiration = new Date(req.body.expiration_date);
+        const review = new Date(req.body.review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (expiration < today && req.body.status !== "Expired") {
-            return res.status(409).json({ error: "Document is expired" });
+        if (expiration < today) {
+            return res.status(409).json({ error: "Expiration Date cannot be in the past" });
+        }
+
+        if (review < today) {
+            return res.status(409).json({ error: "Review Date cannot be in the past" });
         }
 
         if (!file && !rawUrl) {
             return res.status(400).json({error: 'File or URL is required'});
+        }
+
+        if (!ownerUsername || !date_modified || !expiration_date || !review_date || !content_type || !status){
+            return res.status(406).json({error: 'Fill in all fields'});
         }
 
         const employee = await prisma.employee.findUnique({
@@ -1157,11 +1165,20 @@ app.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res) =
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
+        const expiration = new Date(req.body.expiration_date);
+        const review = new Date(req.body.review_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && req.body.status !== "Expired") || (expiration > today && req.body.status === "Expired")) {
+            return res.status(409).json({ error: "Document is expired, please edit the expiration date" });
+        }
+
         const updateData: any = {
             name,
             owner: resolvedOwner,
             persona,  // now correctly set
-            date_modified: new Date(date_modified),
+            date_modified: today,
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,

@@ -30,6 +30,7 @@ import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import { Error as ErrorMessage } from "../components/content/Error.tsx"
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function Documents() {
@@ -90,6 +91,7 @@ export function Documents() {
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    const [addError, setAddError] = useState<string>('');
 
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
@@ -226,7 +228,7 @@ export function Documents() {
     }
 
     const filtered = useMemo(() => {
-        let result = [...documents];
+        let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
@@ -278,11 +280,6 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
     async function handleAdd() {
-        if (uploadMode === 'file' && !addFile) { alert('Please upload a file.'); return; }
-        if (uploadMode === 'url' && !addUrl) { alert('Please enter a URL.'); return; }
-        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.review_date || !addData.content_type || !addData.status) {
-            alert('Please fill in all fields.'); return;
-        }
         const formPayload = new FormData();
         formPayload.append('filename', addData.name);
         formPayload.append('ownerUsername', addData.owner);
@@ -304,16 +301,12 @@ export function Documents() {
             setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '' });
             loadDocuments();
         } catch (err: any) {
-            if (err.status === 409) {
-                alert(`Error: ${err.message}`);
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setAddError(err.message)
             } else {
                 throw err;
             }
         }
-        await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
-        setAddOpen(false); setAddFile(null); setAddUrl('');
-        setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '' });
-        loadDocuments();
     }
 
     async function handleBulkAdd() {
@@ -336,6 +329,19 @@ export function Documents() {
         setBulkOpen(false); setStagedFiles([]); loadDocuments();
     }
 
+    async function handleSaveClick() {
+        const expiration = new Date(editData.expiration_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired')) {
+            alert('Error: Document is expired, please check the expiration date and file status');
+            return;
+        }
+
+        setConfirmSaveOpen(true);
+    }
+
     function openEdit(doc: ContentForm) {
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) })
             .then(res => {
@@ -353,29 +359,38 @@ export function Documents() {
 
     async function handleEdit() {
         if (!editId) return;
-        if (editFile) {
-            const formPayload = new FormData();
-            formPayload.append('filename', editData.name);
-            formPayload.append('ownerUsername', editData.owner);
-            formPayload.append('persona', JSON.stringify(editData.persona));
-            formPayload.append('date_modified', editData.date_modified);
-            formPayload.append('expiration_date', editData.expiration_date);
-            formPayload.append('review_date', editData.review_date);
-            formPayload.append('content_type', editData.content_type);
-            formPayload.append('status', editData.status);
-            formPayload.append('file', editFile);
-            await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
-        } else if (editUploadMode === 'url' && editUrl) {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
-            });
+        try {
+            if (editFile) {
+                const formPayload = new FormData();
+                formPayload.append('filename', editData.name);
+                formPayload.append('ownerUsername', editData.owner);
+                formPayload.append('persona', JSON.stringify(editData.persona));
+                formPayload.append('date_modified', editData.date_modified);
+                formPayload.append('expiration_date', editData.expiration_date);
+                formPayload.append('review_date', editData.review_date);
+                formPayload.append('content_type', editData.content_type);
+                formPayload.append('status', editData.status);
+                formPayload.append('file', editFile);
+                await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+            } else if (editUploadMode === 'url' && editUrl) {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
+                });
 
-        } else {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editData)
-            });
-        }
+            } else {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(editData)
+                });
+            }
+        } catch (err: any) {
+                if (err.status === 409) {
+                    alert(`Error: ${err.message}`);
+                    return;
+                } else {
+                    throw err;
+                }
+            }
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
@@ -784,7 +799,7 @@ export function Documents() {
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type} onChange={val => setAddData({...addData, content_type: val ?? ''})} data={['Reference', 'Workflow']} />
-                        <Select label="Document Status" value={addData.status} onChange={val => setAddData({...addData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} />
+                        <Select label="Document Status" value={addData.status} onChange={val => setAddData({...addData, status: val ?? ''})} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} />
                     </Group>
                     <Group grow>
                         <TextInput label="Last Modified Date" type="date" value={addData.date_modified} onChange={e => setAddData({...addData, date_modified: e.target.value})} />
@@ -792,6 +807,9 @@ export function Documents() {
                         <TextInput label="Review Date" type="date" value={addData.review_date} onChange={e => setAddData({...addData, review_date: e.target.value})} />
 
                     </Group>
+                    {addError && (
+                        <ErrorMessage message={addError} />
+                    )}
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel Changes</Button>
                         <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
@@ -841,7 +859,7 @@ export function Documents() {
                     </Group>
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)} className="invert-hover">✓ Save Changes</Button>
+                        <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
             </Modal>
