@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 //Legacy imports
-//Shoudl be refactored so tag the stuff is in its own file
+//Should be refactored so tag the stuff is in its own file
 //And then these imports are not needed
 import path from 'path';
 import dotenv from 'dotenv';
