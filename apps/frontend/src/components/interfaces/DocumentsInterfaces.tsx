@@ -10,6 +10,7 @@ export type ContentForm = {
     content_type: string;
     review_date: string;
     status: string;
+    folder: string;
     is_favorite: boolean;
     is_deleted: boolean;
     deleted_at: string | null;
@@ -23,6 +24,7 @@ export type StagedFile = {
     persona: string[];
     content_type: string;
     status: string;
+    folder: string;
     date_modified: string;
     expiration_date: string;
     review_date: string;

@@ -47,12 +47,20 @@ export function Documents() {
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
     const [documents, setDocuments] = useState<ContentForm[]>([]);
+    const [folders, setFolders] = useState<string[]>([]);
+    const [activeFolder, setActiveFolder] = useState<string>('All');
+    const [folderedIds, setFolderedIds] = useState<number[]>([]);
+    
+
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
     const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const [selectedFolderedIds, setSelectedFolderedIds] = useState<number[]>([]);
+
 
     const [filterPersona, setFilterPersona] = useState<string[]>([]);
     const [filterStatus, setFilterStatus] = useState<string[]>([]);
@@ -130,7 +138,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', folder: ''
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -146,7 +154,8 @@ export function Documents() {
             status: '',
             date_modified: today,
             review_date: '',
-            expiration_date: ''
+            expiration_date: '',
+            folder:''
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
     }
@@ -171,7 +180,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', folder: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -384,6 +393,8 @@ export function Documents() {
     const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id)?.is_favorite);
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
+    // const selectedNotInFolder = [...selectedIds, ...selectedFolderedIds].some(id => {documents.find(d => d.id === id)?.folder === ''});
+
     async function handleAdd() {
         if (uploadMode === 'file' && !addFile) {
             alert('Please upload a file.');
@@ -425,7 +436,8 @@ export function Documents() {
                 review_date: '',
                 expiration_date: '',
                 content_type: '',
-                status: ''
+                status: '',
+                folder: ''
             });
             loadDocuments();
         } catch (err: any) {
@@ -447,7 +459,8 @@ export function Documents() {
             expiration_date: '',
             review_date: '',
             content_type: '',
-            status: ''
+            status: '',
+            folder: ''
         });
         loadDocuments();
     }
@@ -474,12 +487,17 @@ export function Documents() {
             formPayload.append('review_date', sf.review_date);
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
+            formPayload.append('folder', sf.folder);
             formPayload.append('file', sf.file);
             await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
         }
         setBulkOpen(false);
         setStagedFiles([]);
         loadDocuments();
+    }
+
+    async function createFolder(){
+
     }
 
     function openEdit(doc: ContentForm) {
@@ -502,7 +520,8 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
-                    status: doc.status
+                    status: doc.status,
+                    folder: doc.folder
                 });
                 setEditOpen(true);
             });
@@ -520,6 +539,7 @@ export function Documents() {
             formPayload.append('review_date', editData.review_date);
             formPayload.append('content_type', editData.content_type);
             formPayload.append('status', editData.status);
+            formPayload.append('folder', editData.folder);
             formPayload.append('file', editFile);
             await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
         } else if (editUploadMode === 'url' && editUrl) {
@@ -928,6 +948,12 @@ export function Documents() {
                             {selectedHasFavorites &&
                                 <Button className="invert-hover" onClick={unfavoriteSelected}>☆ Unfavorite
                                     All</Button>}
+                            
+                            <Button className="invert-hover" onClick={() => {
+                                const ids = [...selectedIds, ...selectedFavIds, ...folderedIds, ...selectedFolderedIds];
+                                const docs = documents.filter(d => ids.includes(d.id));
+                            }}> Move to Folder</Button>
+
                             <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
