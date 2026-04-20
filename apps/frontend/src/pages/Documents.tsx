@@ -250,13 +250,7 @@ export function Documents() {
 
 
     async function loadTrash() {
-        const res = await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        trash`);
+        const res = await api(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
         setTrashDocs(data);
     }

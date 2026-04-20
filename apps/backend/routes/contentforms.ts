@@ -24,7 +24,6 @@ router.get('/api/auth/me', checkJWT, async (req, res) => {
         const contentForms = await prisma.contentform.findMany({
             where: {is_deleted: false}
         });
-        console.log('Content Form Data:', contentForms);
         res.json(contentForms);
     });
 

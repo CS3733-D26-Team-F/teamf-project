@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import { Profile } from "./Profile.tsx";
 import { usePersona } from "../hooks/usePersona";
+import { Chatbot } from "./Chatbot.tsx";
 import { ActionIcon, Container, Group, Text } from '@mantine/core';
 import classes from "../FooterLinks.module.css";
 
@@ -33,6 +34,7 @@ export function Header() {
                 )}
                 <Profile />
               </nav>
+                <Chatbot />
             </header>
             <header>
                 <Text size="sm" c="white" ta="center">
