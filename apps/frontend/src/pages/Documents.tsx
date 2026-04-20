@@ -1243,6 +1243,11 @@ export function Documents() {
                                  onChange={val => setAddData({...addData, persona: val})}
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type}
@@ -1253,11 +1258,6 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <Stack>
-                            <MultiSelect label="Tags" value={editData.jointagscontent}
-                                         onChange={val => setAddData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
-                            <Button style={{ height: '10px', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
-                        </Stack>
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
                         <TextInput label="Review Date" type="date" value={addData.review_date} 
@@ -1307,6 +1307,11 @@ export function Documents() {
                     <MultiSelect label="Job Position" value={editData.persona}
                                  onChange={val => setEditData({...editData, persona: val})} data={roles}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect w="75%" label="Tags" value={editData.jointagscontent}
+                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type}
@@ -1317,8 +1322,6 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <MultiSelect label="Tags" value={editData.jointagscontent}
-                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
                         <TextInput label="Expiration Date" type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                         <TextInput label="Review Date" type="date" value={editData.review_date}

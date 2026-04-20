@@ -1,8 +1,6 @@
 import '@mantine/core/styles.css';
 import {
-    TextInput, Button, Modal, Select, MultiSelect, Group, Text,
-    Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip, SegmentedControl
+    TextInput, Button, Group, Stack
 } from '@mantine/core';
 import {useState} from "react";
 import {DOMAIN} from "../../const.ts";
@@ -31,11 +29,11 @@ export function ManageTags() {
         <Stack>
         <Group>
             <TextInput label="Enter a New Tag" value={createTag} onChange={e => setCreateTag(e.target.value)}/>
-            <Button variant="default" onClick={runCreateTag} > Create Tag</Button>
+            <Button className="invert-hover" onClick={runCreateTag} > Create Tag</Button>
         </Group>
         <Group>
             <TextInput label="Enter a tag to Delete" value={deleteTag} onChange={e => setDeleteTag(e.target.value)}/>
-            <Button variant="default" onClick={runDeleteTag} > Delete Tag</Button>
+            <Button className="invert-hover" onClick={runDeleteTag} > Delete Tag</Button>
         </Group>
     </Stack>
     )
