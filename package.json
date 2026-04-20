@@ -31,6 +31,8 @@
     "turbo": "^2.9.1"
   },
   "dependencies": {
+    "@ai-sdk/mistral": "^3.0.30",
+    "@ai-sdk/react": "^3.0.170",
     "@auth0/auth0-react": "^2.16.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -47,6 +49,7 @@
     "@tabler/icons-react": "^3.41.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/express": "^5.0.6",
+    "ai": "^6.0.168",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
@@ -57,9 +60,12 @@
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "morgan": "^1.10.1",
+    "overall": "^0.0.5",
     "railway": "^2.0.17",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.2",
     "recharts": "^3.8.1",
+    "remark-gfm": "^4.0.1",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"

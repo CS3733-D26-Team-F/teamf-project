@@ -52,7 +52,7 @@ export function AreaChart() {
         };
 
         getStatsData();
-    }, [api]);
+    }, []);
 
     return (
         <div

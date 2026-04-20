@@ -7,6 +7,7 @@ import cors from 'cors';
 import employeeRoutes from './routes/employees.js';
 import contentRoutes from './routes/contentforms.js';
 import loginRoutes from './routes/login.js';
+import chatRoutes from './routes/chat.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.use('/', employeeRoutes);
+app.use('/', chatRoutes);
 app.use('/', contentRoutes);
 app.use('/', loginRoutes);
 
