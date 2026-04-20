@@ -81,6 +81,7 @@ export function Profile() {
 
     function handleLogout() {
         localStorage.clear();
+        sessionStorage.removeItem('chatHistory');
         logout({ logoutParams: { returnTo: window.location.origin } });
     }
 
