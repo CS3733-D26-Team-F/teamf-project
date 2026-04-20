@@ -21,10 +21,9 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
-import {useApi} from "../../src/components/api.ts";
-import type {
-    RowCallbacks
-    , StagedFile, ContentForm, Employee
+import { useApi } from "../../src/components/api.ts";
+import type { RowCallbacks
+, StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
 import {getExt, getFileType, normalizeUrl} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
@@ -49,6 +48,7 @@ export function Documents() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [createdTags, setCreatedTags] = useState<Metatag[]>([]);
 
     const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -129,7 +129,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -287,8 +287,50 @@ export function Documents() {
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+
+                //Also load docuemnt tags
+                for(const doc of flat) {
+                    api(`${DOMAIN}/grabformtags/${doc.name}`)
+                        .then(res => res.json())
+                        .then(tagData => {
+                            //const tags = tagData.data;
+                            if (tagData.data.length > 0 ) {
+                                //Tags are id and tag_name, we only want name
+                                const tagNames = [];
+                                for (const tag of tagData.data) {
+                                    tagNames.push(tag.tag_name)
+                                }
+                                doc.jointagscontent = tagNames
+                                console.log(doc.name, doc.id, tagNames)
+                            }
+
+                    });
+                }
+
                 setDocuments(flat);
+                loadTags()
             });
+    }
+
+    function loadTags() {
+        api(`${DOMAIN}/getTags`)
+            .then(res => res.json())
+            .then(data => {
+                console.log("All tags", data, typeof data);
+                console.log("data.data", data.data, typeof data.data);
+                setCreatedTags(data.data);
+
+            });
+    }
+
+    //To display tags in multi select they have to be a list of strings
+    //So take the list of tags with id and name and get just the name
+    function getArrayTags() {
+        const tags: string[] = [];
+        for (const tag of createdTags){
+            tags.push(tag.tag_name);
+        }
+        return tags;
     }
 
     function toggleSort(field: keyof ContentForm) {
@@ -406,20 +448,39 @@ export function Documents() {
             formPayload.append('url', normalizeUrl(addUrl));
         }
         try {
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-            setAddOpen(false);
-            setAddFile(null);
-            setAddUrl('');
-            setAddData({
-                name: '',
-                owner: persona === 'Admin' ? '' : username ?? '',
-                persona: persona !== 'Admin' ? [persona ?? ''] : [],
-                date_modified: today,
-                review_date: '',
-                expiration_date: '',
-                content_type: '',
-                status: ''
-            });
+            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            setAddOpen(false); setAddFile(null); setAddUrl('');
+            //add any tags to the file before closing edit
+            if (addData.jointagscontent.length > 0) {
+                console.log(addData.jointagscontent);
+                //get Document id for the just created doc
+                const flat = await api(`${DOMAIN}/contentforms`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                            [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                        return newFlat;
+                });
+                let docID = 0;
+                for (const doc of flat) {
+                    if (doc.name === addData.name) {
+                        docID = doc.id;
+                        console.log("ID", docID, doc.name, addData.name)
+                    }
+                }
+                for (const tagToAdd of addData.jointagscontent) {
+                    let tagID = 0;
+                    for (const tag of createdTags) {
+                        if (tag.tag_name === tagToAdd) {
+                            console.log("tag stuff", tagToAdd, tag, tag.tag_name, tag.metid)
+                            tagID = tag.metid;
+                        }
+                    }
+                    console.log(addData.name, docID, tagID)
+                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:tagID}) });
+                }
+            }
+            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
             loadDocuments();
         } catch (err: any) {
             if (err.status === 409) {
@@ -428,21 +489,6 @@ export function Documents() {
                 throw err;
             }
         }
-        await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-        setAddOpen(false);
-        setAddFile(null);
-        setAddUrl('');
-        setAddData({
-            name: '',
-            owner: persona === 'Admin' ? '' : username ?? '',
-            persona: persona !== 'Admin' ? [persona ?? ''] : [],
-            date_modified: today,
-            expiration_date: '',
-            review_date: '',
-            content_type: '',
-            status: ''
-        });
-        loadDocuments();
     }
 
     async function handleBulkAdd() {
@@ -1121,12 +1167,12 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={addData.date_modified}
-                                   onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
-                        <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
-                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
-                        <TextInput label="Review Date" type="date" value={addData.review_date}
-                                   onChange={e => setAddData({...addData, review_date: e.target.value})}/>
+                        <MultiSelect label="Tags" value={addData.jointagscontent} 
+                                   onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <TextInput label="Expiration Date" type="date" value={addData.expiration_date} 
+                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
+                        <TextInput label="Review Date" type="date" value={addData.review_date} 
+                                   onChange={e => setAddData({...addData, review_date: e.target.value})} />
 
                     </Group>
                     <Group justify="flex-end" mt="md">
