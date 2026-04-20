@@ -169,7 +169,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -451,7 +451,7 @@ export function Documents() {
         try {
             await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
             setAddOpen(false); setAddFile(null); setAddUrl('');
-            //add any tags to the file before closing edit
+            //add any tags to the file before closing add
             if (addData.jointagscontent.length > 0) {
                 console.log(addData.jointagscontent);
                 //get Document id for the just created doc
@@ -540,7 +540,8 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
-                    status: doc.status
+                    status: doc.status,
+                    jointagscontent: doc.jointagscontent
                 });
                 setEditOpen(true);
             });
@@ -571,6 +572,87 @@ export function Documents() {
                 method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(editData)
             });
         }
+        //add/remove any tags to the file before closing edit
+        console.log(editData.jointagscontent);
+        //get Document id for what we are editing
+        const flat = await api(`${DOMAIN}/contentforms`)
+            .then(res => res.json())
+            .then(data => {
+                const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                return newFlat;
+            });
+        let docID = 0;
+        const docTags: string[] = [];
+        for (const doc of flat) {
+            if (doc.name === editData.name) {
+                docID = doc.id;
+                console.log("name", doc.name)
+                //Also get what tags it had originally so we know what to remove/add
+                await api(`${DOMAIN}/grabformtags/${doc.name}`)
+                    .then(res => res.json())
+                    .then(tagData => {
+                        console.log("tagData", tagData);
+                        if (tagData.data.length > 0 ) {
+                            //Tags are id and tag_name, we only want name
+                            for (const tag of tagData.data) {
+                                docTags.push(tag.tag_name)
+                            }
+                        }
+
+                    });
+            }
+        }
+        console.log("What tags exist currently", docTags);
+
+        //make sure jointagsconent is not undefined
+        const toEdit: string[] = (editData.jointagscontent ?? []);
+        //sets are faster
+        const wantedTags = new Set(toEdit)
+        const currentTags = new Set(docTags);
+
+        console.log("wantedTags", wantedTags);
+        console.log("currentTags", currentTags);
+
+        //Find what tags to remove
+        const tagsToRemove = docTags.filter(tag => !wantedTags.has(tag));
+        //Find what tags to add
+        const tagsToAdd = toEdit.filter(tag => !currentTags.has(tag));
+
+        console.log("toRemove", tagsToRemove);
+        console.log("toAdd", tagsToAdd);
+
+        //add needed tags
+        for (const tagToAdd of tagsToAdd) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToAdd) {
+                    tagID = tag.metid;
+                }
+            }
+            await api(`${DOMAIN}/assigntag`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
+            });
+        }
+
+        //remove needed tags
+        for (const tagToRemove of tagsToRemove) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToRemove) {
+                    tagID = tag.metid;
+                }
+            }
+            await api(`${DOMAIN}/unassigntag`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
+            });
+        }
+
+        //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
         });
@@ -1168,8 +1250,8 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <MultiSelect label="Tags" value={addData.jointagscontent} 
-                                   onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <MultiSelect label="Tags" value={editData.jointagscontent}
+                                   onChange={val => setAddData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date} 
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
                         <TextInput label="Review Date" type="date" value={addData.review_date} 
@@ -1230,8 +1312,8 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={editData.date_modified}
-                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
+                        <MultiSelect label="Tags" value={editData.jointagscontent}
+                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
                         <TextInput label="Expiration Date" type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                         <TextInput label="Review Date" type="date" value={editData.review_date}
