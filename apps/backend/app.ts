@@ -18,21 +18,28 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-
-app.get ('/', (req, res) => {
-    res.status(200);
-})
-
-app.use('/', employeeRoutes);
-app.use('/', contentRoutes);
-app.use('/', loginRoutes);
-
-app.get('/getTags', async (req, res) => {
-    const tags = await prisma.metatags.findMany();
-    console.log('Tags: ', tags);
-    //res.json(tags);
-    return res.status(200).json({data: tags})
+//Legacy imports
+//Shoudl be refactored so tag the stuff is in its own file
+//And then these imports are not needed
+import path from 'path';
+import dotenv from 'dotenv';
+import pkg from '@prisma/client';
+import {PrismaPg} from "@prisma/adapter-pg";
+const { PrismaClient } = pkg;
+const distPath = path.resolve("../frontend/dist");
+app.use(cors());
+import { auth } from "express-oauth2-jwt-bearer";
+dotenv.config();
+const adapter = new PrismaPg({
+    connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL!,
 });
+const prisma = new PrismaClient({adapter});
+const checkJWT = auth({
+    audience: process.env.AUTH0_AUDIENCE,
+    issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
+    tokenSigningAlg: 'RS256'
+});
+//End of stuff that needs to be there for the below tag code to work
 
 app.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
@@ -214,6 +221,28 @@ app.delete('/deletetag/:name', checkJWT, async(req, res) => {
         res.status(500).json({ error: 'Cannot remove a tag' });
     }
 });
+app.get('/getTags', async (req, res) => {
+    console.log("get Tags called in backend")
+    const tags = await prisma.metatags.findMany();
+    console.log('Tags: ', tags);
+    //res.json(tags);
+    //return res.status(200).json({data: tags})
+    return res.json({data: tags})
+});
+
+
+//The new code from refactoring app.ts
+//Needs to be after old code so old code still works
+app.get ('/', (req, res) => {
+    res.status(200);
+})
+
+app.use('/', employeeRoutes);
+app.use('/', contentRoutes);
+app.use('/', loginRoutes);
+
+
+
 
 app.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
@@ -223,5 +252,7 @@ app.use((req, res) => {
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+
+
 
 export default app;

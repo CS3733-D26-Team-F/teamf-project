@@ -313,6 +313,7 @@ export function Documents() {
     }
 
     function loadTags() {
+        console.log("loadTags called")
         api(`${DOMAIN}/getTags`)
             .then(res => res.json())
             .then(data => {
