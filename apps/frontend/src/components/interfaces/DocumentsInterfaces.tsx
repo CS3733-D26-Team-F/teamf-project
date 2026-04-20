@@ -13,6 +13,7 @@ export type ContentForm = {
     is_favorite: boolean;
     is_deleted: boolean;
     deleted_at: string | null;
+    jointagscontent: string[];
 };
 
 export type StagedFile = {
@@ -32,6 +33,11 @@ export type Employee = {
     empid: number;
     username: string;
     persona: string;
+};
+
+export type Metatag = {
+    metid: number;
+    tag_name: string;
 };
 
 export interface RowCallbacks {

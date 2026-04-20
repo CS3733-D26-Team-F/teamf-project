@@ -21,16 +21,17 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
-import {useApi} from "../../src/components/api.ts";
-import type {
-    RowCallbacks
-    , StagedFile, ContentForm, Employee
+import { useApi } from "../../src/components/api.ts";
+import type { RowCallbacks
+, StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
 import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import { Error as ErrorMessage } from "../components/content/Error.tsx"
+import {ManageTags} from "../components/content/ManageTags.tsx";
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -50,6 +51,7 @@ export function Documents() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [createdTags, setCreatedTags] = useState<Metatag[]>([]);
 
     const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -130,10 +132,12 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    const [addError, setAddError] = useState<string>('');
+    const [editError, setEditError] = useState<string>('');
 
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
@@ -171,7 +175,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -192,6 +196,8 @@ export function Documents() {
         const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
+
+    const [advancedTagsOpen, setAdvancedTagsOpen] = useState(false);
 
     // Fetch Auth0 Persona
     useEffect(() => {
@@ -249,30 +255,14 @@ export function Documents() {
 
 
     async function loadTrash() {
-        const res = await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        trash`);
+        const res = await api(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
         setTrashDocs(data);
     }
 
     async function restoreDoc(id: number) {
         if (!window.confirm('Are you sure you want to restore?')) return;
-        await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        $
-        {
-            id
-        }
-        /restore`, {method: 'PATCH'});
+        await api(`${DOMAIN}/contentforms/${id}/restore`, {method: 'PATCH'});
         loadTrash();
         loadDocuments();
     }
@@ -289,8 +279,46 @@ export function Documents() {
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+
+                //Also load docuemnt tags
+                for(const doc of flat) {
+                    api(`${DOMAIN}/grabformtags/${doc.name}`)
+                        .then(res => res.json())
+                        .then(tagData => {
+                            //const tags = tagData.data;
+                            if (tagData.data.length > 0 ) {
+                                //Tags are id and tag_name, we only want name
+                                const tagNames = [];
+                                for (const tag of tagData.data) {
+                                    tagNames.push(tag.tag_name)
+                                }
+                                doc.jointagscontent = tagNames
+                            }
+
+                    });
+                }
+
                 setDocuments(flat);
+                loadTags()
             });
+    }
+
+    function loadTags() {
+        api(`${DOMAIN}/getTags`)
+            .then(res => res.json())
+            .then(data => {
+                setCreatedTags(data.data);
+            });
+    }
+
+    //To display tags in multi select they have to be a list of strings
+    //So take the list of tags with id and name and get just the name
+    function getArrayTags() {
+        const tags: string[] = [];
+        for (const tag of createdTags){
+            tags.push(tag.tag_name);
+        }
+        return tags;
     }
 
     function toggleSort(field: keyof ContentForm) {
@@ -323,7 +351,7 @@ export function Documents() {
     );
 
     const filtered = useMemo(() => {
-        let result = [...documents];
+        let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
         if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
@@ -385,18 +413,6 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
 
     async function handleAdd() {
-        if (uploadMode === 'file' && !addFile) {
-            alert('Please upload a file.');
-            return;
-        }
-        if (uploadMode === 'url' && !addUrl) {
-            alert('Please enter a URL.');
-            return;
-        }
-        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.review_date || !addData.content_type || !addData.status) {
-            alert('Please fill in all fields.');
-            return;
-        }
         const formPayload = new FormData();
         formPayload.append('filename', addData.name);
         formPayload.append('ownerUsername', addData.owner);
@@ -413,48 +429,55 @@ export function Documents() {
             formPayload.append('url', normalizeUrl(addUrl));
         }
         try {
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-            setAddOpen(false);
-            setAddFile(null);
-            setAddUrl('');
-            setAddData({
-                name: '',
-                owner: persona === 'Admin' ? '' : username ?? '',
-                persona: persona !== 'Admin' ? [persona ?? ''] : [],
-                date_modified: today,
-                review_date: '',
-                expiration_date: '',
-                content_type: '',
-                status: ''
-            });
+            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+            setAddOpen(false); setAddFile(null); setAddUrl('');
+            //add any tags to the file before closing add
+            if (addData.jointagscontent.length > 0) {
+                //get Document id for the just created doc
+                const flat = await api(`${DOMAIN}/contentforms`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                            [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                        return newFlat;
+                });
+                let docID = 0;
+                for (const doc of flat) {
+                    if (doc.name === addData.name) {
+                        docID = doc.id;
+                    }
+                }
+                for (const tagToAdd of addData.jointagscontent) {
+                    let tagID = 0;
+                    for (const tag of createdTags) {
+                        if (tag.tag_name === tagToAdd) {
+                            tagID = tag.metid;
+                        }
+                    }
+                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:tagID}) });
+                }
+            }
+            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
             loadDocuments();
         } catch (err: any) {
-            if (err.status === 409) {
-                alert(`Error: ${err.message}`);
+            console.log('err.status:', err.status);
+            console.log('err.message:', err.message);
+            console.log('err.body:', err.body);
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setAddError(err.message)
+                return;
             } else {
                 throw err;
             }
         }
-        await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-        setAddOpen(false);
-        setAddFile(null);
-        setAddUrl('');
-        setAddData({
-            name: '',
-            owner: persona === 'Admin' ? '' : username ?? '',
-            persona: persona !== 'Admin' ? [persona ?? ''] : [],
-            date_modified: today,
-            expiration_date: '',
-            review_date: '',
-            content_type: '',
-            status: ''
-        });
-        loadDocuments();
     }
 
 
 
     async function handleBulkAdd() {
+        // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
+        // const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
+        // if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
         if (stagedFiles.length === 0) {
             alert('Please upload at least one file.');
             return;
@@ -465,6 +488,26 @@ export function Documents() {
             return;
         }
         for (const sf of stagedFiles) {
+            try {
+                const formPayload = new FormData();
+                formPayload.append('filename', sf.name);
+                formPayload.append('ownerUsername', sf.owner);
+                formPayload.append('persona', JSON.stringify(sf.persona));
+                formPayload.append('date_modified', sf.date_modified);
+                formPayload.append('expiration_date', sf.expiration_date);
+                formPayload.append('review_date', sf.review_date);
+                formPayload.append('content_type', sf.content_type);
+                formPayload.append('status', sf.status);
+                formPayload.append('file', sf.file);
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message)
+                } else {
+                    throw err;
+                }
+                return;
+            }
             const formPayload = new FormData();
             formPayload.append('filename', sf.name);
             formPayload.append('ownerUsername', sf.owner);
@@ -480,6 +523,19 @@ export function Documents() {
         setBulkOpen(false);
         setStagedFiles([]);
         loadDocuments();
+    }
+
+    async function handleSaveClick() {
+        const expiration = new Date(editData.expiration_date);
+        const review = new Date(editData.review_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
+            return;
+        }
+
+        setConfirmSaveOpen(true);
     }
 
     function openEdit(doc: ContentForm) {
@@ -502,7 +558,8 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
-                    status: doc.status
+                    status: doc.status,
+                    jointagscontent: doc.jointagscontent
                 });
                 setEditOpen(true);
             });
@@ -510,39 +567,126 @@ export function Documents() {
 
     async function handleEdit() {
         if (!editId) return;
-        if (editFile) {
-            const formPayload = new FormData();
-            formPayload.append('filename', editData.name);
-            formPayload.append('ownerUsername', editData.owner);
-            formPayload.append('persona', JSON.stringify(editData.persona));
-            formPayload.append('date_modified', editData.date_modified);
-            formPayload.append('expiration_date', editData.expiration_date);
-            formPayload.append('review_date', editData.review_date);
-            formPayload.append('content_type', editData.content_type);
-            formPayload.append('status', editData.status);
-            formPayload.append('file', editFile);
-            await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
-        } else if (editUploadMode === 'url' && editUrl) {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
-            });
+        try {
+            if (editFile) {
+                const formPayload = new FormData();
+                formPayload.append('filename', editData.name);
+                formPayload.append('ownerUsername', editData.owner);
+                formPayload.append('persona', JSON.stringify(editData.persona));
+                formPayload.append('date_modified', editData.date_modified);
+                formPayload.append('expiration_date', editData.expiration_date);
+                formPayload.append('review_date', editData.review_date);
+                formPayload.append('content_type', editData.content_type);
+                formPayload.append('status', editData.status);
+                formPayload.append('file', editFile);
+                await api(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
+            } else if (editUploadMode === 'url' && editUrl) {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...editData, url: normalizeUrl(editUrl) })
+                });
+            } else {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(editData)
+                });
+            }
+        } catch (err: any) {
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setEditError(err.message);
+                console.log("error: ", editError)
+            } else {
+                throw err;
+            }
+            return;
+        }
 
-        } else {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(editData)
+        //add/remove any tags to the file before closing edit
+
+        //get Document id for what we are editing
+        const flat = await api(`${DOMAIN}/contentforms`)
+            .then(res => res.json())
+            .then(data => {
+                const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                return newFlat;
+            });
+        let docID = 0;
+        const docTags: string[] = [];
+        for (const doc of flat) {
+            if (doc.name === editData.name) {
+                docID = doc.id;
+                //Also get what tags it had originally so we know what to remove/add
+                await api(`${DOMAIN}/grabformtags/${doc.name}`)
+                    .then(res => res.json())
+                    .then(tagData => {
+                        if (tagData.data.length > 0 ) {
+                            //Tags are id and tag_name, we only want name
+                            for (const tag of tagData.data) {
+                                docTags.push(tag.tag_name)
+                            }
+                        }
+
+                    });
+            }
+        }
+        //make sure jointagscontent is not undefined
+        const toEdit: string[] = (editData.jointagscontent ?? []);
+
+        //sets are faster
+        const wantedTags = new Set(toEdit)
+        const currentTags = new Set(docTags);
+
+        //Find what tags to remove
+        const tagsToRemove = docTags.filter(tag => !wantedTags.has(tag));
+        //Find what tags to add
+        const tagsToAdd = toEdit.filter(tag => !currentTags.has(tag));
+
+        //add needed tags
+        for (const tagToAdd of tagsToAdd) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToAdd) {
+                    tagID = tag.metid;
+                }
+            }
+            await api(`${DOMAIN}/assigntag`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
             });
         }
+
+        //remove needed tags
+        for (const tagToRemove of tagsToRemove) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToRemove) {
+                    tagID = tag.metid;
+                }
+            }
+            await api(`${DOMAIN}/unassigntag`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
+            });
+        }
+
+        //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
         setEditFile(null);
         setConfirmSaveOpen(false);
         setEditOpen(false);
+        setEditError('');
         loadDocuments();
     }
 
+
     function closeEdit() {
+        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
+        setEditOpen(false); setEditUrl(''); setEditUploadMode('file'); setEditError('');
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -981,10 +1125,24 @@ export function Documents() {
             {/* filter modal */}
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
-                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona} onChange={setFilterPersona} data={roles} clearable />
-                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus} onChange={setFilterStatus} data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} clearable />
+                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona}
+                                 onChange={setFilterPersona} data={roles} clearable/>
+                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus}
+                                 onChange={setFilterStatus}
+                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
+                                 clearable/>
                     <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
-                    <MultiSelect label="Owner" placeholder="All owners" value={filterOwner} onChange={setFilterOwner} data={[...new Set(documents.map(d => d.owner))]} clearable />
+                    
+                    <MultiSelect label="Owner" placeholder="All owners" value={filterOwner}
+                                 onChange={setFilterOwner}
+                                 data={[...new Set(documents.map(d => d.owner))]} clearable/>
+                    <MultiSelect label="Checkout Status" placeholder="All Documents" value={filterCheckout}
+                                 onChange={(val) => setFilterCheckout(val ?? 'all')}
+                                 data={[{value: 'all', label: 'All'}, {
+                                     value: 'available',
+                                     label: 'Available'
+                                 }, {value: 'checked_out', label: 'Checked Out'},]}
+                                 clearable/>
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
@@ -1090,7 +1248,7 @@ export function Documents() {
             </Modal>
 
             {/* add modal */}
-            <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
+            <Modal opened={addOpen} onClose={() => {setAddOpen(false); setAddError('');}} title="Add New Document" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={addData.name}
@@ -1124,6 +1282,11 @@ export function Documents() {
                                  onChange={val => setAddData({...addData, persona: val})}
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type}
@@ -1131,20 +1294,19 @@ export function Documents() {
                                 data={['Reference', 'Workflow']}/>
                         <Select label="Document Status" value={addData.status}
                                 onChange={val => setAddData({...addData, status: val ?? ''})}
-                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
+                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={addData.date_modified}
-                                   onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
-                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
-                        <TextInput label="Review Date" type="date" value={addData.review_date}
-                                   onChange={e => setAddData({...addData, review_date: e.target.value})}/>
-
+                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
+                        <TextInput label="Review Date" type="date" value={addData.review_date} 
+                                   onChange={e => setAddData({...addData, review_date: e.target.value})} />
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel
-                            Changes</Button>
+                        {addError && (
+                            <ErrorMessage message={addError} />
+                        )}
+                        <Button className="invert-hover-outline" onClick={() => {setAddOpen(false); setAddError('');}} >✕ Cancel Changes</Button>
                         <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
                     </Group>
                 </Stack>
@@ -1186,6 +1348,11 @@ export function Documents() {
                     <MultiSelect label="Job Position" value={editData.persona}
                                  onChange={val => setEditData({...editData, persona: val})} data={roles}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect w="75%" label="Tags" value={editData.jointagscontent}
+                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
+                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label="Content Type" value={editData.content_type}
@@ -1196,20 +1363,34 @@ export function Documents() {
                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={editData.date_modified}
-                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
                         <TextInput label="Expiration Date" type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                         <TextInput label="Review Date" type="date" value={editData.review_date}
                                    onChange={e => setEditData({...editData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
+                        {editError && (
+                            <ErrorMessage message={editError} />
+                        )}
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)} className="invert-hover">✓ Save
-                            Changes</Button>
+                        <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
             </Modal>
+
+            {/* Advanced tag management (create and delete) tags modal */}
+            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)} title="Advanced Tag Management" size="lg">
+                <Stack>
+                    <ManageTags/>
+                    <Group justify="flex-end" mt="md">
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAdvancedTagsOpen(false);
+                            loadTags();
+                        }}> Done </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
 
             <ConfirmModal
                 opened={confirmSaveOpen}
@@ -1234,6 +1415,7 @@ export function Documents() {
                 setBulkOpen(false);
                 setStagedFiles([]);
             }} title="Bulk Upload" size="1200px">
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
                         <Text size="sm" fw={500} mb={4}>Add Files</Text>
@@ -1279,8 +1461,14 @@ export function Documents() {
                                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
+                                            <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
+                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
+                                                    <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
+                                                    <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
+                                                    <TextInput type="date" label="Review Date" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
                                                     <TextInput type="date" label="Modified" size="xs"
                                                                value={staged.date_modified}
                                                                onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
@@ -1302,16 +1490,13 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => {
-                            setBulkOpen(false);
-                            setStagedFiles([]);
-                        }}>✕ Cancel</Button>
-                        <Button onClick={handleBulkAdd} className="invert-hover"
-                                disabled={stagedFiles.length === 0}>
+                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }}>✕ Cancel</Button>
+                        <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
                             + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
                         </Button>
                     </Group>
                 </Stack>
+            </Modal>
             </Modal>
         </>
     );
