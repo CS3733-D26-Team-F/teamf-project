@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "ts-node --esm app.ts",
-    "start": "ts-node app.ts",
+    "dev": " tsx watch app.ts ",
+    "start": " tsx app.ts",
     "build": "prisma db pull && prisma generate",
     "db:pull": "prisma db pull --schema prisma/schema.prisma",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
@@ -14,6 +14,7 @@
     "db:studio": "prisma studio --schema prisma/schema.prisma"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.170",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@supabase/supabase-js": "^2.102.1",
@@ -27,7 +28,8 @@
     "jwks-rsa": "^4.0.1",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

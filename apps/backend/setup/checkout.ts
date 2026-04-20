@@ -1,0 +1,1 @@
+export const checkOutMem: Record<number, { username: string; checkedOut: Date }> = {};

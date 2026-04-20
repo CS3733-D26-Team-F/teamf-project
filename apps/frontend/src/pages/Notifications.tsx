@@ -142,6 +142,9 @@ export function Notifications() {
         <>
             <Header />
             <PageTitle title="Notifications" />
+            <FilledButton>
+                Send Notification
+            </FilledButton>
             <Box p="md">
                 <TextInput 
                     placeholder="Search for notification..." 

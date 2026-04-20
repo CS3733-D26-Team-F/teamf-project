@@ -6,6 +6,12 @@ datasource db {
   provider = "postgresql"
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model admin {
+  adid     Int      @id
+  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model contentform {
@@ -26,33 +32,62 @@ model contentform {
   checkout_date     DateTime?         @db.Timestamptz(6)
   review_date       DateTime?         @db.Date
   employee          employee?         @relation(fields: [empid], references: [empid])
+  joinedfavorites   joinedfavorites[]
   jointagscontent   jointagscontent[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee {
-  empid         Int             @id @default(autoincrement())
-  username      String          @unique(map: "unique_user") @db.VarChar(50)
-  password      String?         @db.VarChar(20)
-  persona       String?         @db.VarChar(50)
-  theme         Int?            @default(0)
-  isLoggedIn    Boolean?        @default(false)
-  auth0Id       String?         @unique @db.VarChar
-  first_name    String?
-  last_name     String?
-  created_at    DateTime?       @default(now()) @db.Timestamp(6)
-  pfp_URL       String?         @unique @db.VarChar
-  admin         admin?
-  contentform   contentform[]
-  joinednotice  joinednotice[]
-  notifications notifications[]
+  empid           Int               @id @default(autoincrement())
+  username        String            @unique(map: "unique_user") @db.VarChar(50)
+  password        String?           @db.VarChar(20)
+  persona         String?           @db.VarChar(50)
+  theme           Int?              @default(0)
+  isLoggedIn      Boolean?          @default(false)
+  auth0Id         String?           @unique @db.VarChar
+  first_name      String?
+  last_name       String?
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  pfp_URL         String?           @unique @db.VarChar
+  admin           admin?
+  contentform     contentform[]
+  joinedfavorites joinedfavorites[]
+  joinednotice    joinednotice[]
+  notifications   notifications[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model folders {
+  fid           BigInt   @id @default(autoincrement())
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  fname         String?  @db.VarChar
+  owner_empid   BigInt?
+  assc_user_ids BigInt?
+  assc_doc_ids  BigInt?
+  url           String?  @db.VarChar
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model admin {
-  adid     Int      @id
-  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
+model joinedfavorites {
+  empid       Int
+  id          Int
+  employee    employee    @relation(fields: [empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
+  contentform contentform @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([empid, id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model joinednotice {
+  empid         Int
+  notid         Int
+  employee      employee      @relation(fields: [empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
+  notifications notifications @relation(fields: [notid], references: [notid], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([empid, notid])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -82,14 +117,4 @@ model notifications {
   sender       Int?
   joinednotice joinednotice[]
   employee     employee?      @relation(fields: [sender], references: [empid], onDelete: Cascade, onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model joinednotice {
-  empid         Int
-  notid         Int
-  employee      employee      @relation(fields: [empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
-  notifications notifications @relation(fields: [notid], references: [notid], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([empid, notid])
 }
