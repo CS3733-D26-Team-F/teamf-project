@@ -352,16 +352,13 @@ export function Documents() {
                     }
                 }
                 console.log(addData.name, docID, addData.jointagscontent)
-                const tagPayload = new FormData();
-                tagPayload.append('idInt', docID.toString());
-                tagPayload.append('metidInt', "2");
-                console.log(tagPayload);
                 try {
-                    await api(`${DOMAIN}/assigntag`, {method: 'POST', body: tagPayload});
+                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:"2"}) });
                 }
                 catch (error) {
                     console.log("ERROR", error);
-                    console.log(error.toString())
+                    console.log(error.status)
+                    console.log(error.body)
                 }
             }
             setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });

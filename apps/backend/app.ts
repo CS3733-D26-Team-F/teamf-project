@@ -1335,6 +1335,8 @@ app.post('/newtag', checkJWT, async(req, res) => {
 app.post('/assigntag', checkJWT, async(req, res) => {
     console.log("Made it here!")
     const auth0Id = req.auth!.payload.sub as string;
+    console.log("req", req)
+    console.log("req.body", req.body)
     const idInt = Number(req.body.id);
     const metidInt = Number(req.body.metid);
     console.log("Backend Recived", idInt, metidInt)
