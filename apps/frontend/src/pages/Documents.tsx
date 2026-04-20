@@ -247,30 +247,14 @@ export function Documents() {
 
 
     async function loadTrash() {
-        const res = await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        trash`);
+        const res = await api(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
         setTrashDocs(data);
     }
 
     async function restoreDoc(id: number) {
         if (!window.confirm('Are you sure you want to restore?')) return;
-        await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        $
-        {
-            id
-        }
-        /restore`, {method: 'PATCH'});
+        await api(`${DOMAIN}/contentforms/${id}/restore`, {method: 'PATCH'});
         loadTrash();
         loadDocuments();
     }
