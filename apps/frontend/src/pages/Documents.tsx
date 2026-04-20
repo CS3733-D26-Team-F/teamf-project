@@ -64,7 +64,7 @@ export function Documents() {
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
     const [filterTags, setFilterTags] = useState<string[]>([]);
 
-    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length;
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length;
 
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -365,8 +365,6 @@ export function Documents() {
             if (filterCheckout.includes ('checked_out')) result = result.filter (d => !! checkedOutMap[d.id]);
             if (filterCheckout.includes ('avilable')) result = result.filter (d => ! checkedOutMap[d.id]);
         }
-        //TODO
-        //if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterTags.length > 0) {
             console.log("filtering")
         }
@@ -895,12 +893,16 @@ export function Documents() {
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                        {filterTags.map(v => <Badge key={v} variant="filled" color="cyan"
+                                                     style={{cursor: 'pointer'}}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
                             setFilterType([]);
                             setFilterOwner([]);
                             setFilterCheckout([]);
+                            setFilterTags([]);
                         }}>Clear all</Badge>
                     </Group>
                 )}
