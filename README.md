@@ -4,7 +4,6 @@ This repository contains the full application stack for the project:
 
 - `apps/frontend` — React frontend
 - `apps/backend` — Express API
-- `packages/db` — shared Prisma/database resources
 
 ## What you need
 
