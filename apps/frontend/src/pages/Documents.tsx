@@ -21,16 +21,17 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
-import { useApi } from "../../src/components/api.ts";
-import type { RowCallbacks
-, StagedFile, ContentForm, Employee, Metatag
+import {useApi} from "../../src/components/api.ts";
+import type {
+    RowCallbacks
+    , StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
 import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
-import { Error as ErrorMessage } from "../components/content/Error.tsx"
+import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
 
 
@@ -62,8 +63,9 @@ export function Documents() {
     const [filterOwner, setFilterOwner] = useState<string[]>([]);
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
+    const [filterTags, setFilterTags] = useState<string[]>([]);
 
-    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length;
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length;
 
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -132,7 +134,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: [] as string[]
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -160,7 +162,7 @@ export function Documents() {
             item.id === id ? {...item, [field]: value} : item
         ));
     }
-    
+
 
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
@@ -175,7 +177,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: [] as string[]
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -281,12 +283,12 @@ export function Documents() {
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
 
                 //Also load docuemnt tags
-                for(const doc of flat) {
+                for (const doc of flat) {
                     api(`${DOMAIN}/grabformtags/${doc.name}`)
                         .then(res => res.json())
                         .then(tagData => {
                             //const tags = tagData.data;
-                            if (tagData.data.length > 0 ) {
+                            if (tagData.data.length > 0) {
                                 //Tags are id and tag_name, we only want name
                                 const tagNames = [];
                                 for (const tag of tagData.data) {
@@ -295,7 +297,7 @@ export function Documents() {
                                 doc.jointagscontent = tagNames
                             }
 
-                    });
+                        });
                 }
 
                 setDocuments(flat);
@@ -305,12 +307,8 @@ export function Documents() {
 
     function loadTags() {
         api(`${DOMAIN}/getTags`)
-            .then(res => {
-                const toreturn =  res.json()
-                return toreturn
-            })
+            .then(res => res.json())
             .then(data => {
-                console.log("tags", data.data)
                 setCreatedTags(data.data);
             }).catch(err => console.log("Error was", err));
     }
@@ -319,7 +317,7 @@ export function Documents() {
     //So take the list of tags with id and name and get just the name
     function getArrayTags() {
         const tags: string[] = [];
-        for (const tag of createdTags){
+        for (const tag of createdTags) {
             tags.push(tag.tag_name);
         }
         return tags;
@@ -356,7 +354,10 @@ export function Documents() {
 
     const filtered = useMemo(() => {
         let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
-        if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
+        if (search) result = result.filter(d =>
+            d.name.toLowerCase().includes(search.toLowerCase()) ||
+            d.owner.toLowerCase().includes(search.toLowerCase()) ||
+            (d.jointagscontent ?? []).some(p => p.toLowerCase().includes(search.toLowerCase())));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => {
@@ -365,9 +366,24 @@ export function Documents() {
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
         if (filterCheckout.length > 0) {
-            if (filterCheckout.includes ('checked_out')) result = result.filter (d => !! checkedOutMap[d.id]);
-            if (filterCheckout.includes ('avilable')) result = result.filter (d => ! checkedOutMap[d.id]);
+            const showCheckout = filterCheckout.includes('checked out');
+            const showAvailable = filterCheckout.includes('available');
+
+            if (showCheckout && showAvailable) {
+                result = result.sort((a, b) => {
+                    const firstChecked = !!checkedOutMap[a.id];
+                    const secondChecked = !!checkedOutMap[b.id];
+                    if (firstChecked && !secondChecked) return -1;
+                    if (!firstChecked && secondChecked) return 1;
+                    return 0;
+                });
+            } else if (showCheckout) {
+                result = result.filter(d => !!checkedOutMap[d.id]);
+            } else if (showAvailable) {
+                result = result.filter(d => !checkedOutMap[d.id]);
+            }
         }
+        if (filterTags.length > 0) result = result.filter(d => (d.jointagscontent ?? []).some(p => filterTags.includes(p)));
 
         if (sortField) {
             result.sort((a, b) => {
@@ -391,7 +407,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, checkedOutMap, documents, sortField, sortDir, persona]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, filterTags, checkedOutMap, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => d.is_favorite);
@@ -408,7 +424,18 @@ export function Documents() {
         });
     })();
 
-    const nonFavorites = filtered.filter(d => !d.is_favorite);
+    const nonFavorites = filtered
+        .filter(d => !d.is_favorite)
+        .sort((a, b) => {
+            if (filterCheckout.includes('checked out') && filterCheckout.includes('available')) {
+                const aChecked = !!checkedOutMap[a.id];
+                const bChecked = !!checkedOutMap[b.id];
+                if (aChecked && !bChecked) return -1;
+                if (!aChecked && bChecked) return 1;
+            }
+            return 0;
+        });
+
     const allSelected = selectedIds.length === nonFavorites.length && nonFavorites.length > 0;
     const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
     const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
@@ -433,8 +460,10 @@ export function Documents() {
             formPayload.append('url', normalizeUrl(addUrl));
         }
         try {
-            await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
-            setAddOpen(false); setAddFile(null); setAddUrl('');
+            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            setAddOpen(false);
+            setAddFile(null);
+            setAddUrl('');
             //add any tags to the file before closing add
             if (addData.jointagscontent.length > 0) {
                 //get Document id for the just created doc
@@ -444,7 +473,7 @@ export function Documents() {
                         const newFlat: ContentForm[] = Array.isArray(data) ? data :
                             [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
                         return newFlat;
-                });
+                    });
                 let docID = 0;
                 for (const doc of flat) {
                     if (doc.name === addData.name) {
@@ -458,10 +487,24 @@ export function Documents() {
                             tagID = tag.metid;
                         }
                     }
-                    await api(`${DOMAIN}/assigntag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id: docID, metid:tagID}) });
+                    await api(`${DOMAIN}/assigntag`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({id: docID, metid: tagID})
+                    });
                 }
             }
-            setAddData({ name: '', owner: persona === 'Admin' ? '' : username ?? '', persona: persona !== 'Admin' ? [persona ?? ''] : [], date_modified: today, review_date: '', expiration_date: '', content_type: '', status: '', jointagscontent: [] });
+            setAddData({
+                name: '',
+                owner: persona === 'Admin' ? '' : username ?? '',
+                persona: persona !== 'Admin' ? [persona ?? ''] : [],
+                date_modified: today,
+                review_date: '',
+                expiration_date: '',
+                content_type: '',
+                status: '',
+                jointagscontent: []
+            });
             loadDocuments();
         } catch (err: any) {
             console.log('err.status:', err.status);
@@ -477,20 +520,7 @@ export function Documents() {
     }
 
 
-
     async function handleBulkAdd() {
-        // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
-        // const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        // if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
-        if (stagedFiles.length === 0) {
-            alert('Please upload at least one file.');
-            return;
-        }
-        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) {
-            alert('Please fill in all dropdowns and dates for every file.');
-            return;
-        }
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
@@ -504,6 +534,9 @@ export function Documents() {
                 formPayload.append('status', sf.status);
                 formPayload.append('file', sf.file);
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                setBulkOpen(false);
+                setStagedFiles([]);
+                loadDocuments();
             } catch (err: any) {
                 if (err.status === 409 || err.status === 400 || err.status === 406) {
                     setAddError(err.message)
@@ -512,34 +545,7 @@ export function Documents() {
                 }
                 return;
             }
-            const formPayload = new FormData();
-            formPayload.append('filename', sf.name);
-            formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', JSON.stringify(sf.persona));
-            formPayload.append('date_modified', sf.date_modified);
-            formPayload.append('expiration_date', sf.expiration_date);
-            formPayload.append('review_date', sf.review_date);
-            formPayload.append('content_type', sf.content_type);
-            formPayload.append('status', sf.status);
-            formPayload.append('file', sf.file);
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
         }
-        setBulkOpen(false);
-        setStagedFiles([]);
-        loadDocuments();
-    }
-
-    async function handleSaveClick() {
-        const expiration = new Date(editData.expiration_date);
-        const review = new Date(editData.review_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
-            return;
-        }
-
-        setConfirmSaveOpen(true);
     }
 
     function openEdit(doc: ContentForm) {
@@ -569,8 +575,9 @@ export function Documents() {
             });
     }
 
-    async function handleEdit() {
+    async function handleSaveClick() {
         if (!editId) return;
+        setEditError('');
         try {
             if (editFile) {
                 const formPayload = new FormData();
@@ -591,23 +598,24 @@ export function Documents() {
                 });
             } else {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
-                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(editData)
                 });
             }
+            setConfirmSaveOpen(true);
         } catch (err: any) {
             if (err.status === 409 || err.status === 400 || err.status === 406) {
                 setEditError(err.message);
-                console.log("error: ", editError)
             } else {
                 throw err;
             }
-            return;
         }
+    }
 
-        //add/remove any tags to the file before closing edit
+    async function handleEdit() {
+        if (!editId) return;
 
-        //get Document id for what we are editing
+        // tag logic
         const flat = await api(`${DOMAIN}/contentforms`)
             .then(res => res.json())
             .then(data => {
@@ -620,25 +628,21 @@ export function Documents() {
         for (const doc of flat) {
             if (doc.name === editData.name) {
                 docID = doc.id;
-                //Also get what tags it had originally so we know what to remove/add
                 await api(`${DOMAIN}/grabformtags/${doc.name}`)
                     .then(res => res.json())
                     .then(tagData => {
-                        if (tagData.data.length > 0 ) {
+                        if (tagData.data.length > 0) {
                             //Tags are id and tag_name, we only want name
                             for (const tag of tagData.data) {
-                                docTags.push(tag.tag_name)
+                                docTags.push(tag.tag_name);
                             }
                         }
-
                     });
             }
         }
-        //make sure jointagscontent is not undefined
-        const toEdit: string[] = (editData.jointagscontent ?? []);
 
-        //sets are faster
-        const wantedTags = new Set(toEdit)
+        const toEdit: string[] = (editData.jointagscontent ?? []);
+        const wantedTags = new Set(toEdit);
         const currentTags = new Set(docTags);
 
         //Find what tags to remove
@@ -653,6 +657,7 @@ export function Documents() {
                 if (tag.tag_name === tagToAdd) {
                     tagID = tag.metid;
                 }
+                if (tag.tag_name === tagToAdd) tagID = tag.metid;
             }
             await api(`${DOMAIN}/assigntag`, {
                 method: 'POST',
@@ -668,6 +673,7 @@ export function Documents() {
                 if (tag.tag_name === tagToRemove) {
                     tagID = tag.metid;
                 }
+                if (tag.tag_name === tagToRemove) tagID = tag.metid;
             }
             await api(`${DOMAIN}/unassigntag`, {
                 method: 'DELETE',
@@ -678,19 +684,13 @@ export function Documents() {
 
         //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
         });
         setEditFile(null);
         setConfirmSaveOpen(false);
         setEditOpen(false);
         setEditError('');
         loadDocuments();
-    }
-
-
-    function closeEdit() {
-        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-        setEditOpen(false); setEditUrl(''); setEditUploadMode('file'); setEditError('');
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -699,6 +699,19 @@ export function Documents() {
         setEditOpen(false);
         setEditUrl('');
         setEditUploadMode('file');
+    }
+
+
+    function closeEdit() {
+        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username})
+        });
+        setEditOpen(false);
+        setEditUrl('');
+        setEditUploadMode('file');
+        setEditError('');
     }
 
     async function handleDelete() {
@@ -749,8 +762,6 @@ export function Documents() {
         setSelectedIds([]);
         loadDocuments();
     }
-
-
 
 
     function toggleSelect(id: number) {
@@ -892,12 +903,19 @@ export function Documents() {
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                        {filterTags.map(v => <Badge key={v} variant="filled" color="cyan"
+                                                     style={{cursor: 'pointer'}}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                        {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
+                                                     style={{cursor: 'pointer'}}
+                                                     onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>Document(s): {v} ×</Badge>)}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
                             setFilterType([]);
                             setFilterOwner([]);
                             setFilterCheckout([]);
+                            setFilterTags([]);
                         }}>Clear all</Badge>
                     </Group>
                 )}
@@ -940,7 +958,7 @@ export function Documents() {
                 {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
-                        {sortedFavorites.length > 0 && (
+                        {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
                             <Box>
                                 <Text fw={700} size="sm" c="yellow" mb="xs">Favorites</Text>
                                 <Table highlightOnHover withTableBorder withColumnBorders>
@@ -1072,7 +1090,8 @@ export function Documents() {
                                 ;
                             }}> Checkin Selected </Button>
                             {selectedHasNonFavorites &&
-                                <Button className="invert-hover" onClick={favoriteSelected}>★ Favorite All</Button>}
+                                <Button className="invert-hover" onClick={favoriteSelected}>★ Favorite
+                                    All</Button>}
                             {selectedHasFavorites &&
                                 <Button className="invert-hover" onClick={unfavoriteSelected}>☆ Unfavorite
                                     All</Button>}
@@ -1104,18 +1123,32 @@ export function Documents() {
                         </div>
                         <div className="flex-1 overflow-auto">
                             {pickRenderer(viewerUrl ?? '') === 'docviewer' && (
-                                <DocViewer documents={[{ uri: viewerUrl, fileName: viewerLabel }]} pluginRenderers={DocViewerRenderers} style={{ height: '100%', minHeight: '600px' }} />
+                                <DocViewer documents={[{uri: viewerUrl, fileName: viewerLabel}]}
+                                           pluginRenderers={DocViewerRenderers}
+                                           style={{height: '100%', minHeight: '600px'}}/>
                             )}
                             {pickRenderer(viewerUrl ?? '') === 'player' && (
-                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', backgroundColor: '#000', padding: '20px' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    backgroundColor: '#000',
+                                    padding: '20px'
+                                }}>
                                     {['MP3', 'M4A', 'WAV', 'OGG'].includes(getExt(viewerUrl ?? '').toUpperCase()) ? (
-                                        <audio controls style={{ width: '100%', maxWidth: '600px' }}>
-                                            <source src={viewerUrl} />
+                                        <audio controls style={{width: '100%', maxWidth: '600px'}}>
+                                            <source src={viewerUrl}/>
                                             Your browser does not support the audio element.
                                         </audio>
                                     ) : (
-                                        <video controls style={{ width: '100%', height: '100%', maxHeight: '100%', objectFit: 'contain' }}>
-                                            <source src={viewerUrl} />
+                                        <video controls style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            maxHeight: '100%',
+                                            objectFit: 'contain'
+                                        }}>
+                                            <source src={viewerUrl}/>
                                             Your browser does not support the video element.
                                         </video>
                                     )}
@@ -1135,24 +1168,32 @@ export function Documents() {
                                  onChange={setFilterStatus}
                                  data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                  clearable/>
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType} onChange={setFilterType} data={fileTypeOptions} searchable clearable />
-                    
+                    <MultiSelect label="File Type" placeholder="All types" value={filterType}
+                                 onChange={setFilterType} data={fileTypeOptions}
+                                 searchable clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner}
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
                     <MultiSelect label="Checkout Status" placeholder="All Documents" value={filterCheckout}
                                  onChange={(val) => setFilterCheckout(val ?? 'all')}
-                                 data={[{value: 'all', label: 'All'}, {
+                                 data={[{
                                      value: 'available',
                                      label: 'Available'
-                                 }, {value: 'checked_out', label: 'Checked Out'},]}
+                                 }, {
+                                     value: 'checked out',
+                                     label: 'Checked Out'
+                                 },]}
                                  clearable/>
+                    <MultiSelect label="Content Tags" placeholder="Any Tags" value={filterTags}
+                                 onChange={setFilterTags} data={getArrayTags()}
+                                 clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
                             setFilterType([]);
                             setFilterOwner([]);
+                            setFilterCheckout([]);
                         }}>Clear All</Button>
                         <Button className="invert-hover" onClick={() => setFilterOpen(false)}>Apply</Button>
                     </Group>
@@ -1252,7 +1293,10 @@ export function Documents() {
             </Modal>
 
             {/* add modal */}
-            <Modal opened={addOpen} onClose={() => {setAddOpen(false); setAddError('');}} title="Add New Document" size="lg">
+            <Modal opened={addOpen} onClose={() => {
+                setAddOpen(false);
+                setAddError('');
+            }} title="Add New Document" size="lg">
                 <Stack>
                     <Text fw={600}>Document Details</Text>
                     <TextInput label="Name of Document" value={addData.name}
@@ -1288,8 +1332,10 @@ export function Documents() {
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
                         <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
-                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
-                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
+                                     data={getArrayTags()}/>
+                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                                onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
@@ -1302,15 +1348,18 @@ export function Documents() {
                     </Group>
                     <Group grow>
                         <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
-                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})} />
-                        <TextInput label="Review Date" type="date" value={addData.review_date} 
-                                   onChange={e => setAddData({...addData, review_date: e.target.value})} />
+                                   onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
+                        <TextInput label="Review Date" type="date" value={addData.review_date}
+                                   onChange={e => setAddData({...addData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {addError && (
-                            <ErrorMessage message={addError} />
+                            <ErrorMessage message={addError}/>
                         )}
-                        <Button className="invert-hover-outline" onClick={() => {setAddOpen(false); setAddError('');}} >✕ Cancel Changes</Button>
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAddOpen(false);
+                            setAddError('');
+                        }}>✕ Cancel Changes</Button>
                         <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
                     </Group>
                 </Stack>
@@ -1349,13 +1398,15 @@ export function Documents() {
                                   onChange={val => setEditData({...editData, owner: val ?? ''})}
                                   data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}/>
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly/>}
-                    <MultiSelect label="Job Position" value={editData.persona}
-                                 onChange={val => setEditData({...editData, persona: val})} data={roles}
+                    <MultiSelect label="Job Position" value={editData.persona.filter(p => p !== 'Admin')}
+                                 onChange={val => setEditData({...editData, persona: val})} data={roles.filter(r => r !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
                         <MultiSelect w="75%" label="Tags" value={editData.jointagscontent}
-                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})} data={getArrayTags()}  />
-                        <Button className="invert-hover" style={{ width:'20%', padding: '0 0px' }} onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                                     onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})}
+                                     data={getArrayTags()}/>
+                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                                onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
@@ -1374,7 +1425,7 @@ export function Documents() {
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {editError && (
-                            <ErrorMessage message={editError} />
+                            <ErrorMessage message={editError}/>
                         )}
                         <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
                         <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
@@ -1383,7 +1434,9 @@ export function Documents() {
             </Modal>
 
             {/* Advanced tag management (create and delete) tags modal */}
-            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)} title="Advanced Tag Management" size="lg">
+            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)}
+                   title="Advanced Tag Management"
+                   size="lg">
                 <Stack>
                     <ManageTags/>
                     <Group justify="flex-end" mt="md">
@@ -1415,10 +1468,6 @@ export function Documents() {
             />
 
             {/* bulk upload modal */}
-            <Modal opened={bulkOpen} onClose={() => {
-                setBulkOpen(false);
-                setStagedFiles([]);
-            }} title="Bulk Upload" size="1200px">
             <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
@@ -1438,7 +1487,6 @@ export function Documents() {
                                         <Table.Th w={150}>Persona</Table.Th>
                                         <Table.Th w={150}>Content Type</Table.Th>
                                         <Table.Th w={150}>Status</Table.Th>
-                                        <Table.Th w={150}>Dates</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
@@ -1455,33 +1503,21 @@ export function Documents() {
                                                         onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
                                                     : <TextInput value={staged.owner} readOnly/>}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles} value={staged.persona}
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona}
                                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                                    disabled={persona !== 'Admin'}/></Table.Td>
                                             <Table.Td><Select data={['Reference', 'Workflow']}
                                                               value={staged.content_type}
                                                               onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
                                             <Table.Td><Select
-                                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
+                                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
-                                            <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
-                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
                                                     <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
                                                     <TextInput type="date" label="Review Date" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
-                                                    <TextInput type="date" label="Modified" size="xs"
-                                                               value={staged.date_modified}
-                                                               onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
-                                                    <TextInput type="date" label="Expires" size="xs"
-                                                               value={staged.expiration_date}
-                                                               onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                    <TextInput type="date" label="Expires" size="xs"
-                                                               value={staged.review_date}
-                                                               onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
                                                 </Stack>
                                             </Table.Td>
                                             <Table.Td><ActionIcon color="var(--color-neutral-red)"
@@ -1494,13 +1530,15 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
+                        {addError && (
+                            <ErrorMessage message={addError} />
+                        )}
                         <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }}>✕ Cancel</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
                             + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
                         </Button>
                     </Group>
                 </Stack>
-            </Modal>
             </Modal>
         </>
     );
