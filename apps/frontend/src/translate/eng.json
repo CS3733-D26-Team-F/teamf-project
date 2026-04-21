@@ -146,5 +146,11 @@
   "all_fields": "Please fill in all fields",
   "search_doc": "Search for documents...",
   "doc_name": "Document Name",
-  "doc_tag": "Document Tags"
+  "doc_tag": "Document Tags",
+  "restore": "Restore in progress",
+  "trash": "Move to trash",
+  "trash_message": "Documents whose expiration date has passed. Restore them to put them back in active circulation, or move them to trash.",
+  "archive_message": "Documents that have been manually archived. Restore them to put them back in active circulation.",
+  "theme": "Red-Green Colorblind Theme"
+
 }

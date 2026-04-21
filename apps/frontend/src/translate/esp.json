@@ -145,6 +145,12 @@
   "all_fields": "Por favor, complete todos los campos.",
   "search_doc": "Buscar documentos...",
   "doc_name": "Nombre del documento",
-  "doc_tag": "Etiquetas del documento"
+  "doc_tag": "Etiquetas del documento",
+  "restore": "Restauración en curso",
+  "trash": "Mover a la papelera",
+  "trash_message": "Documentos cuya fecha de vencimiento ha expirado. Restáurelos para volver a ponerlos en circulación activa o muévalos a la papelera.",
+  "archive_message": "Documentos que han sido archivados manualmente. Restáurelos para volver a ponerlos en circulación activa.",
+  "theme": "Tema para daltónicos rojo-verde"
+
 
 }

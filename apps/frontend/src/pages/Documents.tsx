@@ -998,10 +998,10 @@ export function Documents() {
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
                     <MultiSelect label={t('checkout_status')} placeholder={t('all_doc')} value={filterCheckout}
                                  onChange={(val) => setFilterCheckout(val ?? 'all')}
-                                 data={[{value: 'all', label: t('all')}, {
+                                 data={[{
                                      value: 'available',
                                      label: t('available')
-                                 }, {value: 'checked_out', label: t('checked_out')},]}
+                                 }, {value: 'checked out', label: t('checked_out')},]}
                                  clearable/>
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
@@ -1009,6 +1009,7 @@ export function Documents() {
                             setFilterStatus([]);
                             setFilterType([]);
                             setFilterOwner([]);
+                            setFilterCheckout([]);
                         }}>Clear All</Button>
                         <Button className="invert-hover" onClick={() => setFilterOpen(false)}>Apply</Button>
                     </Group>

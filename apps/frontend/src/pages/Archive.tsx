@@ -12,6 +12,7 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import { useApi } from "../../src/components/api.ts";
 
 import { PageTitle } from "../components/Title.tsx"
+import {useTranslation} from "react-i18next";
 
 type ContentForm = {
     id: number;
@@ -34,6 +35,7 @@ interface DocTableProps {
 }
 
 function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
+    const {t} = useTranslation();
     if (docs.length === 0) {
         return <Text c="dimmed" ta="center" py="xl">No documents here.</Text>;
     }
@@ -42,13 +44,13 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
             <Table highlightOnHover withTableBorder withColumnBorders>
                 <Table.Thead>
                     <Table.Tr>
-                        <Table.Th>Document Name</Table.Th>
-                        <Table.Th>Persona</Table.Th>
-                        <Table.Th>Owner</Table.Th>
-                        <Table.Th>Content Type</Table.Th>
-                        <Table.Th>Date Modified</Table.Th>
-                        <Table.Th>Expiration Date</Table.Th>
-                        <Table.Th>Actions</Table.Th>
+                        <Table.Th>{t('doc_name')}</Table.Th>
+                        <Table.Th>{t('persona')}</Table.Th>
+                        <Table.Th>{t('owner')}</Table.Th>
+                        <Table.Th>{t('content_type')}</Table.Th>
+                        <Table.Th>{t('date_modified')}</Table.Th>
+                        <Table.Th>{t('expiration_date')}</Table.Th>
+                        <Table.Th>{t('actions')}</Table.Th>
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -64,13 +66,13 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
                             <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
                             <Table.Td>
                                 <Group gap="xs">
-                                    <Tooltip label="Restore to In Progress">
+                                    <Tooltip label= {t('restore')}>
                                         <ActionIcon variant="subtle" color="var(--color-yale-blue)" onClick={() => onRestore(doc.id)}>
                                             <IconRestore size={16} />
                                         </ActionIcon>
                                     </Tooltip>
                                     {userPersona === 'Admin' && (
-                                        <Tooltip label="Move to Trash">
+                                        <Tooltip label={t('trash')}>
                                             <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onTrash(doc.id)}>
                                                 <IconTrash size={16} />
                                             </ActionIcon>
@@ -87,6 +89,7 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
 }
 
 export function Archive() {
+    const {t} = useTranslation();
     const persona = localStorage.getItem('persona');
     const [expired, setExpired] = useState<ContentForm[]>([]);
     const [archived, setArchived] = useState<ContentForm[]>([]);
@@ -137,22 +140,22 @@ export function Archive() {
         <>
             <Header />
             <Box p="md">
-                <PageTitle title="Archive" />
+                <PageTitle title= {t('archive')} />
 
                 <Tabs defaultValue="expired">
                     <Tabs.List mb="md">
                         <Tabs.Tab value="expired" leftSection={<IconClock size={16} />}>
-                            Expired ({expired.length})
+                            {t('expired')} ({expired.length})
                         </Tabs.Tab>
                         <Tabs.Tab value="archived" leftSection={<IconArchive size={16} />}>
-                            Archived ({archived.length})
+                            {t('archived')} ({archived.length})
                         </Tabs.Tab>
                     </Tabs.List>
 
                     <Tabs.Panel value="expired">
                         <Stack gap="sm">
                             <Text size="sm" c="dimmed">
-                                Documents whose expiration date has passed. Restore them to put them back in active circulation, or move them to trash.
+                                {t('trash_message')}
                             </Text>
                             <DocTable docs={expired} userPersona={persona} onRestore={restoreDoc} onTrash={trashDoc} />
                         </Stack>
@@ -161,7 +164,7 @@ export function Archive() {
                     <Tabs.Panel value="archived">
                         <Stack gap="sm">
                             <Text size="sm" c="dimmed">
-                                Documents that have been manually archived. Restore them to put them back in active circulation.
+                                {t('archive_message')}
                             </Text>
                             <DocTable docs={archived} userPersona={persona} onRestore={restoreDoc} onTrash={trashDoc} />
                         </Stack>
