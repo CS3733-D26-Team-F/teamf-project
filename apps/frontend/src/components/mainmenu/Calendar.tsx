@@ -16,7 +16,7 @@ export function Calendar() {
             setCalendarData(fileData);
         };
             loadDocs();
-    }, [api]);
+    }, []);
 
     // Build events from expiration_date
     const reviewDates = calendarData
