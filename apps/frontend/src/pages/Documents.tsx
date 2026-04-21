@@ -64,8 +64,9 @@ export function Documents() {
     const [filterOwner, setFilterOwner] = useState<string[]>([]);
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
+    const [filterTags, setFilterTags] = useState<string[]>([]);
 
-    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterCheckout.length;
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length;
 
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -307,12 +308,8 @@ export function Documents() {
 
     function loadTags() {
         api(`${DOMAIN}/getTags`)
-            .then(res => {
-                const toreturn = res.json()
-                return toreturn
-            })
+            .then(res => res.json())
             .then(data => {
-                console.log("tags", data.data)
                 setCreatedTags(data.data);
             }).catch(err => console.log("Error was", err));
     }
@@ -358,7 +355,10 @@ export function Documents() {
 
     const filtered = useMemo(() => {
         let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
-        if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
+        if (search) result = result.filter(d =>
+            d.name.toLowerCase().includes(search.toLowerCase()) ||
+            d.owner.toLowerCase().includes(search.toLowerCase()) ||
+            (d.jointagscontent ?? []).some(p => p.toLowerCase().includes(search.toLowerCase())));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => {
@@ -384,6 +384,7 @@ export function Documents() {
                 result = result.filter(d => !checkedOutMap[d.id]);
             }
         }
+        if (filterTags.length > 0) result = result.filter(d => (d.jointagscontent ?? []).some(p => filterTags.includes(p)));
 
         if (sortField) {
             result.sort((a, b) => {
@@ -407,7 +408,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, checkedOutMap]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, filterTags, checkedOutMap, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => d.is_favorite);
@@ -939,15 +940,19 @@ export function Documents() {
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                        {filterTags.map(v => <Badge key={v} variant="filled" color="cyan"
+                                                     style={{cursor: 'pointer'}}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
                         {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
-                                                        style={{cursor: 'pointer'}}
-                                                        onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>Document(s): {v} ×</Badge>)}
+                                                     style={{cursor: 'pointer'}}
+                                                     onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>Document(s): {v} ×</Badge>)}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
                             setFilterType([]);
                             setFilterOwner([]);
                             setFilterCheckout([]);
+                            setFilterTags([]);
                         }}>Clear all</Badge>
                     </Group>
                 )}
@@ -1201,9 +1206,8 @@ export function Documents() {
                                  data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                  clearable/>
                     <MultiSelect label="File Type" placeholder="All types" value={filterType}
-                                 onChange={setFilterType}
-                                 data={fileTypeOptions} searchable clearable/>
-
+                                 onChange={setFilterType} data={fileTypeOptions}
+                                 searchable clearable />
                     <MultiSelect label="Owner" placeholder="All owners" value={filterOwner}
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
@@ -1217,6 +1221,9 @@ export function Documents() {
                                      label: 'Checked Out'
                                  },]}
                                  clearable/>
+                    <MultiSelect label="Content Tags" placeholder="Any Tags" value={filterTags}
+                                 onChange={setFilterTags} data={getArrayTags()}
+                                 clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
