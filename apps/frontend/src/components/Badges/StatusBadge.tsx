@@ -8,7 +8,7 @@ interface StatusBadgesProps {
 }
 
 const statusColors: Record<string, string> = {
-    'In Progress': 'var(--color-sapphire',
+    'In Progress': 'var(--color-sapphire)',
     'Internal Review': 'var(--color-yale-blue)',
     'Client Review': 'blue',
     'Approved': 'var(--color-fresh-sky)',

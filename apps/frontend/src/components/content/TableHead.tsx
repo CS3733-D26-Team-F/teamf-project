@@ -43,7 +43,9 @@ export function TableHead({ onSort, currentField, currentDir, onSelectAll, allCh
                 <SortTh field="owner" label="Owner" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="content_type" label="Content Type" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="status" label="Status" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="jointagscontent" label="Document Tags" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="date_modified" label="Date Modified" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="review_date" label="Review Date" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="expiration_date" label="Expiration" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <Table.Th>Actions</Table.Th>
             </Table.Tr>

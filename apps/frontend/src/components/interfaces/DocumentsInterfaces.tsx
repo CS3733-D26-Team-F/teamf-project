@@ -8,10 +8,12 @@ export type ContentForm = {
     date_modified: string;
     expiration_date: string;
     content_type: string;
+    review_date: string;
     status: string;
     is_favorite: boolean;
     is_deleted: boolean;
     deleted_at: string | null;
+    jointagscontent: string[];
 };
 
 export type StagedFile = {
@@ -25,6 +27,7 @@ export type StagedFile = {
     status: string;
     date_modified: string;
     expiration_date: string;
+    review_date: string;
     uploadType: 'file' | 'url';
 };
 
@@ -32,6 +35,11 @@ export type Employee = {
     empid: number;
     username: string;
     persona: string;
+};
+
+export type Metatag = {
+    metid: number;
+    tag_name: string;
 };
 
 export interface RowCallbacks {

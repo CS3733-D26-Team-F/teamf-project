@@ -1,6 +1,8 @@
 import { Header } from "../components/Header";
 import { Hero } from "../components/mainmenu/Hero.tsx";
 import { StatsDashboard } from "../components/mainmenu/StatsDashboard.tsx";
+import {AreaChart} from "../components/mainmenu/AreaChart.tsx";
+import { Calendar } from "../components/mainmenu/Calendar.tsx";
 
 export function MainMenu() {
             return (
@@ -10,7 +12,10 @@ export function MainMenu() {
                 </title>
                 <Header />
                 <Hero />
+                <br/>
+                <Calendar />
                 <StatsDashboard />
+                <AreaChart/>
             </>
         )
 }

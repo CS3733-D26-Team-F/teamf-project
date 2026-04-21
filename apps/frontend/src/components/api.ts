@@ -20,7 +20,13 @@ export const useApi = () => {
 
         });
 
-        if (!res.ok) throw new Error("API error");
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            const error = new Error(body.error || "API error") as any;
+            error.status = res.status;
+            error.body = body;
+            throw error;
+        }
 
         return res;
     };
