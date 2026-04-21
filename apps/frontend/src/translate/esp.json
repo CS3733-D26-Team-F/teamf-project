@@ -136,6 +136,15 @@
   "date": "Fechas",
   "modified": "Modificado",
   "expires": "Caduca",
-  "review_by": "Reseña de"
+  "review_by": "Reseña de",
+  "checkout_message":"Este documento es revisado por",
+  "upload_error": "Por favor, suba al menos un archivo.",
+  "missing_error": "Por favor, complete todos los menús desplegables y las fechas de cada archivo.",
+  "upload_error_first": "Por favor, suba un archivo.",
+  "url_error": "Por favor, introduzca una URL.",
+  "all_fields": "Por favor, complete todos los campos.",
+  "search_doc": "Buscar documentos...",
+  "doc_name": "Nombre del documento",
+  "doc_tag": "Etiquetas del documento"
 
 }

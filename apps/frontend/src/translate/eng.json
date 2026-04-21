@@ -137,6 +137,14 @@
   "file_name": "File Name",
   "modified": "Modified",
   "expires": "Expires",
-  "review_by": "Review By"
-
+  "review_by": "Review By",
+  "checkout_message":"This document is checked out by",
+  "upload_error": "Please upload at least one file.",
+  "missing_error": "Please fill in all dropdowns and dates for every file.",
+  "upload_error_first": "Please upload a file.",
+  "url_error": "Please enter a URL.",
+  "all_fields": "Please fill in all fields",
+  "search_doc": "Search for documents...",
+  "doc_name": "Document Name",
+  "doc_tag": "Document Tags"
 }

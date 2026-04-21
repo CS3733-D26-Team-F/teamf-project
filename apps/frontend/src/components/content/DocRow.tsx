@@ -16,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 
 
+
 interface DocRowProps extends RowCallbacks {
     doc: ContentForm;
     isSelected: boolean;
@@ -70,7 +71,7 @@ export function DocRow({
             <Table.Td onClick={e => e.stopPropagation()}>
                 <Group gap="xs">
                     {isSomeoneCheckout ? (
-                        <Tooltip label={` This document is checked out by ${checkedOutBy}`}>
+                        <Tooltip label={`This document is checked out by ${checkedOutBy}`}>
                             <ActionIcon variant="subtle" color="gray" disabled>
                                 <IconLock size={16}/>
                             </ActionIcon>

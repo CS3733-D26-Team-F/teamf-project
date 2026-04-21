@@ -330,8 +330,22 @@ export function Documents() {
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
         if (filterCheckout.length > 0) {
-            if (filterCheckout.includes('checked_out')) result = result.filter(d => !!checkedOutMap[d.id]);
-            if (filterCheckout.includes('available')) result = result.filter(d => !checkedOutMap[d.id]);
+            const showCheckout = filterCheckout.includes('checked out');
+            const showAvailable = filterCheckout.includes('available');
+
+            if (showCheckout && showAvailable) {
+                result = result.sort((a, b) => {
+                    const firstChecked = !!checkedOutMap[a.id];
+                    const secondChecked = !!checkedOutMap[b.id];
+                    if (firstChecked && !secondChecked) return -1;
+                    if (!firstChecked && secondChecked) return 1;
+                    return 0;
+                });
+            } else if (showCheckout) {
+                result = result.filter(d => !!checkedOutMap[d.id]);
+            } else if (showAvailable) {
+                result = result.filter(d => !checkedOutMap[d.id]);
+            }
         }
 
         if (sortField) {
@@ -356,7 +370,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, checkedOutMap, documents, sortField, sortDir, persona]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, checkedOutMap]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => d.is_favorite);
@@ -373,7 +387,17 @@ export function Documents() {
         });
     })();
 
-    const nonFavorites = filtered.filter(d => !d.is_favorite);
+    const nonFavorites = filtered
+        .filter(d => !d.is_favorite)
+        .sort((a, b) => {
+            if (filterCheckout.includes('checked out') && filterCheckout.includes('available')) {
+                const aChecked = !!checkedOutMap[a.id];
+                const bChecked = !!checkedOutMap[b.id];
+                if (aChecked && !bChecked) return -1;
+                if (!aChecked && bChecked) return 1;
+            }
+            return 0;
+        });
     const allSelected = selectedIds.length === nonFavorites.length && nonFavorites.length > 0;
     const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
     const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
@@ -383,15 +407,15 @@ export function Documents() {
 
     async function handleAdd() {
         if (uploadMode === 'file' && !addFile) {
-            alert('Please upload a file.');
+            alert(t('upload_error_first'));
             return;
         }
         if (uploadMode === 'url' && !addUrl) {
-            alert('Please enter a URL.');
+            alert(t('url_error'));
             return;
         }
         if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.review_date || !addData.content_type || !addData.status) {
-            alert('Please fill in all fields.');
+            alert(t('all_fields'));
             return;
         }
         const formPayload = new FormData();
@@ -451,12 +475,12 @@ export function Documents() {
 
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) {
-            alert('Please upload at least one file.');
+            alert(t('upload_error'));
             return;
         }
         const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
         if (missingData) {
-            alert('Please fill in all dropdowns and dates for every file.');
+            alert(t('missing_error'));
             return;
         }
         for (const sf of stagedFiles) {
@@ -713,7 +737,7 @@ export function Documents() {
                         )}
                     </Group>
                     <Group gap="sm">
-                        <TextInput placeholder="Search for document..." leftSection={<IconSearch size={16}/>}
+                        <TextInput placeholder={t('search_doc')} leftSection={<IconSearch size={16}/>}
                                    value={search} onChange={e => setSearch(e.target.value)} w={250}/>
                     </Group>
                 </Group>
@@ -734,6 +758,9 @@ export function Documents() {
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('owner')}: {v} ×</Badge>)}
+                        {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
+                                                        style={{cursor: 'pointer'}}
+                                                        onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>{t('documents')}: {v} ×</Badge>)}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
@@ -782,7 +809,7 @@ export function Documents() {
                 {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
-                        {sortedFavorites.length > 0 && (
+                        {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
                             <Box>
                                 <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
                                 <Table highlightOnHover withTableBorder withColumnBorders>
@@ -1298,7 +1325,7 @@ export function Documents() {
                         }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t(documents)}
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
                         </Button>
                     </Group>
                 </Stack>
