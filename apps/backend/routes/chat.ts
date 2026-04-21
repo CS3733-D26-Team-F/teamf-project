@@ -440,7 +440,7 @@ router.post('/api/chat', async (req, res) => {
 
                     return { success: true, docName: doc.name, isFavorite, message: `${isFavorite ? 'Favorited' : 'Unfavorited'} document: ${doc.name}` };
                 }
-            })
+            }),
 
             changeTheme: tool({
                 description: 'Change the UI theme for the user. Supports "high-visibility" (red-green colorblind friendly) or "default" theme.',
