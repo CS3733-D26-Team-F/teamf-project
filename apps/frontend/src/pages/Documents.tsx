@@ -1487,7 +1487,7 @@ export function Documents() {
                                                         onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
                                                     : <TextInput value={staged.owner} readOnly/>}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role )} value={staged.persona}
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona}
                                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                                    disabled={persona !== 'Admin'}/></Table.Td>
                                             <Table.Td><Select data={['Reference', 'Workflow']}
