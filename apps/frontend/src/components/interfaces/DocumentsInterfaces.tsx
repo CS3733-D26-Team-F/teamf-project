@@ -16,7 +16,7 @@ export type ContentForm = {
 
 export type StagedFile = {
     id: string;
-    file: File;
+    file: File | null;
     url: string;
     name: string;
     owner: string;
@@ -25,6 +25,7 @@ export type StagedFile = {
     status: string;
     date_modified: string;
     expiration_date: string;
+    uploadType: 'file' | 'url';
 };
 
 export type Employee = {

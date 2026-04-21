@@ -344,10 +344,11 @@ export function Documents() {
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
 
-            if(addFile) {
+            if (sf.uploadType === 'file' && sf.file) {
                 formPayload.append('file', sf.file);
-            }else {
-                formPayload.append('url', normalizeUrl(sf.url))
+            } else {
+                formPayload.append('url', normalizeUrl(sf.url));
+                formPayload.append('content_type', 'URL');
             }
             await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         }
@@ -881,11 +882,17 @@ export function Documents() {
             <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Add Files</Text>
-                        <input type="file" multiple onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
+                        <Text size="sm" fw={500} mb={4}>Add Files or URLs</Text>
+                        <Group>
+                            <input type="file" multiple onChange={e => {
+                                handleBulkFileSelect(Array.from(e.target.files ?? []));
+                                e.target.value = '';
+                            }}/>
+                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
+                        </Group>
                     </Box>
                     {stagedFiles.length > 0 && (
-                        <Box style={{ overflowX: 'auto' }}>
+                        <Box style={{overflowX: 'auto'}}>
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <Table.Thead>
                                     <Table.Tr>
@@ -901,7 +908,12 @@ export function Documents() {
                                 <Table.Tbody>
                                     {stagedFiles.map(staged => (
                                         <Table.Tr key={staged.id}>
-                                            <Table.Td><TextInput value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} /></Table.Td>
+                                            <Table.Td>
+                                                {staged.uploadType === 'url'
+                                                    ? <TextInput placeholder="https://example.com" value={staged.url} onChange={e => updateStagedFile(staged.id, 'url', e.target.value)} />
+                                                    : <TextInput value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} />
+                                                }
+                                            </Table.Td>
                                             <Table.Td>
                                                 {persona === 'Admin'
                                                     ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
