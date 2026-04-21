@@ -57,7 +57,7 @@ export function Calendar() {
 
     return (
         <div style={{ width: 1200, margin: "0 auto" }}>
-            <Schedule events={events} />
+            <Schedule events={events} defaultView="month"/>
         </div>
     );
 }
