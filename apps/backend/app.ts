@@ -2,8 +2,6 @@ import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 
-
-
 import employeeRoutes from './routes/employees.js';
 import contentRoutes from './routes/contentforms.js';
 import loginRoutes from './routes/login.js';
