@@ -1,4 +1,5 @@
 export type ContentForm = {
+    folder: string;
     id: number;
     name: string;
     file_name: string;
@@ -10,10 +11,20 @@ export type ContentForm = {
     content_type: string;
     review_date: string;
     status: string;
-    folder: string;
+    folder_id: number | null;
     is_favorite: boolean;
     is_deleted: boolean;
     deleted_at: string | null;
+};
+
+export type Folder = {
+    id: number;
+    name: string;
+    owner: string;
+    persona: string[]; // Access control based on user roles, can be null or empty for public folders or specific access lists
+    associated_docsIDs: number[]; // List of document IDs that are contained within this folder
+    date_modified: string;
+    url: string;
 };
 
 export type StagedFile = {
@@ -24,7 +35,7 @@ export type StagedFile = {
     persona: string[];
     content_type: string;
     status: string;
-    folder: string;
+    folder_id: number | null;
     date_modified: string;
     expiration_date: string;
     review_date: string;

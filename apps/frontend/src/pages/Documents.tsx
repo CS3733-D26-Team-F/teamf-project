@@ -24,13 +24,15 @@ import {ConfirmModal} from "../components/content/ConfirmModal"
 import {useApi} from "../../src/components/api.ts";
 import type {
     RowCallbacks
-    , StagedFile, ContentForm, Employee
+    , StagedFile, ContentForm, Employee,
+    Folder
 } from "../components/interfaces/DocumentsInterfaces.tsx"
 import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import { Folders } from './Folders.tsx';
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -47,8 +49,9 @@ export function Documents() {
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
     const [documents, setDocuments] = useState<ContentForm[]>([]);
-    const [folders, setFolders] = useState<string[]>([]);
-    const [activeFolder, setActiveFolder] = useState<string>('All');
+    const [folders, setFolders] = useState<Folder[]>([]);
+    const [folderMap, setFolderMap] = useState<Record<number, Folder>>({});
+    const [folderContentsMap, setFolderContentsMap] = useState<Record<number, number[]>>({});
     const [folderedIds, setFolderedIds] = useState<number[]>([]);
     
 
@@ -60,6 +63,13 @@ export function Documents() {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
     const [selectedFolderedIds, setSelectedFolderedIds] = useState<number[]>([]);
+    const [folderName, setFolderName] = useState<string>('');
+    const [folderPersona, setFolderPersona] = useState<string[]>([]);
+    const [folderOwner, setFolderOwner] = useState<number[]>([]); //owner empid
+    const [createFolderOpen, setCreateFolderOpen] = useState(false);
+    const [editFolderOpen, setEditFolderOpen] = useState(false);
+
+
 
 
     const [filterPersona, setFilterPersona] = useState<string[]>([]);
@@ -143,6 +153,8 @@ export function Documents() {
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
 
+    const[addFolderOpen, setAddFolderOpen] = useState(false);
+
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
             id: Math.random().toString(36).substring(7),
@@ -152,10 +164,10 @@ export function Documents() {
             persona: persona !== 'Admin' ? [persona ?? ''] : [],
             content_type: '',
             status: '',
+            folder_id: null,
             date_modified: today,
             review_date: '',
-            expiration_date: '',
-            folder:''
+            expiration_date: ''
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
     }
@@ -487,7 +499,9 @@ export function Documents() {
             formPayload.append('review_date', sf.review_date);
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
-            formPayload.append('folder', sf.folder);
+            if (sf.folder_id !== null) {
+                formPayload.append('folder_id', String(sf.folder_id));
+            }
             formPayload.append('file', sf.file);
             await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
         }
@@ -496,9 +510,6 @@ export function Documents() {
         loadDocuments();
     }
 
-    async function createFolder(){
-
-    }
 
     function openEdit(doc: ContentForm) {
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
@@ -719,10 +730,14 @@ export function Documents() {
                                         className="invert-hover">
                                     Add Document
                                 </Button>
+
                                 <Button variant="default" leftSection={<IconPlus size={16}/>}
                                         onClick={() => setBulkOpen(true)} className="invert-hover">
                                     Bulk Upload
                                 </Button>
+
+                                <Button variant="default" leftSection={<IconPlus size={16}/>} onClick={() => setAddFolderOpen(true)} className="invert-hover"> Create Folder </Button>
+                                
                             </>
                         )}
                         <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'}
@@ -1004,6 +1019,25 @@ export function Documents() {
                 </div>
             )}
 
+            {/* Folder modal */}
+            <Modal opened={addFolderOpen} onClose={() => setAddFolderOpen(false)} title="Create Folder">
+                <Stack>
+                    <TextInput label="Folder Name" placeholder="Enter folder name" value={folderName} onChange={e => setFolderName(e.target.value)} />
+                    <MultiSelect label="Persona" placeholder="Select personas" value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
+                    <Group justify="flex-end">
+                        <Button className="invert-hover" onClick={() => {
+                            if (folderName.trim() !== '') {
+                                const newFolder = createFolderOpen(folderName, user?.id || '', folderPersona, [], new Date().toISOString(), '');
+                                setFolders([...folders, newFolder]);
+                                setAddFolderOpen(false);
+                                setFolderName('');
+                                setFolderPersona([]);
+                            }
+                        }}>Create</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
             {/* filter modal */}
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
                 <Stack>
@@ -1151,6 +1185,8 @@ export function Documents() {
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
+                    <Select label="Folder" value={addData.folder} onChange={val => setAddData({...addData, folder: val ?? ''})} 
+                        data={folders.map(f => ({label: f.name, value: f.name}))} clearable />
                     <Group grow>
                         <Select label="Content Type" value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
