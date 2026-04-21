@@ -148,5 +148,13 @@
   "trash": "Cuir sa bhosca bruscair",
   "trash_message": "Cáipéisí a bhfuil a ndáta éaga caite. Athchóirigh iad chun iad a chur ar ais i gcúrsaíocht ghníomhach, nó cuir sa bhosca bruscair iad.",
   "archive_message": "Cáipéisí a cartlannaíodh de láimh. Athchóirigh iad chun iad a chur ar ais i gcúrsaíocht ghníomhach.",
-  "theme": "Téama Dathdhallachta Dearg-Glas"
+  "theme": "Téama Dathdhallachta Dearg-Glas",
+  "clear_all": "Glan Uile",
+  "trash_delete": "Bosca Bruscair - Cáipéisí Scriosta",
+  "trash_search": "Cuardaigh de réir ainm nó úinéara...",
+  "trash_filter": "Scag de réir pearsan",
+  "trash_delete_doc": "Níl aon cháipéis scriosta ann",
+  "all_content": "Gach Ábhar",
+  "grid": "Gréine",
+  "list": "Liosta"
 }

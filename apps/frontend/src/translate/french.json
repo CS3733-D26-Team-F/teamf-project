@@ -148,5 +148,13 @@
   "trash": "Déplacer vers la corbeille",
   "trash_message": "Documents dont la date d'expiration est dépassée. Restaurez-les pour les remettre en circulation active, ou déplacez-les vers la corbeille.",
   "archive_message": "Documents qui ont été archivés manuellement. Restaurez-les pour les remettre en circulation active.",
-  "theme": "Thème daltonien rouge-vert"
+  "theme": "Thème daltonien rouge-vert",
+  "clear_all": "Tout effacer",
+  "trash_delete": "Corbeille - Documents supprimés",
+  "trash_search": "Rechercher par nom ou propriétaire...",
+  "trash_filter": "Filtrer par persona",
+  "trash_delete_doc": "Aucun document supprimé",
+  "all_content": "Tout le contenu",
+  "grid": "Grille",
+  "list": "Liste"
 }

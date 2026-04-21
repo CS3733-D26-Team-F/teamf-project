@@ -679,7 +679,7 @@ export function Documents() {
         .map(id => documents.find(d => d.id === id))
         .filter(Boolean) as ContentForm[];
 
-    const titleProp = persona === 'Admin' ? 'All content' :
+    const titleProp = persona === 'Admin' ? t('all_content'):
         persona === 'Underwriter' ? t('underwriter_title') :
             persona === 'Business Analyst' ? t('ba_title') :
                 persona === 'Actuarial Analyst' ? t('act_title') :
@@ -1011,8 +1011,8 @@ export function Documents() {
                             setFilterType([]);
                             setFilterOwner([]);
                             setFilterCheckout([]);
-                        }}>Clear All</Button>
-                        <Button className="invert-hover" onClick={() => setFilterOpen(false)}>Apply</Button>
+                        }}>{t('clear_all')}</Button>
+                        <Button className="invert-hover" onClick={() => setFilterOpen(false)}>{t('apply')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1022,13 +1022,13 @@ export function Documents() {
                 setTrashOpen(false);
                 setTrashSearch('');
                 setTrashSelected([]);
-            }} title="Trash — Deleted Documents" size="xl">
+            }} title= {t('trash_delete')} size="xl">
                 <Stack gap="sm">
                     <Group gap="sm">
-                        <TextInput placeholder="Search by name or owner..." leftSection={<IconSearch size={16}/>}
+                        <TextInput placeholder= {t('trash_search')} leftSection={<IconSearch size={16}/>}
                                    value={trashSearch} onChange={e => setTrashSearch(e.target.value)}
                                    style={{flex: 1}}/>
-                        <Select placeholder="Filter by persona" clearable value={trashPersonaFilter}
+                        <Select placeholder={t('trash_filter')} clearable value={trashPersonaFilter}
                                 onChange={val => setTrashPersonaFilter(val ?? '')} data={roles} w={180}/>
                     </Group>
                     {filteredTrash.length > 0 && (

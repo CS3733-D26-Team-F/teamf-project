@@ -150,7 +150,14 @@
   "trash": "Mover a la papelera",
   "trash_message": "Documentos cuya fecha de vencimiento ha expirado. Restáurelos para volver a ponerlos en circulación activa o muévalos a la papelera.",
   "archive_message": "Documentos que han sido archivados manualmente. Restáurelos para volver a ponerlos en circulación activa.",
-  "theme": "Tema para daltónicos rojo-verde"
-
+  "theme": "Tema para daltónicos rojo-verde",
+  "clear_all": "Borrar todo",
+  "trash_delete": "Papelera - Documentos eliminados",
+  "trash_search": "Buscar por nombre o propietario...",
+  "trash_filter": "Filtrar por persona",
+  "trash_delete_doc": "No hay documentos eliminados",
+  "all_content": "Todo el contenido",
+  "grid": "Cuadrícula",
+  "list": "Lista"
 
 }

@@ -151,6 +151,13 @@
   "trash": "Move to trash",
   "trash_message": "Documents whose expiration date has passed. Restore them to put them back in active circulation, or move them to trash.",
   "archive_message": "Documents that have been manually archived. Restore them to put them back in active circulation.",
-  "theme": "Red-Green Colorblind Theme"
-
+  "theme": "Red-Green Colorblind Theme",
+  "clear_all": "Clear all",
+  "trash_delete": "Trash - Deleted Documents",
+  "trash_search": "Search by name or owner...",
+  "trash_filter": "Filter by persona",
+  "trash_delete_doc": "No deleted Documents",
+  "all_content": "All Content",
+  "grid": "Grid",
+  "list": "List"
 }
