@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -7,8 +8,8 @@ import {
     Group, ActionIcon, Loader, Anchor, Button, Alert
 } from '@mantine/core';
 import { IconSend, IconTrash, IconPaperclip, IconX, IconMicrophone, IconSquare } from '@tabler/icons-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+//import ReactMarkdown from 'react-markdown';
+//import remarkGfm from 'remark-gfm';
 import { DOMAIN } from '../const';
 
 export function Chatbot() {

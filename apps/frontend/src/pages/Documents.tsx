@@ -31,6 +31,7 @@ import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import {useTranslation} from "react-i18next";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -69,6 +70,9 @@ export function Documents() {
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
+
+    // translator
+    const {t} = useTranslation();
 
     // Explicit Checkout/in set up
     const [checkedOutMap, setCheckedOutMap] = useState<Record<number, string>>({});
@@ -652,13 +656,13 @@ export function Documents() {
         .filter(Boolean) as ContentForm[];
 
     const titleProp = persona === 'Admin' ? 'All content' :
-        persona === 'Underwriter' ? 'Core Commercial Underwriter Resources' :
-            persona === 'Business Analyst' ? 'Business Analyst Resources' :
-                persona === 'Actuarial Analyst' ? 'Actuarial Analyst Resources' :
-                    persona === 'EXL Operations' ? 'EXL Operations Resources' :
+        persona === 'Underwriter' ? t('underwriter_title'):
+            persona === 'Business Analyst' ? t('ba_title') :
+                persona === 'Actuarial Analyst' ? t('act_title') :
+                    persona === 'EXL Operations' ? t('exl_title') :
                         'Documents';
 
-    if (isLoadingUser) return <div style={{padding: '20px'}}>Loading Profile...</div>;
+    if (isLoadingUser) return <div style={{padding: '20px'}}>{t('load_profile')}</div>;
 
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
@@ -666,7 +670,7 @@ export function Documents() {
     return (
         <>
             <title>
-                Documents - Hanover Insurance
+                {t('doc_title')}
             </title>
             <Header/>
             <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
@@ -683,11 +687,11 @@ export function Documents() {
                             <>
                                 <Button leftSection={<IconPlus size={16}/>} onClick={() => setAddOpen(true)}
                                         className="invert-hover">
-                                    Add Document
+                                    {t('add_doc')}
                                 </Button>
                                 <Button variant="default" leftSection={<IconPlus size={16}/>}
                                         onClick={() => setBulkOpen(true)} className="invert-hover">
-                                    Bulk Upload
+                                    {t('bulk_doc')}
                                 </Button>
                             </>
                         )}
@@ -695,7 +699,7 @@ export function Documents() {
                                 color={activeFilterCount > 0 ? 'blue' : undefined}
                                 leftSection={<IconFilter size={16}/>}
                                 onClick={() => setFilterOpen(true)} className="invert-hover">
-                            Filter by{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                            {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
                         </Button>
                         {persona === 'Admin' && (
                             <Button leftSection={<IconTrash size={16}/>} className="invert-hover-red"
@@ -704,7 +708,7 @@ export function Documents() {
                                         loadTrash();
                                         setTrashOpen(true);
                                     }}>
-                                Trash
+                                {t('trash_doc')}
                             </Button>
                         )}
                     </Group>
@@ -718,7 +722,7 @@ export function Documents() {
                     <Group mb="sm" gap="xs">
                         {filterPersona.map(v => <Badge key={v} variant="filled" color="blue"
                                                        style={{cursor: 'pointer'}}
-                                                       onClick={() => setFilterPersona(p => p.filter(x => x !== v))}>Persona: {v} ×</Badge>)}
+                                                       onClick={() => setFilterPersona(p => p.filter(x => x !== v))}>{t('persona')}: {v} ×</Badge>)}
                         {filterStatus.map(v => <StatusBadge
                             status={v}
                             filter
@@ -726,10 +730,10 @@ export function Documents() {
                         />)}
                         {filterType.map(v => <Badge key={v} variant="filled" color="violet"
                                                     style={{cursor: 'pointer'}}
-                                                    onClick={() => setFilterType(p => p.filter(x => x !== v))}>Type: {v} ×</Badge>)}
+                                                    onClick={() => setFilterType(p => p.filter(x => x !== v))}>{t('type')}: {v} ×</Badge>)}
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
-                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('owner')}: {v} ×</Badge>)}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
@@ -745,7 +749,7 @@ export function Documents() {
                     <Box mb="lg">
                         <Group gap={6} mb="xs">
                             <IconClock size={14} color="gray"/>
-                            <Text fw={700} size="sm" c="dimmed">Recently Viewed</Text>
+                            <Text fw={700} size="sm" c="dimmed">{t('recent_viewed')}</Text>
                         </Group>
                         <div style={{display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8}}>
                             {recentDocs.map(doc => (
@@ -780,7 +784,7 @@ export function Documents() {
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && (
                             <Box>
-                                <Text fw={700} size="sm" c="yellow" mb="xs">Favorites</Text>
+                                <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
                                 <Table highlightOnHover withTableBorder withColumnBorders>
                                     <TableHead onSort={toggleFavSort} currentField={favSortField}
                                                currentDir={favSortDir}
@@ -802,7 +806,7 @@ export function Documents() {
                             </Box>
                         )}
                         <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">All Documents</Text>
+                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
                                            onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
@@ -830,7 +834,7 @@ export function Documents() {
                         {sortedFavorites.length > 0 && (
                             <Box>
                                 <Group justify="space-between" mb="sm">
-                                    <Text fw={700} c="yellow">Favorites</Text>
+                                    <Text fw={700} c="yellow">{t('favorites')}</Text>
                                     <Checkbox label="Select all" checked={allFavSelected}
                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}
                                               onChange={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}/>
@@ -848,7 +852,7 @@ export function Documents() {
                         )}
                         <Box>
                             <Group justify="space-between" mb="sm">
-                                <Text fw={700} c="dimmed">All Documents</Text>
+                                <Text fw={700} c="dimmed">{t('all_doc')}</Text>
                                 <Checkbox label="Select all" checked={allSelected}
                                           indeterminate={selectedIds.length > 0 && !allSelected}
                                           onChange={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}/>
@@ -880,12 +884,12 @@ export function Documents() {
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
-                        <Text c="white">{selectedCount} selected</Text>
+                        <Text c="white">{selectedCount} {t('selected')}</Text>
                         <Group gap="sm">
                             <Button className="invert-hover" onClick={() => {
                                 setSelectedIds([]);
                                 setSelectedFavIds([]);
-                            }}>Deselect All</Button>
+                            }}>D{t('deselect_all')}</Button>
                             <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
@@ -895,20 +899,20 @@ export function Documents() {
                                         await new Promise(resolve => setTimeout(resolve, 500));
                                     }
                                 }
-                            }}>Download Selected</Button>
+                            }}>{t('download_all')}</Button>
                             <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
                                     await checkOutHandle(id);
                                 }
-                            }}> Checkout Selected</Button>
+                            }}> {t('checkout_selected')}</Button>
                             <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
                                     await checkInHandle(id)
                                 }
                                 ;
-                            }}> Checkin Selected </Button>
+                            }}> {t('checkin_selected')} </Button>
                             {selectedHasNonFavorites &&
                                 <Button className="invert-hover" onClick={favoriteSelected}>★ Favorite All</Button>}
                             {selectedHasFavorites &&
@@ -950,27 +954,27 @@ export function Documents() {
             )}
 
             {/* filter modal */}
-            <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Documents">
+            <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title={t('filter_documents')}>
                 <Stack>
-                    <MultiSelect label="Persona" placeholder="All personas" value={filterPersona}
+                    <MultiSelect label={t('persona')} placeholder={t('all_persona')} value={filterPersona}
                                  onChange={setFilterPersona} data={roles} clearable/>
-                    <MultiSelect label="Status" placeholder="All statuses" value={filterStatus}
+                    <MultiSelect label={t('status')} placeholder={t('all_status')}  value={filterStatus}
                                  onChange={setFilterStatus}
-                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
+                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
                                  clearable/>
-                    <MultiSelect label="File Type" placeholder="All types" value={filterType}
+                    <MultiSelect label={t('file_type')} placeholder={t('all_type')}  value={filterType}
                                  onChange={setFilterType}
                                  data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png', 'jpg', 'txt', 'link']}
                                  clearable/>
-                    <MultiSelect label="Owner" placeholder="All owners" value={filterOwner}
+                    <MultiSelect label={t('owner')} placeholder={t('all_owner')}  value={filterOwner}
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
-                    <MultiSelect label="Checkout Status" placeholder="All Documents" value={filterCheckout}
+                    <MultiSelect label={t('checkout_status')} placeholder={t('all_doc')}  value={filterCheckout}
                                  onChange={(val) => setFilterCheckout(val ?? 'all')}
-                                 data={[{value: 'all', label: 'All'}, {
+                                 data={[{value: 'all', label: t('all')}, {
                                      value: 'available',
-                                     label: 'Available'
-                                 }, {value: 'checked_out', label: 'Checked Out'},]}
+                                     label: t('available')
+                                 }, {value: 'checked_out', label: t('checked_out')},]}
                                  clearable/>
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
