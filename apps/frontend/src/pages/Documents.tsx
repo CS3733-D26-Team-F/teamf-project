@@ -96,6 +96,8 @@ export function Documents() {
         const newStaged: StagedFile[] = files.map(f => ({
             id: Math.random().toString(36).substring(7),
             file: f,
+            url: '',
+            uploadType: 'file' as const,
             name: f.name,
             owner: persona === 'Admin' ? '' : username ?? '',
             persona: persona !== 'Admin' ? [persona ?? ''] : [],
@@ -115,6 +117,22 @@ export function Documents() {
 
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
+    }
+
+    function addStagedUrl() {
+        setStagedFiles(prev => [...prev, {
+            id: Math.random().toString(36).substring(7),
+            file: null,
+            url: '',
+            uploadType: 'url' as const,
+            name: '',
+            owner: persona === 'Admin' ? '' : username ?? '',
+            persona: persona !== 'Admin' ? [persona ?? ''] : [],
+            content_type: 'URL',
+            status: '',
+            date_modified: today,
+            expiration_date: ''
+        }]);
     }
 
     const [addFile, setAddFile] = useState<File | null>(null);
@@ -304,7 +322,16 @@ export function Documents() {
     }
 
     async function handleBulkAdd() {
-        if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
+        if (stagedFiles.length === 0) {
+            if (uploadMode === 'file') {
+                alert('Please upload at least one file.');
+                return;
+            } else if (uploadMode === 'url') {
+                alert('Please enter at least one URL.');
+                return;
+            }
+        }
+
         const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
         if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
         for (const sf of stagedFiles) {
@@ -316,7 +343,12 @@ export function Documents() {
             formPayload.append('expiration_date', sf.expiration_date);
             formPayload.append('content_type', sf.content_type);
             formPayload.append('status', sf.status);
-            formPayload.append('file', sf.file);
+
+            if(addFile) {
+                formPayload.append('file', sf.file);
+            }else {
+                formPayload.append('url', normalizeUrl(sf.url))
+            }
             await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
         }
         setBulkOpen(false); setStagedFiles([]); loadDocuments();
