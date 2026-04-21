@@ -353,7 +353,10 @@ export function Documents() {
 
     const filtered = useMemo(() => {
         let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
-        if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
+        if (search) result = result.filter(d =>
+            d.name.toLowerCase().includes(search.toLowerCase()) ||
+            d.owner.toLowerCase().includes(search.toLowerCase()) ||
+            (d.jointagscontent ?? []).some(p => p.toLowerCase().includes(search.toLowerCase())));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => {
@@ -364,9 +367,6 @@ export function Documents() {
         if (filterCheckout.length > 0) {
             if (filterCheckout.includes ('checked_out')) result = result.filter (d => !! checkedOutMap[d.id]);
             if (filterCheckout.includes ('avilable')) result = result.filter (d => ! checkedOutMap[d.id]);
-        }
-        if (filterTags.length > 0) {
-            console.log("filtering")
         }
         if (filterTags.length > 0) result = result.filter(d => (d.jointagscontent ?? []).some(p => filterTags.includes(p)));
 
