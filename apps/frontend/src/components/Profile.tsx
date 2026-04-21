@@ -7,6 +7,7 @@ import { DOMAIN } from '../const';
 import { useDisclosure } from "@mantine/hooks";
 import ThemeToggle from "./ThemeToggle";
 
+// Lightweight fallback avatar shown when no custom profile picture is available.
 const placeholderProfilePicture =
     'data:image/svg+xml;charset=UTF-8,' +
     encodeURIComponent(
@@ -14,12 +15,15 @@ const placeholderProfilePicture =
     );
 
 export function Profile() {
+    // Initialize from localStorage so the header can render immediately on page load.
     const [profilePicture, setProfilePicture] = useState<string | undefined>(() => (
         localStorage.getItem('pfp_URL') ?? localStorage.getItem('profilePicture') ?? undefined
     ));
     const { user, logout } = useAuth0();
+    // Mantine disclosure hook manages the Settings modal open/close state.
     const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
 
+    // Prefer employee name, then username, then Auth0 nickname as the display label.
     const displayName =
         localStorage.getItem('first_name') && localStorage.getItem('first_name') !== 'undefined'
             ? localStorage.getItem('first_name')
@@ -28,12 +32,14 @@ export function Profile() {
                 : user?.nickname || 'User';
 
     useEffect(() => {
+        // Use the saved username first, then fall back to the Auth0 nickname.
         const username = localStorage.getItem('username') || user?.nickname;
         
         if (!username) {
             return;
         }
 
+        // Refresh employee details from the backend so localStorage stays current.
         fetch(`${DOMAIN}/getEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -51,9 +57,11 @@ export function Profile() {
                     return;
                 }
 
+                // Keep the latest profile picture in state for immediate UI updates.
                 const url = employee.pfp_URL ?? undefined;
                 setProfilePicture(url);
 
+                // Sync commonly used profile fields into localStorage for the rest of the app.
                 if (employee.username) {
                     localStorage.setItem('username', employee.username);
                 }
@@ -67,6 +75,7 @@ export function Profile() {
                     localStorage.setItem('empid', String(employee.empid));
                 }
 
+                // Save the image URL when present; otherwise fall back to the placeholder avatar.
                 if (url) {
                     localStorage.setItem('pfp_URL', url);
                 } else {
@@ -79,12 +88,14 @@ export function Profile() {
             });
     }, [user?.nickname]);
 
+    // Clear local session data before sending the user back to the app's landing origin.
     function handleLogout() {
         localStorage.clear();
         sessionStorage.removeItem('chatHistory');
         logout({ logoutParams: { returnTo: window.location.origin } });
     }
 
+    // Hide the profile menu entirely for guest/unauthenticated visitors.
     if (localStorage.getItem('persona') !== 'Guest' || localStorage.getItem('username') !== null) {
         return (
             <>
@@ -109,6 +120,7 @@ export function Profile() {
                                         border: '1px solid var(--color-pale-sky)',
                                     }}
                                     onError={(event) => {
+                                        // Replace broken images with the fallback avatar.
                                         setProfilePicture(placeholderProfilePicture);
                                         event.currentTarget.src = placeholderProfilePicture;
                                     }}
@@ -117,6 +129,7 @@ export function Profile() {
                             </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
+                            {/* Quick actions for profile navigation, settings, and sign-out. */}
                             <Menu.Label>Username: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
                             <Menu.Item component={Link} to="/profilePage">Profile</Menu.Item>
                             <Menu.Item onClick={openSettings}>Settings</Menu.Item>
@@ -130,6 +143,7 @@ export function Profile() {
                     onClose={closeSettings}
                     title={<Text fw={700} size="xl" c="var(--color-yale-blue)">Settings</Text>}
                 >
+                    {/* Theme controls live in the settings modal to keep the header compact. */}
                     <ThemeToggle />
                 </Modal>
             </>

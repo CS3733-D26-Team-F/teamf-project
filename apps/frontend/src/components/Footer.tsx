@@ -3,6 +3,7 @@ import { ActionIcon, Container, Group, Text } from '@mantine/core';
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import classes from '../FooterLinks.module.css';
 
+// Footer link groups are defined as data so the layout stays easy to update.
 const data = [
     {
         title: 'Learn More',
@@ -16,6 +17,7 @@ const data = [
 ];
 
 export function Footer() {
+    // Build the footer sections from the data above so links and headings stay in sync.
     const groups = data.map((group) => {
         const links = group.links.map((link, index) => (
             <Text<'a'>
@@ -30,6 +32,7 @@ export function Footer() {
 
         return (
             <div className={classes.wrapper} key={group.title}>
+                {/* Each footer group contains a heading, text links, and social icons. */}
                 <Text className={classes.title}><b>{group.title}</b></Text>
                 {links}
                 <Group gap={0} className={classes.social} justify="flex-end" wrap="nowrap">
@@ -51,6 +54,7 @@ export function Footer() {
         <footer className={classes.footer}>
             <Container className={classes.inner}>
                 <div className={classes.logo}>
+                    {/* Company logo and address are shown together as the primary footer identity block. */}
                     <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
                     <br />
                     <Text size="s" c="white" className={classes.description} style={{ whiteSpace: 'pre-line' }}>
@@ -60,6 +64,7 @@ export function Footer() {
                 </div>
                 <div className={classes.groups}>{groups}</div>
             </Container>
+            {/* Reserved footer area for future content or legal links. */}
             <Container className={classes.afterFooter} >
 
             </Container>
