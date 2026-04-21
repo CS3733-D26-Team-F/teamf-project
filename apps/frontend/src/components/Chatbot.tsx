@@ -6,7 +6,7 @@ import {
     Affix, Drawer, Stack, TextInput, Paper, Text, ScrollArea,
     Group, ActionIcon, Loader, Anchor, Button, Alert
 } from '@mantine/core';
-import { IconSend, IconTrash, IconPaperclip, IconX, IconMicrophone } from '@tabler/icons-react';
+import { IconSend, IconTrash, IconPaperclip, IconX, IconMicrophone, IconSquare } from '@tabler/icons-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { DOMAIN } from '../const';
@@ -97,7 +97,7 @@ export function Chatbot() {
         return [];
     };
 
-    const { messages, setMessages, sendMessage, status, error } = useChat({
+    const { messages, setMessages, sendMessage, status, error, stop } = useChat({
         transport: new DefaultChatTransport({
             api: `${DOMAIN}/api/chat`,
             body: {
@@ -433,14 +433,25 @@ export function Chatbot() {
                                         <IconMicrophone size={16} />
                                     </ActionIcon>
 
-                                    <ActionIcon
-                                        type="submit"
-                                        color="blue"
-                                        variant="filled"
-                                        disabled={!input.trim() || status === 'submitted' || status === 'streaming'}
-                                    >
-                                        <IconSend size={16} />
-                                    </ActionIcon>
+                                    {status === 'submitted' || status === 'streaming' ? (
+                                        <ActionIcon
+                                            color="red"
+                                            variant="filled"
+                                            onClick={() => stop()}
+                                            title="Stop generating"
+                                        >
+                                            <IconSquare size={14} fill="currentColor" />
+                                        </ActionIcon>
+                                    ) : (
+                                        <ActionIcon
+                                            type="submit"
+                                            color="blue"
+                                            variant="filled"
+                                            disabled={!input.trim()}
+                                        >
+                                            <IconSend size={16} />
+                                        </ActionIcon>
+                                    )}
                                 </Group>
                             }
                         />
