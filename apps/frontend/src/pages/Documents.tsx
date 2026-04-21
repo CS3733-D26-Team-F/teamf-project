@@ -330,8 +330,8 @@ export function Documents() {
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
         if (filterCheckout.length > 0) {
-            if (filterCheckout.includes ('checked_out')) result = result.filter (d => !! checkedOutMap[d.id]);
-            if (filterCheckout.includes ('avilable')) result = result.filter (d => ! checkedOutMap[d.id]);
+            if (filterCheckout.includes('checked_out')) result = result.filter(d => !!checkedOutMap[d.id]);
+            if (filterCheckout.includes('available')) result = result.filter(d => !checkedOutMap[d.id]);
         }
 
         if (sortField) {
@@ -656,7 +656,7 @@ export function Documents() {
         .filter(Boolean) as ContentForm[];
 
     const titleProp = persona === 'Admin' ? 'All content' :
-        persona === 'Underwriter' ? t('underwriter_title'):
+        persona === 'Underwriter' ? t('underwriter_title') :
             persona === 'Business Analyst' ? t('ba_title') :
                 persona === 'Actuarial Analyst' ? t('act_title') :
                     persona === 'EXL Operations' ? t('exl_title') :
@@ -958,18 +958,18 @@ export function Documents() {
                 <Stack>
                     <MultiSelect label={t('persona')} placeholder={t('all_persona')} value={filterPersona}
                                  onChange={setFilterPersona} data={roles} clearable/>
-                    <MultiSelect label={t('status')} placeholder={t('all_status')}  value={filterStatus}
+                    <MultiSelect label={t('status')} placeholder={t('all_status')} value={filterStatus}
                                  onChange={setFilterStatus}
                                  data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
                                  clearable/>
-                    <MultiSelect label={t('file_type')} placeholder={t('all_type')}  value={filterType}
+                    <MultiSelect label={t('file_type')} placeholder={t('all_type')} value={filterType}
                                  onChange={setFilterType}
                                  data={['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png', 'jpg', 'txt', 'link']}
                                  clearable/>
-                    <MultiSelect label={t('owner')} placeholder={t('all_owner')}  value={filterOwner}
+                    <MultiSelect label={t('owner')} placeholder={t('all_owner')} value={filterOwner}
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
-                    <MultiSelect label={t('checkout_status')} placeholder={t('all_doc')}  value={filterCheckout}
+                    <MultiSelect label={t('checkout_status')} placeholder={t('all_doc')} value={filterCheckout}
                                  onChange={(val) => setFilterCheckout(val ?? 'all')}
                                  data={[{value: 'all', label: t('all')}, {
                                      value: 'available',
@@ -1081,10 +1081,10 @@ export function Documents() {
             </Modal>
 
             {/* add modal */}
-            <Modal opened={addOpen} onClose={() => setAddOpen(false)} title="Add New Document" size="lg">
+            <Modal opened={addOpen} onClose={() => setAddOpen(false)} title={t('add_new_doc')} size="lg">
                 <Stack>
-                    <Text fw={600}>Document Details</Text>
-                    <TextInput label="Name of Document" value={addData.name}
+                    <Text fw={600}>{t('document_details')}</Text>
+                    <TextInput label={t('name_document')} value={addData.name}
                                onChange={e => setAddData({...addData, name: e.target.value})}/>
                     <Box>
                         <SegmentedControl
@@ -1094,7 +1094,7 @@ export function Documents() {
                                 setAddFile(null);
                                 setAddUrl('');
                             }}
-                            data={[{label: 'Upload File', value: 'file'}, {label: 'Enter URL', value: 'url'}]}
+                            data={[{label: t('upload_file'), value: 'file'}, {label: t('enter_url'), value: 'url'}]}
                             mb="sm"
                         />
                         {uploadMode === 'file'
@@ -1107,44 +1107,44 @@ export function Documents() {
                         }
                     </Box>
                     {persona === 'Admin'
-                        ? <Select label="Name of Content Owner" value={addData.owner}
+                        ? <Select label={t('name_owner')} value={addData.owner}
                                   onChange={val => setAddData({...addData, owner: val ?? ''})}
                                   data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}/>
-                        : <TextInput label="Name of Content Owner" value={addData.owner} readOnly/>}
-                    <MultiSelect label="Job Position" value={addData.persona}
+                        : <TextInput label={t('name_owner')} value={addData.owner} readOnly/>}
+                    <MultiSelect label={t('job_position')} value={addData.persona}
                                  onChange={val => setAddData({...addData, persona: val})}
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
-                    <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
+                    <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Group grow>
-                        <Select label="Content Type" value={addData.content_type}
+                        <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
-                                data={['Reference', 'Workflow']}/>
-                        <Select label="Document Status" value={addData.status}
+                                data={[t('reference'), t('workflow')]}/>
+                        <Select label={t('document_status')} value={addData.status}
                                 onChange={val => setAddData({...addData, status: val ?? ''})}
-                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
+                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={addData.date_modified}
+                        <TextInput label={t('last_modified')} type="date" value={addData.date_modified}
                                    onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
-                        <TextInput label="Expiration Date" type="date" value={addData.expiration_date}
+                        <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
-                        <TextInput label="Review Date" type="date" value={addData.review_date}
+                        <TextInput label={t('review_date')} type="date" value={addData.review_date}
                                    onChange={e => setAddData({...addData, review_date: e.target.value})}/>
 
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={() => setAddOpen(false)}>✕ Cancel
-                            Changes</Button>
-                        <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
+                        <Button className="invert-hover-outline"
+                                onClick={() => setAddOpen(false)}>✕ {t('cancel')}</Button>
+                        <Button onClick={handleAdd} className="invert-hover">+ {t('submit_doc')}</Button>
                     </Group>
                 </Stack>
             </Modal>
 
             {/* edit modal */}
-            <Modal opened={editOpen} onClose={closeEdit} title="Edit Document Details" size="lg">
+            <Modal opened={editOpen} onClose={closeEdit} title={t('edit_doc')} size="lg">
                 <Stack>
-                    <Text fw={600}>Document Details</Text>
+                    <Text fw={600}>{t('document_details')}</Text>
                     <TextInput label="Name of Document" value={editData.name}
                                onChange={e => setEditData({...editData, name: e.target.value})}/>
                     <Box>
@@ -1155,49 +1155,48 @@ export function Documents() {
                                 setEditFile(null);
                                 setEditUrl('');
                             }}
-                            data={[{label: 'Upload File', value: 'file'}, {label: 'Enter URL', value: 'url'}]}
+                            data={[{label: t('upload_file'), value: 'file'}, {label: t('enter_url'), value: 'url'}]}
                             mb="sm"
                         />
                         {editUploadMode === 'file'
                             ? <Box>
                                 <input type="file" style={{display: 'block', marginTop: '8px'}}
                                        onChange={e => setEditFile(e.target.files?.[0] ?? null)}/>
-                                <Text size="xs" c="dimmed" mt={2}>Leave blank if you are only changing document
-                                    details.</Text>
+                                <Text size="xs" c="dimmed" mt={2}> {t('edit_message')}</Text>
                             </Box>
                             : <TextInput label="URL" placeholder="https://example.com" value={editUrl}
                                          onChange={e => setEditUrl(e.target.value)}/>
                         }
                     </Box>
                     {persona === 'Admin'
-                        ? <Select label="Name of Content Owner" value={editData.owner}
+                        ? <Select label={t('content_owner')} value={editData.owner}
                                   onChange={val => setEditData({...editData, owner: val ?? ''})}
                                   data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}/>
-                        : <TextInput label="Name of Content Owner" value={editData.owner} readOnly/>}
-                    <MultiSelect label="Job Position" value={editData.persona}
+                        : <TextInput label={t('content_owner')} value={editData.owner} readOnly/>}
+                    <MultiSelect label={t('job_position')} value={editData.persona}
                                  onChange={val => setEditData({...editData, persona: val})} data={roles}
                                  disabled={persona !== 'Admin'}/>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
-                        <Select label="Content Type" value={editData.content_type}
+                        <Select label={t('content_type')} value={editData.content_type}
                                 onChange={val => setEditData({...editData, content_type: val ?? ''})}
-                                data={['Reference', 'Workflow']}/>
-                        <Select label="Document Status" value={editData.status}
+                                data={[t('reference'), t('workflow')]}/>
+                        <Select label={t('document_status')} value={editData.status}
                                 onChange={val => setEditData({...editData, status: val ?? ''})}
-                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}/>
+                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label="Last Modified Date" type="date" value={editData.date_modified}
+                        <TextInput label={t('last_modified')} type="date" value={editData.date_modified}
                                    onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
-                        <TextInput label="Expiration Date" type="date" value={editData.expiration_date}
+                        <TextInput label={t('expiration_date')} type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
-                        <TextInput label="Review Date" type="date" value={editData.review_date}
+                        <TextInput label={t('review_date')} type="date" value={editData.review_date}
                                    onChange={e => setEditData({...editData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)} className="invert-hover">✓ Save
-                            Changes</Button>
+                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ {t('cancel')}</Button>
+                        <Button onClick={() => setConfirmSaveOpen(true)}
+                                className="invert-hover">✓ {t('submit_doc')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1205,8 +1204,8 @@ export function Documents() {
             <ConfirmModal
                 opened={confirmSaveOpen}
                 onClose={() => setConfirmSaveOpen(false)}
-                title="Confirm Changes"
-                message={<>Are you sure you want to save these changes?</>}
+                title={t('confirm_changes')}
+                message={<>{t('change_message')}</>}
                 onConfirm={handleEdit}
                 onCancel={() => setConfirmSaveOpen(false)}
             />
@@ -1214,8 +1213,8 @@ export function Documents() {
             <ConfirmModal
                 opened={deleteOpen}
                 onClose={() => setDeleteOpen(false)}
-                title="Delete form?"
-                message={<>Are you sure you want to <strong>delete</strong> this file?</>}
+                title={t('delete_form')}
+                message={<>{t('delete_message')}</>}
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteOpen(false)}
             />
@@ -1224,10 +1223,10 @@ export function Documents() {
             <Modal opened={bulkOpen} onClose={() => {
                 setBulkOpen(false);
                 setStagedFiles([]);
-            }} title="Bulk Upload" size="1200px">
+            }} title={t('bulk_doc')} size="1200px">
                 <Stack>
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Add Files</Text>
+                        <Text size="sm" fw={500} mb={4}>{t('add_file')}</Text>
                         <input type="file" multiple onChange={e => {
                             handleBulkFileSelect(Array.from(e.target.files ?? []));
                             e.target.value = '';
@@ -1238,12 +1237,12 @@ export function Documents() {
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <Table.Thead>
                                     <Table.Tr>
-                                        <Table.Th w={200}>File Name</Table.Th>
-                                        <Table.Th w={150}>Owner</Table.Th>
-                                        <Table.Th w={150}>Persona</Table.Th>
-                                        <Table.Th w={150}>Content Type</Table.Th>
-                                        <Table.Th w={150}>Status</Table.Th>
-                                        <Table.Th w={150}>Dates</Table.Th>
+                                        <Table.Th w={200}>{t('file_name')}</Table.Th>
+                                        <Table.Th w={150}>{t('owner')}</Table.Th>
+                                        <Table.Th w={150}>{t('persona')}</Table.Th>
+                                        <Table.Th w={150}>{t('content_type')}</Table.Th>
+                                        <Table.Th w={150}>{t('status')}</Table.Th>
+                                        <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
@@ -1263,22 +1262,22 @@ export function Documents() {
                                             <Table.Td><MultiSelect data={roles} value={staged.persona}
                                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                                    disabled={persona !== 'Admin'}/></Table.Td>
-                                            <Table.Td><Select data={['Reference', 'Workflow']}
+                                            <Table.Td><Select data={[t('reference'), t('workflow')]}
                                                               value={staged.content_type}
                                                               onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
                                             <Table.Td><Select
-                                                data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
+                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
-                                                    <TextInput type="date" label="Modified" size="xs"
+                                                    <TextInput type="date" label={t('modified')} size="xs"
                                                                value={staged.date_modified}
                                                                onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
-                                                    <TextInput type="date" label="Expires" size="xs"
+                                                    <TextInput type="date" label={t('expires')} size="xs"
                                                                value={staged.expiration_date}
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                    <TextInput type="date" label="Expires" size="xs"
+                                                    <TextInput type="date" label={t('review_by')} size="xs"
                                                                value={staged.review_date}
                                                                onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
                                                 </Stack>
@@ -1296,10 +1295,10 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => {
                             setBulkOpen(false);
                             setStagedFiles([]);
-                        }}>✕ Cancel</Button>
+                        }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t(documents)}
                         </Button>
                     </Group>
                 </Stack>

@@ -61,6 +61,7 @@
   "actions": "Acciones",
   "selected": "seleccionados",
   "open_url": "Abrir URL",
+  "enter_url": "Introduzca la URL",
   "checked_out_by": "Verificado por {{name}}",
   "click_to_checkin": "Haga clic para Verificar Entrada",
   "delete_confirm": "¿Eliminar {{count}} documentos?",
@@ -116,7 +117,25 @@
   "all_persona": "Todas las personas",
   "all_status": "Todos los estados",
   "all_type": "Todos los tipos",
-  "all_owner": "Todos los propietarios"
-
+  "all_owner": "Todos los propietarios",
+  "document_details": "Detalles del documento",
+  "name_document": "Nombre del documento",
+  "add_new_doc": "Añadir nuevo documento",
+  "name_owner": "Nombre del propietario del contenido",
+  "life_cycle": "Ciclo de vida y atributos",
+  "cancel": "Cancelar cambios",
+  "submit_doc": "Enviar documento",
+  "edit_doc": "Editar detalles del documento",
+  "edit_message": "Deje este campo en blanco si solo está modificando los detalles del documento.",
+  "confirm_changes": "Confirmar cambios",
+  "delete_form": "Eliminar formulario",
+  "change_message": "¿Estás seguro de que quieres guardar estos cambios?",
+  "delete_message": "¿Estás seguro de que quieres eliminar este archivo?",
+  "add_files": "Añadir archivos",
+  "file_name": "Nombre del archivo",
+  "date": "Fechas",
+  "modified": "Modificado",
+  "expires": "Caduca",
+  "review_by": "Reseña de"
 
 }
