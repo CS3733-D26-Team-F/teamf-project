@@ -19,6 +19,7 @@ export type ContentForm = {
 export type StagedFile = {
     id: string;
     file: File;
+    url: string;
     name: string;
     owner: string;
     persona: string[];
