@@ -132,7 +132,7 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: [] as string[]
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -175,7 +175,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: []
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: [] as string[]
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -479,18 +479,6 @@ export function Documents() {
 
 
     async function handleBulkAdd() {
-        // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
-        // const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        // if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
-        if (stagedFiles.length === 0) {
-            alert('Please upload at least one file.');
-            return;
-        }
-        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) {
-            alert('Please fill in all dropdowns and dates for every file.');
-            return;
-        }
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
@@ -504,6 +492,9 @@ export function Documents() {
                 formPayload.append('status', sf.status);
                 formPayload.append('file', sf.file);
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                setBulkOpen(false);
+                setStagedFiles([]);
+                loadDocuments();
             } catch (err: any) {
                 if (err.status === 409 || err.status === 400 || err.status === 406) {
                     setAddError(err.message)
@@ -512,34 +503,7 @@ export function Documents() {
                 }
                 return;
             }
-            const formPayload = new FormData();
-            formPayload.append('filename', sf.name);
-            formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', JSON.stringify(sf.persona));
-            formPayload.append('date_modified', sf.date_modified);
-            formPayload.append('expiration_date', sf.expiration_date);
-            formPayload.append('review_date', sf.review_date);
-            formPayload.append('content_type', sf.content_type);
-            formPayload.append('status', sf.status);
-            formPayload.append('file', sf.file);
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
         }
-        setBulkOpen(false);
-        setStagedFiles([]);
-        loadDocuments();
-    }
-
-    async function handleSaveClick() {
-        const expiration = new Date(editData.expiration_date);
-        const review = new Date(editData.review_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
-            return;
-        }
-
-        setConfirmSaveOpen(true);
     }
 
     function openEdit(doc: ContentForm) {
@@ -569,8 +533,9 @@ export function Documents() {
             });
     }
 
-    async function handleEdit() {
+    async function handleSaveClick() {
         if (!editId) return;
+        setEditError('');
         try {
             if (editFile) {
                 const formPayload = new FormData();
@@ -595,19 +560,20 @@ export function Documents() {
                     body: JSON.stringify(editData)
                 });
             }
+            setConfirmSaveOpen(true);
         } catch (err: any) {
             if (err.status === 409 || err.status === 400 || err.status === 406) {
                 setEditError(err.message);
-                console.log("error: ", editError)
             } else {
                 throw err;
             }
-            return;
         }
+    }
 
-        //add/remove any tags to the file before closing edit
+    async function handleEdit() {
+        if (!editId) return;
 
-        //get Document id for what we are editing
+        // tag logic
         const flat = await api(`${DOMAIN}/contentforms`)
             .then(res => res.json())
             .then(data => {
@@ -620,63 +586,46 @@ export function Documents() {
         for (const doc of flat) {
             if (doc.name === editData.name) {
                 docID = doc.id;
-                //Also get what tags it had originally so we know what to remove/add
                 await api(`${DOMAIN}/grabformtags/${doc.name}`)
                     .then(res => res.json())
                     .then(tagData => {
-                        if (tagData.data.length > 0 ) {
-                            //Tags are id and tag_name, we only want name
+                        if (tagData.data.length > 0) {
                             for (const tag of tagData.data) {
-                                docTags.push(tag.tag_name)
+                                docTags.push(tag.tag_name);
                             }
                         }
-
                     });
             }
         }
-        //make sure jointagscontent is not undefined
+
         const toEdit: string[] = (editData.jointagscontent ?? []);
-
-        //sets are faster
-        const wantedTags = new Set(toEdit)
+        const wantedTags = new Set(toEdit);
         const currentTags = new Set(docTags);
-
-        //Find what tags to remove
         const tagsToRemove = docTags.filter(tag => !wantedTags.has(tag));
-        //Find what tags to add
         const tagsToAdd = toEdit.filter(tag => !currentTags.has(tag));
 
-        //add needed tags
         for (const tagToAdd of tagsToAdd) {
             let tagID = 0;
             for (const tag of createdTags) {
-                if (tag.tag_name === tagToAdd) {
-                    tagID = tag.metid;
-                }
+                if (tag.tag_name === tagToAdd) tagID = tag.metid;
             }
             await api(`${DOMAIN}/assigntag`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: docID, metid: tagID})
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: docID, metid: tagID })
             });
         }
 
-        //remove needed tags
         for (const tagToRemove of tagsToRemove) {
             let tagID = 0;
             for (const tag of createdTags) {
-                if (tag.tag_name === tagToRemove) {
-                    tagID = tag.metid;
-                }
+                if (tag.tag_name === tagToRemove) tagID = tag.metid;
             }
             await api(`${DOMAIN}/unassigntag`, {
-                method: 'DELETE',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: docID, metid: tagID})
+                method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: docID, metid: tagID })
             });
         }
 
-        //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
@@ -689,16 +638,13 @@ export function Documents() {
 
 
     function closeEdit() {
-        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username }) });
-        setEditOpen(false); setEditUrl(''); setEditUploadMode('file'); setEditError('');
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username})
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
         });
         setEditOpen(false);
         setEditUrl('');
         setEditUploadMode('file');
+        setEditError('');
     }
 
     async function handleDelete() {
@@ -1349,8 +1295,8 @@ export function Documents() {
                                   onChange={val => setEditData({...editData, owner: val ?? ''})}
                                   data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}/>
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly/>}
-                    <MultiSelect label="Job Position" value={editData.persona}
-                                 onChange={val => setEditData({...editData, persona: val})} data={roles}
+                    <MultiSelect label="Job Position" value={editData.persona.filter(p => p !== 'Admin')}
+                                 onChange={val => setEditData({...editData, persona: val})} data={roles.filter(r => r !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
                         <MultiSelect w="75%" label="Tags" value={editData.jointagscontent}
@@ -1415,10 +1361,6 @@ export function Documents() {
             />
 
             {/* bulk upload modal */}
-            <Modal opened={bulkOpen} onClose={() => {
-                setBulkOpen(false);
-                setStagedFiles([]);
-            }} title="Bulk Upload" size="1200px">
             <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }} title="Bulk Upload" size="1200px">
                 <Stack>
                     <Box>
@@ -1438,7 +1380,6 @@ export function Documents() {
                                         <Table.Th w={150}>Persona</Table.Th>
                                         <Table.Th w={150}>Content Type</Table.Th>
                                         <Table.Th w={150}>Status</Table.Th>
-                                        <Table.Th w={150}>Dates</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
@@ -1465,23 +1406,11 @@ export function Documents() {
                                                 data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} /></Table.Td>
-                                            <Table.Td><Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} /></Table.Td>
-                                            <Table.Td><Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} /></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
                                                     <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
                                                     <TextInput type="date" label="Review Date" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
-                                                    <TextInput type="date" label="Modified" size="xs"
-                                                               value={staged.date_modified}
-                                                               onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
-                                                    <TextInput type="date" label="Expires" size="xs"
-                                                               value={staged.expiration_date}
-                                                               onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                    <TextInput type="date" label="Expires" size="xs"
-                                                               value={staged.review_date}
-                                                               onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
                                                 </Stack>
                                             </Table.Td>
                                             <Table.Td><ActionIcon color="var(--color-neutral-red)"
@@ -1494,13 +1423,15 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
+                        {addError && (
+                            <ErrorMessage message={addError} />
+                        )}
                         <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); setAddError(''); }}>✕ Cancel</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
                             + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
                         </Button>
                     </Group>
                 </Stack>
-            </Modal>
             </Modal>
         </>
     );
