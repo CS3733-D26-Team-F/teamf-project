@@ -654,11 +654,15 @@ export function Documents() {
         for (const tagToAdd of tagsToAdd) {
             let tagID = 0;
             for (const tag of createdTags) {
+                if (tag.tag_name === tagToAdd) {
+                    tagID = tag.metid;
+                }
                 if (tag.tag_name === tagToAdd) tagID = tag.metid;
             }
             await api(`${DOMAIN}/assigntag`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: docID, metid: tagID })
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
             });
         }
 
@@ -666,11 +670,15 @@ export function Documents() {
         for (const tagToRemove of tagsToRemove) {
             let tagID = 0;
             for (const tag of createdTags) {
+                if (tag.tag_name === tagToRemove) {
+                    tagID = tag.metid;
+                }
                 if (tag.tag_name === tagToRemove) tagID = tag.metid;
             }
             await api(`${DOMAIN}/unassigntag`, {
-                method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: docID, metid: tagID })
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
             });
         }
 
@@ -683,6 +691,14 @@ export function Documents() {
         setEditOpen(false);
         setEditError('');
         loadDocuments();
+        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username})
+        });
+        setEditOpen(false);
+        setEditUrl('');
+        setEditUploadMode('file');
     }
 
 
