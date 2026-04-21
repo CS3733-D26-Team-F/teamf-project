@@ -1007,36 +1007,29 @@ router.get('/getTags', async (req, res) => {
 
 router.get('/favorites', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const {username} = req.body;
-
-    const employee = await prisma.employee.findUnique({
-        where: {username: username}
-    })
-
-    if (!employee) {
-        return res.status(404).json({error: 'No employee found with this name'});
-    }
 
     try {
-
-        const favorite = await prisma.joinedfavorites.findMany({
-            where: {empid: employee.empid}
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id}
         })
 
-        const favorites = favorite.map(favor => favor.id);
+        if (!employee) return res.status(404).json({ error: 'No employee found' });
 
-        const forms= await prisma.contentform.findMany({
-            where: {
-                id: { in: favorites }
-            }
-        })
+        const favRows = await prisma.joinedfavorites.findMany({
+            where: { empid: employee.empid }
+        });
 
+        const ids = favRows.map(r => r.id);
+
+        const forms = await prisma.contentform.findMany({
+            where: { id: { in: ids } }
+        });
 
         return res.json(forms);
     } catch (err) {
-        res.status(500).json({error: 'No favorite documents found'});
+        res.status(500).json({ error: 'No favorite documents found' });
     }
-})
+});
 
 router.post('/addFavorite', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
