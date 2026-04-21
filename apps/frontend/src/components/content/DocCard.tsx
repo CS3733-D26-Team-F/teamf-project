@@ -1,7 +1,7 @@
 import type {ContentForm, RowCallbacks} from "../interfaces/DocumentsInterfaces.tsx";
 import {getFileType} from "./Functions.tsx";
 import {DocThumbnail} from "./DocThumbnail.tsx";
-import {ActionIcon, Checkbox, Group, Text} from "@mantine/core";
+import {ActionIcon, Badge, Checkbox, Group, Text} from "@mantine/core";
 import {IconDownload, IconEdit, IconStar, IconStarFilled, IconTrash} from "@tabler/icons-react";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
@@ -48,6 +48,11 @@ export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite
                     <StatusBadge status={doc.status} size="xs" filter={false} />
                     <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
                     <TagBadges tags={doc.jointagscontent} />
+                    {doc.folder && (
+                        <Badge variant="outline" color="gray" size="xs">
+                            Folder: {doc.folder}
+                        </Badge>
+                    )}
                 </Group>
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
