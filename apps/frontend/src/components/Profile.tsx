@@ -145,7 +145,15 @@ export function Profile() {
                             onChange={(val) => translate(val ?? 'eng')}
                             data={[
                                 {value: 'eng', label: 'English'},
-                                {value: 'esp', label: 'Espanol'}
+                                {value: 'esp', label: 'Espanol'},
+                                {value: 'mandarin', label: 'Mandarin'},
+                                {value: 'hindi', label: 'Hindi'},
+                                {value: 'french', label: 'French'},
+                                {value: 'arabic', label: 'Arabic'},
+                                {value: 'bengali', label: 'Bengali'},
+                                {value: 'russian', label: 'Russian'},
+                                {value: 'turkish', label: 'Turkish'},
+                                {value: 'irish', label: 'Irish'},
                             ]}
                         />
                     </Stack>
