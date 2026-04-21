@@ -6,6 +6,7 @@ import {IconDownload, IconEdit, IconStar, IconStarFilled, IconTrash} from "@tabl
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
 import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
+import {TagBadges} from "../Badges/TagBadges.tsx";
 
 interface DocCardProps extends RowCallbacks {
     doc: ContentForm;
@@ -46,6 +47,7 @@ export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite
                     <PersonaBadges personas={doc.persona} />
                     <StatusBadge status={doc.status} size="xs" filter={false} />
                     <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
+                    <TagBadges tags={doc.jointagscontent} />
                 </Group>
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
