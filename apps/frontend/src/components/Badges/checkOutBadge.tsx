@@ -7,14 +7,14 @@ interface checkOutBadgesProps {
 
 export function checkOutBadges({isChecked}: checkOutBadgesProps) {
     return (
-        <Group gap={3}>
+        <Group gap={2}>
             {isChecked.map(p => (
                 <Badge
                     key={p}
                     variant="light"
                     color={
-                            p === 'Available' ? 'var(--color-fresh-sky)' :
-                                p === 'CheckedOut' ? 'var(--color-fresh-sky)' :
+                            p === 'available' ? 'var(--color-fresh-sky)' :
+                                p === 'checked_out' ? 'var(--color-fresh-sky)' :
                                     'var(color-neutral-purple)'}
                     size="sm"
                 >
