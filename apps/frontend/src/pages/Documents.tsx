@@ -541,20 +541,16 @@ export function Documents() {
 
     async function handleBulkAdd() {
         if (stagedFiles.length === 0) {
-            if (uploadMode === 'file') {
-                alert('Please upload at least one file.');
-                return;
-            } else if (uploadMode === 'url') {
-                alert('Please enter at least one URL.');
-                return;
-            }
-        }
-
-        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) {
-            alert('Please fill in all dropdowns and dates for every file.');
+            alert('Please upload at least one file or URL.');
             return;
         }
+
+        const missingData = stagedFiles.some(sf => !sf.name || !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status || !sf.expiration_date || !sf.review_date);
+        if (missingData) {
+            alert('Please fill in all fields for every entry.');
+            return;
+        }
+
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
@@ -564,36 +560,26 @@ export function Documents() {
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
                 formPayload.append('review_date', sf.review_date);
-                formPayload.append('content_type', sf.content_type);
                 formPayload.append('status', sf.status);
-                formPayload.append('file', sf.file);
-                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                formPayload.append('content_type', sf.content_type);
+
+                if (sf.uploadType === 'file' && sf.file) {
+                    formPayload.append('file', sf.file);
+                } else {
+                    formPayload.append('url', normalizeUrl(sf.url));
+                }
+
+                await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
             } catch (err: any) {
                 if (err.status === 409 || err.status === 400 || err.status === 406) {
-                    setAddError(err.message)
+                    setAddError(err.message);
                 } else {
                     throw err;
                 }
                 return;
             }
-            const formPayload = new FormData();
-            formPayload.append('filename', sf.name);
-            formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', JSON.stringify(sf.persona));
-            formPayload.append('date_modified', sf.date_modified);
-            formPayload.append('expiration_date', sf.expiration_date);
-            formPayload.append('review_date', sf.review_date);
-            formPayload.append('content_type', sf.content_type);
-            formPayload.append('status', sf.status);
-
-            if (sf.uploadType === 'file' && sf.file) {
-                formPayload.append('file', sf.file);
-            } else {
-                formPayload.append('url', normalizeUrl(sf.url));
-                formPayload.append('content_type', 'URL');
-            }
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
         }
+
         setBulkOpen(false);
         setStagedFiles([]);
         loadDocuments();
@@ -1532,115 +1518,85 @@ export function Documents() {
             />
 
             {/* bulk upload modal */}
-            <Modal opened={bulkOpen} onClose={() => {
-                setBulkOpen(false);
-                setStagedFiles([]);
-            }} title="Bulk Upload" size="1200px">
-                <Modal opened={bulkOpen} onClose={() => {
-                    setBulkOpen(false);
-                    setStagedFiles([]);
-                    setAddError('');
-                }} title="Bulk Upload" size="1200px">
-                    <Stack>
-                        <Box>
-                            <Text size="sm" fw={500} mb={4}>Add Files</Text>
-                            <input type="file" multiple onChange={e => {
-                                handleBulkFileSelect(Array.from(e.target.files ?? []));
-                                e.target.value = '';
-                            }}/>
-                        </Box>
-                        {stagedFiles.length > 0 && (
-                            <Box style={{overflowX: 'auto'}}>
-                                <Table highlightOnHover withTableBorder withColumnBorders>
-                                    <Table.Thead>
-                                        <Table.Tr>
-                                            <Table.Th w={200}>File Name</Table.Th>
-                                            <Table.Th w={150}>Owner</Table.Th>
-                                            <Table.Th w={150}>Persona</Table.Th>
-                                            <Table.Th w={150}>Content Type</Table.Th>
-                                            <Table.Th w={150}>Status</Table.Th>
-                                            <Table.Th w={150}>Dates</Table.Th>
-                                            <Table.Th w={50}></Table.Th>
-                                        </Table.Tr>
-                                    </Table.Thead>
-                                    <Table.Tbody>
-                                        {stagedFiles.map(staged => (
-                                            <Table.Tr key={staged.id}>
-                                                <Table.Td><TextInput value={staged.name}
-                                                                     onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}/></Table.Td>
-                                                <Table.Td>
-                                                    {persona === 'Admin'
-                                                        ? <Select
-                                                            data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
-                                                            value={staged.owner}
-                                                            onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
-                                                        : <TextInput value={staged.owner} readOnly/>}
-                                                </Table.Td>
-                                                <Table.Td><MultiSelect data={roles} value={staged.persona}
-                                                                       onChange={val => updateStagedFile(staged.id, 'persona', val)}
-                                                                       disabled={persona !== 'Admin'}/></Table.Td>
-                                                <Table.Td><Select data={['Reference', 'Workflow']}
-                                                                  value={staged.content_type}
-                                                                  onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
-                                                <Table.Td><Select
-                                                    data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']}
-                                                    value={staged.status}
-                                                    onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
-                                                <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')}
-                                                                       value={staged.persona}
-                                                                       onChange={val => updateStagedFile(staged.id, 'persona', val)}
-                                                                       disabled={persona !== 'Admin'}/></Table.Td>
-                                                <Table.Td><Select data={['Reference', 'Workflow']}
-                                                                  value={staged.content_type}
-                                                                  onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
-                                                <Table.Td><Select
-                                                    data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Archived']}
-                                                    value={staged.status}
-                                                    onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
-                                                <Table.Td>
-                                                    <Stack gap={4}>
-                                                        <TextInput type="date" label="Modified" size="xs"
-                                                                   value={staged.date_modified}
-                                                                   onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
-                                                        <TextInput type="date" label="Expires" size="xs"
-                                                                   value={staged.expiration_date}
-                                                                   onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                        <TextInput type="date" label="Review Date" size="xs"
-                                                                   value={staged.review_date}
-                                                                   onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
-                                                        <TextInput type="date" label="Modified" size="xs"
-                                                                   value={staged.date_modified}
-                                                                   onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
-                                                        <TextInput type="date" label="Expires" size="xs"
-                                                                   value={staged.expiration_date}
-                                                                   onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                        <TextInput type="date" label="Expires" size="xs"
-                                                                   value={staged.review_date}
-                                                                   onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
-                                                    </Stack>
-                                                </Table.Td>
-                                                <Table.Td><ActionIcon color="var(--color-neutral-red)"
-                                                                      onClick={() => removeStagedFile(staged.id)}><IconTrash
-                                                    size={16}/></ActionIcon></Table.Td>
-                                            </Table.Tr>
-                                        ))}
-                                    </Table.Tbody>
-                                </Table>
-                            </Box>
-                        )}
-                        <Group justify="flex-end" mt="md">
-                            <Button className="invert-hover-outline" onClick={() => {
-                                setBulkOpen(false);
-                                setStagedFiles([]);
-                                setAddError('');
-                            }}>✕ Cancel</Button>
-                            <Button onClick={handleBulkAdd} className="invert-hover"
-                                    disabled={stagedFiles.length === 0}>
-                                + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
-                            </Button>
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]); }} title="Bulk Upload" size="1200px">
+                <Stack>
+                    <Box>
+                        <Text size="sm" fw={500} mb={4}>Add Files or URLs</Text>
+                        <Group>
+                            <input
+                                type="file"
+                                multiple
+                                style={{ display: 'none' }}
+                                id="bulk-file-input"
+                                onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
+                            />
+                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ Add Files</Button>
+                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
                         </Group>
-                    </Stack>
-                </Modal>
+                    </Box>
+                    {stagedFiles.length > 0 && (
+                        <Box style={{ overflowX: 'auto' }}>
+                            <Table highlightOnHover withTableBorder withColumnBorders>
+                                <Table.Thead>
+                                    <Table.Tr>
+                                        <Table.Th w={200}>File Name / URL</Table.Th>
+                                        <Table.Th w={150}>Owner</Table.Th>
+                                        <Table.Th w={150}>Persona</Table.Th>
+                                        <Table.Th w={150}>Content Type</Table.Th>
+                                        <Table.Th w={150}>Status</Table.Th>
+                                        <Table.Th w={150}>Dates</Table.Th>
+                                        <Table.Th w={50}></Table.Th>
+                                    </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                    {stagedFiles.map(staged => (
+                                        <Table.Tr key={staged.id}>
+                                            <Table.Td>
+                                                {staged.uploadType === 'url'
+                                                    ? <Stack gap={4}>
+                                                        <TextInput placeholder="Document name" value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} />
+                                                        <TextInput placeholder="https://example.com" value={staged.url} onChange={e => updateStagedFile(staged.id, 'url', e.target.value)} />
+                                                    </Stack>
+                                                    : <TextInput value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} />
+                                                }
+                                            </Table.Td>
+                                            <Table.Td>
+                                                {persona === 'Admin'
+                                                    ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
+                                                    : <TextInput value={staged.owner} readOnly />}
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <MultiSelect data={roles} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Stack gap={4}>
+                                                    <TextInput type="date" label="Modified" size="xs" value={staged.date_modified} onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)} />
+                                                    <TextInput type="date" label="Expires" size="xs" value={staged.expiration_date} onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)} />
+                                                    <TextInput type="date" label="Review Date" size="xs" value={staged.review_date} onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)} />
+                                                </Stack>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <ActionIcon color="var(--color-neutral-red)" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon>
+                                            </Table.Td>
+                                        </Table.Tr>
+                                    ))}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    )}
+                    <Group justify="flex-end" mt="md">
+                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false); setStagedFiles([]); }}>✕ Cancel</Button>
+                        <Button onClick={handleBulkAdd} className="invert-hover" disabled={stagedFiles.length === 0}>
+                            + Submit {stagedFiles.length > 0 ? stagedFiles.length : ''} Documents
+                        </Button>
+                    </Group>
+                </Stack>
             </Modal>
         </>
     );
