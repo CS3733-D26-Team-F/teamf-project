@@ -6,9 +6,11 @@ import { DOMAIN } from "../../const.ts";
 
 const placeholder = "/default-profile-picture.png";
 
+// Handles Auth0 login and syncs the authenticated user with the backend.
 function LoginModal() {
     const { getAccessTokenSilently, loginWithPopup, user, isAuthenticated } = useAuth0();
 
+    // After login, send the Auth0 token to the backend so it can load/create the employee record.
     async function sendToBackend() {
         const token = await getAccessTokenSilently({});
 
@@ -32,6 +34,7 @@ function LoginModal() {
             return;
         }
 
+        // Persist the key profile fields locally so the rest of the app can use them immediately.
         localStorage.setItem('username', employee.username || user?.nickname || '');
         localStorage.setItem('persona', employee.persona || 'Guest');
         localStorage.setItem('first_name', employee.first_name || user?.given_name || user?.nickname || '');
@@ -44,6 +47,7 @@ function LoginModal() {
         }
     }
 
+    // Prevent duplicate backend sync calls during the first authenticated render.
     const [first, setFirst] = React.useState(true);
 
     useEffect(()=> {
@@ -59,10 +63,11 @@ function LoginModal() {
     return (
         <>
             {
+                // Only show the login button when the user is signed out.
                 !isAuthenticated && (
                     <Button variant="default" onClick={async () => {
                         try {
-
+                            // Open the Auth0 popup and request the scopes needed by the app.
                             await loginWithPopup({
                                 authorizationParams: {
                                     audience: import.meta.env.VITE_AUTH0_AUDIENCE,
