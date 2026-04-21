@@ -119,6 +119,29 @@ export function Chatbot() {
     });
 
     useEffect(() => {
+        for (const m of messages) {
+            const parts = m.parts as any[];
+            if (!parts) continue;
+            for (const part of parts) {
+                if (
+                    part.type === 'tool-changeTheme' &&
+                    part.state === 'output-available' &&
+                    part.output?.themeChange
+                ) {
+                    const newTheme = part.output.themeChange;
+                    console.log('applying theme:', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    document.documentElement.setAttribute(
+                        'data-theme',
+                        newTheme === 'high-visibility' ? 'high-visibility' : ' '
+                    );
+                    window.dispatchEvent(new CustomEvent('themeChange', { detail: newTheme }));
+                }
+            }
+        }
+    }, [messages]);
+
+    useEffect(() => {
         if (messages.length > 0) {
             const clean = messages.filter(m => {
                 if (m.role === 'user') return true;

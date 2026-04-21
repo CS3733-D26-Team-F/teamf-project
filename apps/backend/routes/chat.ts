@@ -441,6 +441,23 @@ router.post('/api/chat', async (req, res) => {
                     return { success: true, docName: doc.name, isFavorite, message: `${isFavorite ? 'Favorited' : 'Unfavorited'} document: ${doc.name}` };
                 }
             })
+
+            changeTheme: tool({
+                description: 'Change the UI theme for the user. Supports "high-visibility" (red-green colorblind friendly) or "default" theme.',
+                parameters: z.object({
+                    theme: z.enum(['high-visibility', 'default']).describe('The theme to switch to.')
+                }),
+                execute: async ({ theme }) => {
+                    console.log(`--- TOOL TRIGGERED: changeTheme [${theme}] ---`);
+                    return {
+                        success: true,
+                        themeChange: theme,  // frontend watches for this
+                        message: theme === 'high-visibility'
+                            ? 'Switched to the high-visibility theme for red-green colorblind users.'
+                            : 'Switched back to the default theme.'
+                    };
+                }
+            }),
         };
 
         const result = streamText({

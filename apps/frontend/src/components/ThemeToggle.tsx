@@ -19,7 +19,18 @@ export default function ThemeToggle() {
     /* theme might not be in local storage yet, which would return it as null */
     const theme = localStorage.getItem("theme") === "high-visibility";
 
-    const [checked, setChecked] = React.useState(theme);
+    const [checked, setChecked] = React.useState(
+        localStorage.getItem("theme") === "high-visibility"
+    );
+
+    React.useEffect(() => {
+        const handler = (e: Event) => {
+            const theme = (e as CustomEvent).detail;
+            setChecked(theme === 'high-visibility');
+        };
+        window.addEventListener('themeChange', handler);
+        return () => window.removeEventListener('themeChange', handler);
+    }, []);
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setChecked(event.target.checked);
