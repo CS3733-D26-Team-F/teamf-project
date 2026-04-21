@@ -61,7 +61,7 @@ export function Documents() {
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
 
-    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length;
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterCheckout.length;
 
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -723,7 +723,7 @@ export function Documents() {
                                 color={activeFilterCount > 0 ? 'blue' : undefined}
                                 leftSection={<IconFilter size={16}/>}
                                 onClick={() => setFilterOpen(true)} className="invert-hover">
-                            {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                            {t('filter_doc')}{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
                         </Button>
                         {persona === 'Admin' && (
                             <Button leftSection={<IconTrash size={16}/>} className="invert-hover-red"
@@ -760,7 +760,8 @@ export function Documents() {
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('owner')}: {v} ×</Badge>)}
                         {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
                                                         style={{cursor: 'pointer'}}
-                                                        onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>{t('documents')}: {v} ×</Badge>)}
+                                                        onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}> {t('checkout_status')}: {v === 'checked out' ? t('checked_out') : t('available')} ×
+                        </Badge>)}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
@@ -997,7 +998,7 @@ export function Documents() {
                                  onChange={setFilterOwner}
                                  data={[...new Set(documents.map(d => d.owner))]} clearable/>
                     <MultiSelect label={t('checkout_status')} placeholder={t('all_doc')} value={filterCheckout}
-                                 onChange={(val) => setFilterCheckout(val ?? 'all')}
+                                 onChange={(val) => setFilterCheckout(val)}
                                  data={[{
                                      value: 'available',
                                      label: t('available')
