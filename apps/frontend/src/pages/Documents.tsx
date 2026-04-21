@@ -1438,7 +1438,7 @@ export function Documents() {
                    title="Advanced Tag Management"
                    size="lg">
                 <Stack>
-                    <ManageTags/>
+                    <ManageTags allTags={getArrayTags()}/>
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={() => {
                             setAdvancedTagsOpen(false);

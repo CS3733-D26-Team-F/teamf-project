@@ -1,38 +1,70 @@
 import '@mantine/core/styles.css';
 import {
-    TextInput, Button, Group, Stack
+    TextInput, Button, Group, Stack, Select
 } from '@mantine/core';
 import {useState} from "react";
 import {DOMAIN} from "../../const.ts";
 import { useApi } from "../api.ts"
+import type {Metatag} from "../interfaces/DocumentsInterfaces.tsx";
 
-export function ManageTags() {
+interface ManageTagsProps {
+    allTags: string[];
+}
+
+export function ManageTags({allTags}: ManageTagsProps) {
     const api = useApi();
 
     const [createTag, setCreateTag] = useState<string>("");
     const [deleteTag, setDeleteTag] = useState<string>("");
 
+    const [currentTags, setCurrentTags] = useState<string[]>([]);
+
+    async function updateTags() {
+        let data = await api(`${DOMAIN}/getTags`)
+        data = await data.json();
+        const iteratableTagPairs: Metatag = data.data;
+        const tags: string[] = [];
+        for (const tag of await iteratableTagPairs) {
+            tags.push(tag.tag_name);
+        }
+        setCurrentTags(tags);
+    }
+
+    function getCurrentTags() {
+        if (currentTags.length === 0) setCurrentTags(allTags);
+        return currentTags
+    }
 
     async function runCreateTag() {
         await api(`${DOMAIN}/newtag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: createTag}) });
+        await updateTags();
         setCreateTag("");
+
     }
 
     async function runDeleteTag() {
         await api(`${DOMAIN}/deletetag`, {method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: deleteTag}) });
-        setDeleteTag("");
+        await updateTags();
+        setDeleteTag(null);
     }
 
     return(
         <Stack>
-        <Group>
-            <TextInput label="Enter a New Tag" value={createTag} onChange={e => setCreateTag(e.target.value)}/>
-            <Button className="invert-hover" onClick={runCreateTag} > Create Tag</Button>
-        </Group>
-        <Group>
-            <TextInput label="Enter a tag to Delete" value={deleteTag} onChange={e => setDeleteTag(e.target.value)}/>
-            <Button className="invert-hover" onClick={runDeleteTag} > Delete Tag</Button>
-        </Group>
+            <label>
+                Enter a New Tag:
+                <Group>
+                    <TextInput label="" value={createTag} onChange={e => setCreateTag(e.target.value)}/>
+                    <Button className="invert-hover" onClick={runCreateTag} > Create Tag</Button>
+                </Group>
+            </label>
+            <label>
+                Enter a tag to Delete
+                <Group>
+                    <Select label="" placeholder="Select a Tag" value={deleteTag}
+                                 onChange={val => setDeleteTag(val ?? "")} data={getCurrentTags()} />
+                    <Button className="invert-hover" onClick={runDeleteTag} > Delete Tag</Button>
+                </Group>
+            </label>
     </Stack>
     )
 }
