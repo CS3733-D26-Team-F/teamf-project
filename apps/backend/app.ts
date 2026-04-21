@@ -17,11 +17,6 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-
-app.get ('/health', (req, res) => {
-    res.status(200);
-})
-
 app.use('/', employeeRoutes);
 app.use('/', chatRoutes);
 app.use('/', contentRoutes);

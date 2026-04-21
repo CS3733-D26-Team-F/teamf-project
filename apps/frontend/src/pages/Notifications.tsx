@@ -138,11 +138,40 @@ export function Notifications() {
         return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
     };
 
+    const handleSendTestNotification = async () => {
+        const empid = localStorage.getItem('empid');
+        if (!empid) {
+            console.error('User not logged in');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${DOMAIN}/notifications`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: 'Test Notification',
+                    message: `This is a test notification sent at ${new Date().toLocaleString()}`,
+                    importance: 1,
+                    recipientEmpids: [parseInt(empid)],
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setNotifications(prev => [data.notification, ...prev]);
+            }
+        } catch (error) {
+            console.error('Failed to send test notification:', error);
+        }
+    };
+
     return (
         <>
             <Header />
             <PageTitle title="Notifications" />
-            <FilledButton>
+            <FilledButton onClick={handleSendTestNotification}>
                 Send Notification
             </FilledButton>
             <Box p="md">
