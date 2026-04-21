@@ -199,6 +199,8 @@ export function Documents() {
         return matchSearch && matchPersona;
     });
 
+    const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
+
     const [advancedTagsOpen, setAdvancedTagsOpen] = useState(false);
 
     // Fetch Auth0 Persona
@@ -253,6 +255,12 @@ export function Documents() {
             setCheckedOutMap(map);
         };
         loadCheckoutStatus();
+    }, []);
+
+    useEffect(() => {
+        api(`${DOMAIN}/favorites`)
+            .then(res => res.json())
+            .then((forms: { id: number }[]) => setFavoritedIds(new Set(forms.map(f => f.id))));
     }, []);
 
 
@@ -410,7 +418,7 @@ export function Documents() {
     }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, filterTags, checkedOutMap, documents, sortField, sortDir, persona]);
 
     const sortedFavorites = (() => {
-        const favs = filtered.filter(d => d.is_favorite);
+        const favs = filtered.filter(d => favoritedIds.has(d.id));
         if (!favSortField) return favs;
         return [...favs].sort((a, b) => {
             let aVal = String(a[favSortField] ?? '');
@@ -425,7 +433,7 @@ export function Documents() {
     })();
 
     const nonFavorites = filtered
-        .filter(d => !d.is_favorite)
+        .filter(d => !favoritedIds.has(d.id))
         .sort((a, b) => {
             if (filterCheckout.includes('checked out') && filterCheckout.includes('available')) {
                 const aChecked = !!checkedOutMap[a.id];
@@ -440,8 +448,8 @@ export function Documents() {
     const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
     const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
     const selectedCount = selectedIds.length + selectedFavIds.length;
-    const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id)?.is_favorite);
-    const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
+    const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => favoritedIds.has(id));
+    const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !favoritedIds.has(d.id)));
 
     async function handleAdd() {
         const formPayload = new FormData();
@@ -724,43 +732,57 @@ export function Documents() {
     }
 
     async function toggleFavorite(doc: ContentForm) {
-        await api(`${DOMAIN}/contentforms/${doc.id}/favorite`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({is_favorite: !doc.is_favorite})
+        const isFav = favoritedIds.has(doc.id);
+        await api(`${DOMAIN}/${isFav ? 'removeFavorite' : 'addFavorite'}`, {
+            method: isFav ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, formname: doc.name })
         });
-        loadDocuments();
+        setFavoritedIds(prev => {
+            const next = new Set(prev);
+            isFav ? next.delete(doc.id) : next.add(doc.id);
+            return next;
+        });
     }
 
     async function unfavoriteSelected() {
         const ids = [...selectedFavIds, ...selectedIds];
         await Promise.all(ids.map(id => {
-            const doc = documents.find(d => d.id === id && d.is_favorite);
+            const doc = documents.find(d => d.id === id && favoritedIds.has(d.id));
             if (!doc) return Promise.resolve();
-            return api(`${DOMAIN}/contentforms/${id}/favorite`, {
-                method: 'POST',
+            return api(`${DOMAIN}/removeFavorite`, {
+                method: 'DELETE',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({is_favorite: false})
+                body: JSON.stringify({ username, formname: doc.name })
             });
         }));
         setSelectedFavIds([]);
         setSelectedIds([]);
-        loadDocuments();
+        setFavoritedIds(prev => {
+            const next = new Set(prev);
+            ids.forEach(id => next.delete(id));
+            return next;
+        });
     }
 
     async function favoriteSelected() {
         const ids = [...selectedFavIds, ...selectedIds];
         await Promise.all(ids.map(id => {
-            const doc = documents.find(d => d.id === id && !d.is_favorite);
+            const doc = documents.find(d => d.id === id && !favoritedIds.has(d.id));
             if (!doc) return Promise.resolve();
-            return api(`${DOMAIN}/contentforms/${id}/favorite`, {
+            return api(`${DOMAIN}/addFavorite`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({is_favorite: true})
+                body: JSON.stringify({ username, formname: doc.name })
             });
         }));
         setSelectedFavIds([]);
         setSelectedIds([]);
-        loadDocuments();
+        setFavoritedIds(prev => {
+            const next = new Set(prev);
+            ids.forEach(id => next.add(id));
+            return next;
+        });
     }
 
 
@@ -818,6 +840,7 @@ export function Documents() {
             setDeleteId(id);
             setDeleteOpen(true);
         },
+        isFavorited: (id: number) => favoritedIds.has(id),
     };
 
     const recentDocs = recentIds

@@ -34,6 +34,7 @@ export function DocRow({
                            onSelect,
                            onView,
                            onFavorite,
+                            isFavorited,
                            onDownload,
                            onEdit,
                            onDelete,
@@ -77,9 +78,9 @@ export function DocRow({
                         </Tooltip>
                     ) : (
                         <>
-                            <Tooltip label={doc.is_favorite ? 'Unfavorite' : 'Favorite'}>
+                            <Tooltip label={isFavorited(doc.id) ? 'Unfavorite' : 'Favorite'}>
                                 <ActionIcon variant="subtle" color="yellow" onClick={() => onFavorite(doc)}>
-                                    {doc.is_favorite ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
+                                    {isFavorited(doc.id) ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label={isUrl ? "Open URL" : "Download"}>
