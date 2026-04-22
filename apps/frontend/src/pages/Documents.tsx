@@ -1350,11 +1350,13 @@ export function Documents() {
                                  onChange={val => setAddData({...addData, persona: val})}
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
+                    <Group preventGrowOverflow={false}>
                     <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
                                  onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
                                  data={getArrayTags()}/>
                     <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
                             onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                    </Group>
                     <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
