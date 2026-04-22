@@ -15,7 +15,6 @@ import {
     IconLock,
 } from "@tabler/icons-react";
 
-
 interface DocRowProps extends RowCallbacks {
     doc: ContentForm;
     isSelected: boolean;
@@ -34,7 +33,7 @@ export function DocRow({
                            onSelect,
                            onView,
                            onFavorite,
-                            isFavorited,
+                           isFavorited,
                            onDownload,
                            onEdit,
                            onDelete,
@@ -85,9 +84,9 @@ export function DocRow({
                         </Tooltip>
                     ) : (
                         <>
-                            <Tooltip label={doc.is_favorite ? 'Unfavorite' : 'Favorite'}>
+                            <Tooltip label={isFavorited(doc.id) ? 'Unfavorite' : 'Favorite'}>
                                 <ActionIcon variant="subtle" color="yellow" onClick={() => onFavorite(doc)}>
-                                    {doc.is_favorite ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
+                                    {isFavorited(doc.id) ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label={isUrl ? "Open URL" : "Download"}>
@@ -128,17 +127,17 @@ export function DocRow({
                                 </Tooltip>
                             )}
                             {canModify && (
-                            <Tooltip label={canEdit ? "Delete" : "Check out to delete"}>
-                                <ActionIcon
-                                    variant="subtle"
-                                    color={canEdit ? "var(--color-neutral-red)" : "gray"}
-                                    onClick={() => canEdit && onDelete(doc.id)}
-                                    style={{ opacity: canEdit ? 1 : 0.4, cursor: canEdit ? 'pointer' : 'not-allowed' }}
-                                >
-                                    <IconTrash size={16}/>
-                                </ActionIcon>
-                            </Tooltip>
-                        )}
+                                <Tooltip label={canEdit ? "Delete" : "Check out to delete"}>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color={canEdit ? "var(--color-neutral-red)" : "gray"}
+                                        onClick={() => canEdit && onDelete(doc.id)}
+                                        style={{ opacity: canEdit ? 1 : 0.4, cursor: canEdit ? 'pointer' : 'not-allowed' }}
+                                    >
+                                        <IconTrash size={16}/>
+                                    </ActionIcon>
+                                </Tooltip>
+                            )}
                         </>
                     )}
                 </Group>
