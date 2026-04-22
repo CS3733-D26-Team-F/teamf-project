@@ -151,16 +151,16 @@ export function Archive() {
         <>
             <Header />
             <Box p="md">
-                <PageTitle title="Archive" />
+                <PageTitle title= {t('archive')} />
 
                 <Tabs defaultValue="expired">
                     <Tabs.List mb="md">
                         {/* Documents sorted here by expiration status. */}
                         <Tabs.Tab value="expired" leftSection={<IconClock size={16} />}>
-                            Expired ({expired.length})
+                            {t('expired')} ({expired.length})
                         </Tabs.Tab>
                         <Tabs.Tab value="archived" leftSection={<IconArchive size={16} />}>
-                            Archived ({archived.length})
+                        {t('archived')} ({archived.length})
                         </Tabs.Tab>
                     </Tabs.List>
 
