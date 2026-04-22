@@ -432,7 +432,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, checkedOutMap]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, filterTags, checkedOutMap]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => favoritedIds.has(d.id));
@@ -469,18 +469,6 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !favoritedIds.has(d.id)));
 
     async function handleAdd() {
-        if (uploadMode === 'file' && !addFile) {
-            alert(t('upload_error_first'));
-            return;
-        }
-        if (uploadMode === 'url' && !addUrl) {
-            alert(t('url_error'));
-            return;
-        }
-        if (!addData.name || !addData.owner || !addData.persona || !addData.date_modified || !addData.expiration_date || !addData.review_date || !addData.content_type || !addData.status) {
-            alert(t('all_fields'));
-            return;
-        }
         const formPayload = new FormData();
         formPayload.append('filename', addData.name);
         formPayload.append('ownerUsername', addData.owner);
@@ -928,7 +916,7 @@ export function Documents() {
                                     color={activeFilterCount > 0 ? 'blue' : undefined}
                                     leftSection={<IconFilter size={16}/>}
                                     onClick={() => setFilterOpen(true)} className="invert-hover">
-                                {t('filter_doc')}{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
+                                {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
                             </Button>
                             {persona === 'Admin' && (
                                 <Button leftSection={<IconTrash size={16}/>} className="invert-hover-red"
@@ -1351,7 +1339,7 @@ export function Documents() {
                 </Modal>
 
                 {/* add modal */}
-                <Modal opened={addOpen} onClose={() => setAddOpen(false)} title={t('add_new_doc')} size="lg">
+                <Modal opened={addOpen} onClose={() =>{ setAddOpen(false);  setAddError('');}} title={t('add_new_doc')} size="lg">
                     <Stack>
                         <Text fw={600}>{t('document_details')}</Text>
                         <TextInput label={t('name_document')} value={addData.name}
@@ -1543,6 +1531,7 @@ export function Documents() {
                 <Modal opened={bulkOpen} onClose={() => {
                     setBulkOpen(false);
                     setStagedFiles([]);
+                    setAddError('');
                 }} title={t('bulk_doc')} size="1200px">
                     <Stack>
                         <Box>
@@ -1612,6 +1601,9 @@ export function Documents() {
                             </Box>
                         )}
                         <Group justify="flex-end" mt="md">
+                            {addError && (
+                                <ErrorMessage message={addError} />
+                                )}
                             <Button className="invert-hover-outline" onClick={() => {
                                 setBulkOpen(false);
                                 setStagedFiles([]);
