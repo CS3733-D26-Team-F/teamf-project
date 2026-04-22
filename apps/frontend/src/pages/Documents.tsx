@@ -1350,6 +1350,11 @@ export function Documents() {
                                  onChange={val => setAddData({...addData, persona: val})}
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
+                    <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                                 onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
+                                 data={getArrayTags()}/>
+                    <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                            onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
                     <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
@@ -1545,7 +1550,7 @@ export function Documents() {
                                                         onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
                                                     : <TextInput value={staged.owner} readOnly/>}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles} value={staged.persona}
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin') } value={staged.persona}
                                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                                    disabled={persona !== 'Admin'}/></Table.Td>
                                             <Table.Td><Select data={[t('reference'), t('workflow')]}
@@ -1583,6 +1588,7 @@ export function Documents() {
                         )}
                         <Button className="invert-hover-outline" onClick={() => {
                             setBulkOpen(false);
+                            setAddError('');
                             setStagedFiles([]);
                         }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleSaveClick} className="invert-hover"
