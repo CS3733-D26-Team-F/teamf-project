@@ -2,7 +2,7 @@ import type {ContentForm, RowCallbacks} from "../interfaces/DocumentsInterfaces.
 import {getFileType} from "./Functions.tsx";
 import {DocThumbnail} from "./DocThumbnail.tsx";
 import {ActionIcon, Badge, Checkbox, Group, Text} from "@mantine/core";
-import {IconDownload, IconEdit, IconStar, IconStarFilled, IconTrash} from "@tabler/icons-react";
+import {IconDownload, IconEdit, IconFolder, IconStar, IconStarFilled, IconTrash} from "@tabler/icons-react";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
 import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
@@ -14,7 +14,7 @@ interface DocCardProps extends RowCallbacks {
     onSelect: (id: number) => void;
 }
 
-export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onDelete, onEdit, isFavorited }: DocCardProps) {
+export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onDelete, onEdit, isFavorited, onFolderClick }: DocCardProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     const isUrl = getFileType(doc.url) === 'Link';
     return (
@@ -49,8 +49,18 @@ export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite
                     <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
                     <TagBadges tags={doc.jointagscontent} />
                     {doc.folder && (
-                        <Badge variant="outline" color="gray" size="xs">
-                            Folder: {doc.folder}
+                        <Badge
+                            variant="outline"
+                            color="gray"
+                            size="xs"
+                            style={{cursor: 'pointer'}}
+                            leftSection={<IconFolder size={12} />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onFolderClick(doc.folder_id);
+                            }}
+                        >
+                            {doc.folder}
                         </Badge>
                     )}
                 </Group>

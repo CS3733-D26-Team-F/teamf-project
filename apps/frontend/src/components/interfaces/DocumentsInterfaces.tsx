@@ -61,13 +61,5 @@ export interface RowCallbacks {
     onEdit: (doc: ContentForm) => void;
     onDelete: (id: number) => void;
     isFavorited: (id: number) => boolean;
-}
-
-export interface RowCallbacks {
-    persona: string | null;
-    onView: (url: string, label: string, id: number, isUrl: boolean) => void;
-    onFavorite: (doc: ContentForm) => void;
-    onDownload: (url: string, name: string) => void;
-    onEdit: (doc: ContentForm) => void;
-    onDelete: (id: number) => void;
+    onFolderClick: (folderId: number | null) => void;
 }

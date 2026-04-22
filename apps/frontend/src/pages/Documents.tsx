@@ -10,7 +10,7 @@ import {
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
-    IconFilter, IconClock
+    IconFilter, IconClock, IconFolder
 } from '@tabler/icons-react';
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -64,10 +64,10 @@ export function Documents() {
 
     const [documents, setDocuments] = useState<ContentForm[]>([]);
     const [folders, setFolders] = useState<Folder[]>([]);
-    const [documentFolderMap, setDocumentFolderMap] = useState<Record<number, string>>({});
     const [moveFolderOpen, setMoveFolderOpen] = useState(false);
-    const [moveTargetFolder, setMoveTargetFolder] = useState<string | null>(null);
+    const [moveTargetFolderId, setMoveTargetFolderId] = useState<string | null>(null);
     const [quickFolderName, setQuickFolderName] = useState('');
+    const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
     const folderMap = useMemo<Record<number, Folder>>(
         () => folders.reduce((acc, folder) => ({...acc, [folder.id]: folder}), {}),
         [folders]
@@ -94,7 +94,7 @@ export function Documents() {
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
     const [filterTags, setFilterTags] = useState<string[]>([]);
 
-    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length;
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length + (selectedFolderId !== null ? 1 : 0);
 
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -170,6 +170,7 @@ export function Documents() {
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    const [bulkFolderId, setBulkFolderId] = useState<string | null>(null);
     const [addError, setAddError] = useState<string>('');
     const [, setEditError] = useState<string>('');
 
@@ -263,50 +264,12 @@ export function Documents() {
             .catch(() => {
             }); // silently ignore if endpoint doesn't exist yet
         loadDocuments();
+        loadFolders();
         api(
             `${DOMAIN}/employees`)
             .then(res => res.json())
             .then((data: Employee[]) => setEmployees(data));
     }, []);
-
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem('documents-folder-list');
-            if (!raw) return;
-            const parsed = JSON.parse(raw) as Folder[];
-            if (Array.isArray(parsed)) {
-                setFolders(parsed);
-            }
-        } catch {
-        }
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('documents-folder-list', JSON.stringify(folders));
-    }, [folders]);
-
-    useEffect(() => {
-        try {
-            const raw = localStorage.getItem('documents-folder-map');
-            if (!raw) return;
-            const parsed = JSON.parse(raw) as Record<number, string>;
-            if (parsed && typeof parsed === 'object') {
-                setDocumentFolderMap(parsed);
-            }
-        } catch {
-        }
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('documents-folder-map', JSON.stringify(documentFolderMap));
-    }, [documentFolderMap]);
-
-    useEffect(() => {
-        setDocuments(prev => prev.map(doc => ({
-            ...doc,
-            folder: documentFolderMap[doc.id] ?? doc.folder ?? ''
-        })));
-    }, [documentFolderMap]);
 
     // Keep Add/Edit forms synced with persona after it loads
     useEffect(() => {
@@ -317,7 +280,7 @@ export function Documents() {
         }));
     }, [persona, username]);
 
-    function createFolderLocal(name: string, personaList: string[]) {
+    async function createFolder(name: string, personaList: string[]) {
         const trimmedName = name.trim();
         if (!trimmedName) return null;
 
@@ -327,34 +290,37 @@ export function Documents() {
             return null;
         }
 
-        const newFolder: Folder = {
-            id: Date.now(),
-            name: trimmedName,
-            owner: username ?? '',
-            persona: personaList,
-            associated_docsIDs: [],
-            date_modified: new Date().toISOString(),
-            url: ''
-        };
+        try {
+            const createdFolder = await api(`${DOMAIN}/folders`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: trimmedName, persona: personaList})
+            }).then(res => res.json()) as Folder;
 
-        setFolders(prev => [...prev, newFolder]);
-        setFolderModalError('');
-        return newFolder;
+            setFolders(prev => [createdFolder, ...prev]);
+            setFolderModalError('');
+            return createdFolder;
+        } catch (err: any) {
+            setFolderModalError(err?.message ?? 'Could not create folder.');
+            return null;
+        }
     }
 
-    function assignDocumentsToFolder(ids: number[], folderName: string) {
-        if (!folderName) return;
-        setDocumentFolderMap(prev => {
-            const next = {...prev};
-            ids.forEach(id => {
-                next[id] = folderName;
-            });
-            return next;
+    async function assignDocumentsToFolder(ids: number[], folderId: number | null) {
+        if (ids.length === 0) return;
+
+        await api(`${DOMAIN}/contentforms/folder/bulk`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ids, folderId})
         });
 
-        setDocuments(prev => prev.map(doc => (
-            ids.includes(doc.id) ? {...doc, folder: folderName} : doc
-        )));
+        await Promise.all([loadDocuments(), loadFolders()]);
+    }
+
+    async function loadFolders() {
+        const fetchedFolders = await api(`${DOMAIN}/folders`).then(res => res.json()) as Folder[];
+        setFolders(Array.isArray(fetchedFolders) ? fetchedFolders : []);
     }
 
     // checkall
@@ -404,13 +370,8 @@ export function Documents() {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
 
-                const merged = flat.map(doc => ({
-                    ...doc,
-                    folder: documentFolderMap[doc.id] ?? doc.folder ?? ''
-                }));
-
                 //Also load docuemnt tags
-                for (const doc of merged) {
+                for (const doc of flat) {
                     api(`${DOMAIN}/grabformtags/${doc.name}`)
                         .then(res => res.json())
                         .then(tagData => {
@@ -427,7 +388,7 @@ export function Documents() {
                         });
                 }
 
-                setDocuments(merged);
+                setDocuments(flat);
                 loadTags()
             });
     }
@@ -492,6 +453,12 @@ export function Documents() {
             return filterType.map(t => t.toLowerCase()).includes(getExt(d.url));
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
+        if (selectedFolderId !== null) {
+            result = result.filter(d => d.folder_id === selectedFolderId);
+        } else {
+            // Main pool should only show files that are not inside any folder.
+            result = result.filter(d => d.folder_id === null);
+        }
         if (filterCheckout.length > 0) {
             const showCheckout = filterCheckout.includes('checked out');
             const showAvailable = filterCheckout.includes('available');
@@ -534,7 +501,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, filterTags, checkedOutMap]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, filterTags, checkedOutMap, selectedFolderId]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => favoritedIds.has(d.id));
@@ -564,14 +531,15 @@ export function Documents() {
         });
 
     const folderDocCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        filtered.forEach(doc => {
-            const folderName = (doc.folder ?? '').trim();
-            if (!folderName) return;
-            counts[folderName] = (counts[folderName] ?? 0) + 1;
-        });
+        const counts: Record<number, number> = {};
+        documents
+            .filter(doc => doc.status !== 'Expired' && doc.status !== 'Archived')
+            .forEach(doc => {
+            if (doc.folder_id === null) return;
+            counts[doc.folder_id] = (counts[doc.folder_id] ?? 0) + 1;
+            });
         return counts;
-    }, [filtered]);
+    }, [documents]);
 
     const allSelected = selectedIds.length === nonFavorites.length && nonFavorites.length > 0;
     const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
@@ -590,6 +558,9 @@ export function Documents() {
         formPayload.append('review_date', addData.review_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
+        if (addData.folder) {
+            formPayload.append('folder_id', addData.folder);
+        }
 
         if (addFile) {
             formPayload.append('file', addFile);
@@ -628,10 +599,6 @@ export function Documents() {
                         body: JSON.stringify({id: docID, metid: tagID})
                     });
                 }
-            }
-
-            if (docID && addData.folder) {
-                assignDocumentsToFolder([docID], addData.folder);
             }
 
             setAddData({
@@ -673,8 +640,8 @@ export function Documents() {
                 formPayload.append('review_date', sf.review_date);
                 formPayload.append('content_type', sf.content_type);
                 formPayload.append('status', sf.status);
-                if (sf.folder_id !== null && folderMap[sf.folder_id]) {
-                    formPayload.append('folder', folderMap[sf.folder_id].name);
+                if (sf.folder_id !== null) {
+                    formPayload.append('folder_id', String(sf.folder_id));
                 }
                 formPayload.append('file', sf.file);
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
@@ -688,23 +655,6 @@ export function Documents() {
                     throw err;
                 }
                 return;
-            }
-            if (sf.folder_id !== null) {
-                const folderName = folderMap[sf.folder_id]?.name ?? '';
-                if (folderName) {
-                    const latestDocs = await api(`${DOMAIN}/contentforms`)
-                        .then(res => res.json())
-                        .then(data => {
-                            const flat: ContentForm[] = Array.isArray(data) ? data :
-                                [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
-                            return flat;
-                        });
-
-                    const uploaded = latestDocs.find(d => d.name === sf.name);
-                    if (uploaded) {
-                        assignDocumentsToFolder([uploaded.id], folderName);
-                    }
-                }
             }
         }
         setBulkOpen(false);
@@ -732,7 +682,7 @@ export function Documents() {
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
-                    folder: doc.folder,
+                    folder: doc.folder_id !== null ? String(doc.folder_id) : '',
                     jointagscontent: doc.jointagscontent
                 });
                 setEditOpen(true);
@@ -952,6 +902,10 @@ export function Documents() {
         onView: openViewer,
         onFavorite: toggleFavorite,
         onDownload: downloadFile,
+        onFolderClick: (folderId: number | null) => {
+            if (folderId === null) return;
+            setSelectedFolderId(prev => (prev === folderId ? null : folderId));
+        },
         onEdit: openEdit,
         onDelete: (id: number) => {
             setDeleteId(id);
@@ -1054,6 +1008,16 @@ export function Documents() {
                                                         style={{cursor: 'pointer'}}
                                                         onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}> {t('checkout_status')}: {v === 'checked out' ? t('checked_out') : t('available')} ×
                         </Badge>)}
+                        {selectedFolderId !== null && (
+                            <Badge
+                                variant="filled"
+                                color="grape"
+                                style={{cursor: 'pointer'}}
+                                onClick={() => setSelectedFolderId(null)}
+                            >
+                                Folder: {folderMap[selectedFolderId]?.name ?? 'Unknown'} ×
+                            </Badge>
+                        )}
                         <Badge variant="outline" style={{cursor: 'pointer'}} onClick={() => {
                             setFilterPersona([]);
                             setFilterStatus([]);
@@ -1061,6 +1025,7 @@ export function Documents() {
                             setFilterOwner([]);
                             setFilterCheckout([]);
                             setFilterTags([]);
+                            setSelectedFolderId(null);
                         }}>Clear all</Badge>
                     </Group>
                 )}
@@ -1099,6 +1064,55 @@ export function Documents() {
                     </Box>
                 )}
                 {/* ─────────────────────────────────────────────────────────── */}
+
+                {folders.length > 0 && (
+                    <Box mb="lg">
+                        <Group justify="space-between" mb="xs">
+                            <Text fw={700} size="sm" c="dimmed">Folders</Text>
+                            {selectedFolderId !== null && (
+                                <Button variant="light" size="xs" onClick={() => setSelectedFolderId(null)}>
+                                    Show all documents
+                                </Button>
+                            )}
+                        </Group>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                            gap: 12
+                        }}>
+                            {folders.map(folder => {
+                                const isActive = selectedFolderId === folder.id;
+                                return (
+                                    <Box
+                                        key={folder.id}
+                                        p="sm"
+                                        onClick={() => setSelectedFolderId(prev => prev === folder.id ? null : folder.id)}
+                                        style={{
+                                            border: isActive ? '1px solid #3b82f6' : '1px solid #d7dee8',
+                                            borderRadius: 10,
+                                            background: isActive ? '#eff6ff' : '#f8fafc',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <Group gap={8} wrap="nowrap" align="center">
+                                            <ActionIcon variant={isActive ? 'filled' : 'light'} color={isActive ? 'blue' : 'gray'}>
+                                                <IconFolder size={16}/>
+                                            </ActionIcon>
+                                            <div style={{minWidth: 0}}>
+                                                <Text fw={700} size="sm" style={{color: 'var(--color-yale-blue)'}}>
+                                                    {folder.name}
+                                                </Text>
+                                                <Text size="xs" c="dimmed">
+                                                    {folderDocCounts[folder.id] ?? 0} document(s)
+                                                </Text>
+                                            </div>
+                                        </Group>
+                                    </Box>
+                                );
+                            })}
+                        </div>
+                    </Box>
+                )}
 
                 {/* list view */}
                 {viewMode === 'list' && (
@@ -1152,32 +1166,6 @@ export function Documents() {
                 {/* grid view */}
                 {viewMode === 'grid' && (
                     <Stack gap="lg">
-                        {folders.length > 0 && (
-                            <Box>
-                                <Text fw={700} size="sm" c="dimmed" mb="xs">Folders</Text>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                                    gap: 12
-                                }}>
-                                    {folders.map(folder => (
-                                        <Box key={folder.id} p="sm" style={{
-                                            border: '1px solid #d7dee8',
-                                            borderRadius: 10,
-                                            background: '#f8fafc'
-                                        }}>
-                                            <Text fw={700} size="sm" style={{color: 'var(--color-yale-blue)'}}>
-                                                {folder.name}
-                                            </Text>
-                                            <Text size="xs" c="dimmed">
-                                                {folderDocCounts[folder.name] ?? 0} document(s)
-                                            </Text>
-                                        </Box>
-                                    ))}
-                                </div>
-                            </Box>
-                        )}
-
                         {sortedFavorites.length > 0 && (
                             <Box>
                                 <Group justify="space-between" mb="sm">
@@ -1267,7 +1255,7 @@ export function Documents() {
                                     All</Button>}
 
                             <Button className="invert-hover" onClick={() => {
-                                setMoveTargetFolder(null);
+                                setMoveTargetFolderId(null);
                                 setQuickFolderName('');
                                 setMoveFolderOpen(true);
                             }}> Move to Folder</Button>
@@ -1346,9 +1334,9 @@ export function Documents() {
                     <MultiSelect label="Persona" placeholder="Select personas" value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
                     {folderModalError && <ErrorMessage message={folderModalError} />}
                     <Group justify="flex-end">
-                        <Button className="invert-hover" onClick={() => {
+                        <Button className="invert-hover" onClick={async () => {
                             const personas = folderPersona.length > 0 ? folderPersona : [persona ?? ''].filter(Boolean);
-                            const created = createFolderLocal(folderName, personas);
+                            const created = await createFolder(folderName, personas);
                             if (created) {
                                 setAddFolderOpen(false);
                                 setFolderName('');
@@ -1365,9 +1353,9 @@ export function Documents() {
                     <Select
                         label="Target Folder"
                         placeholder="Choose folder"
-                        value={moveTargetFolder}
-                        onChange={setMoveTargetFolder}
-                        data={folders.map(f => ({label: f.name, value: f.name}))}
+                        value={moveTargetFolderId}
+                        onChange={setMoveTargetFolderId}
+                        data={folders.map(f => ({label: f.name, value: String(f.id)}))}
                         searchable
                         clearable
                     />
@@ -1378,21 +1366,21 @@ export function Documents() {
                             value={quickFolderName}
                             onChange={e => setQuickFolderName(e.target.value)}
                         />
-                        <Button mt={24} className="invert-hover-outline" onClick={() => {
+                        <Button mt={24} className="invert-hover-outline" onClick={async () => {
                             const personas = [persona ?? ''].filter(Boolean);
-                            const created = createFolderLocal(quickFolderName, personas);
+                            const created = await createFolder(quickFolderName, personas);
                             if (created) {
-                                setMoveTargetFolder(created.name);
+                                setMoveTargetFolderId(String(created.id));
                                 setQuickFolderName('');
                             }
                         }}>Create</Button>
                     </Group>
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => setMoveFolderOpen(false)}>Cancel</Button>
-                        <Button className="invert-hover" onClick={() => {
-                            if (!moveTargetFolder) return;
+                        <Button className="invert-hover" onClick={async () => {
+                            if (!moveTargetFolderId) return;
                             const ids = [...new Set([...selectedIds, ...selectedFavIds])];
-                            assignDocumentsToFolder(ids, moveTargetFolder);
+                            await assignDocumentsToFolder(ids, Number(moveTargetFolderId));
                             setMoveFolderOpen(false);
                         }}>Move</Button>
                     </Group>
@@ -1432,6 +1420,8 @@ export function Documents() {
                             setFilterType([]);
                             setFilterOwner([]);
                             setFilterCheckout([]);
+                            setFilterTags([]);
+                            setSelectedFolderId(null);
                         }}>{t('clear_all')}</Button>
                         <Button className="invert-hover" onClick={() => setFilterOpen(false)}>{t('apply')}</Button>
                     </Group>
@@ -1577,7 +1567,7 @@ export function Documents() {
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Select label="Folder" value={addData.folder} onChange={val => setAddData({...addData, folder: val ?? ''})} 
-                        data={folders.map(f => ({label: f.name, value: f.name}))} clearable />
+                        data={folders.map(f => ({label: f.name, value: String(f.id)}))} clearable />
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
@@ -1611,6 +1601,7 @@ export function Documents() {
             <Modal opened={bulkOpen} onClose={() => {
                 setBulkOpen(false);
                 setStagedFiles([]);
+                setBulkFolderId(null);
                 setAddError('');
             }} title={t('bulk_doc')} size="1200px">
                 <Stack>
@@ -1621,6 +1612,39 @@ export function Documents() {
                             e.target.value = '';
                         }}/>
                     </Box>
+                    {stagedFiles.length > 0 && (
+                        <Group align="end" grow>
+                            <Select
+                                label="Add to folder (all files)"
+                                placeholder="Choose folder"
+                                value={bulkFolderId}
+                                onChange={setBulkFolderId}
+                                data={folders.map(f => ({label: f.name, value: String(f.id)}))}
+                                searchable
+                                clearable
+                            />
+                            <Button
+                                className="invert-hover"
+                                onClick={() => {
+                                    if (!bulkFolderId) return;
+                                    const folderId = Number(bulkFolderId);
+                                    setStagedFiles(prev => prev.map(item => ({...item, folder_id: folderId})));
+                                }}
+                                disabled={!bulkFolderId}
+                            >
+                                Apply folder to all
+                            </Button>
+                            <Button
+                                className="invert-hover-outline"
+                                onClick={() => {
+                                    setBulkFolderId(null);
+                                    setStagedFiles(prev => prev.map(item => ({...item, folder_id: null})));
+                                }}
+                            >
+                                Clear folder for all
+                            </Button>
+                        </Group>
+                    )}
                     {stagedFiles.length > 0 && (
                         <Box style={{overflowX: 'auto'}}>
                             <Table highlightOnHover withTableBorder withColumnBorders>
@@ -1694,6 +1718,7 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => {
                             setBulkOpen(false);
                             setAddError('');
+                            setBulkFolderId(null);
                             setStagedFiles([]);
                         }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"

@@ -34,6 +34,7 @@ export function DocRow({
                            onSelect,
                            onView,
                            onFavorite,
+                           onFolderClick,
                            isFavorited,
                            onDownload,
                            onEdit,
@@ -107,6 +108,20 @@ export function DocRow({
                                     </ActionIcon>
                                 )}
                             </Tooltip>
+                            {doc.folder_id !== null && (
+                                <Tooltip label={`Open folder: ${doc.folder || 'Folder'}`}>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color="indigo"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onFolderClick(doc.folder_id);
+                                        }}
+                                    >
+                                        <IconFolder size={16}/>
+                                    </ActionIcon>
+                                </Tooltip>
+                            )}
                             {canModify && (
                                 <Tooltip label={canEdit ? "Edit" : "Check out to edit"}>
                                     <ActionIcon
