@@ -7,21 +7,26 @@ import { DOMAIN } from '../../const';
 import { useTranslation } from 'react-i18next';
 
 
+// Fallback image shown when the user does not have a stored profile picture yet.
 const placeholder = '/default-profile-picture.png';
-
 
 export function ProfileComponent() {
     const { t } = useTranslation();
+    // Initialize from localStorage so the profile card can render immediately
+    // without waiting for the network request.
     const [profileImage, setProfileImage] = useState<string>(() => (
         localStorage.getItem('pfp_URL') || localStorage.getItem('profilePicture') || placeholder
     ));
 
     useEffect(() => {
+        // Username is required to look up the employee record on the backend.
         const username = localStorage.getItem('username');
         if (!username) {
             return;
         }
 
+        // Fetch the latest profile image URL so local storage stays in sync
+        // with the backend if the user updated their picture elsewhere.
         fetch(`${DOMAIN}/getEmployee`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -62,6 +67,7 @@ export function ProfileComponent() {
                 </thead>
                 <tbody>
                     <tr>
+                        {/* Profile image is loaded from the backend when available, otherwise fallback is used. */}
                         <td><Image src={profileImage} style={{ width: 200, height: 200 }} alt="Profile" /></td>
                         <td>{t ('email')}: {localStorage.getItem('email')}</td>
                     </tr>

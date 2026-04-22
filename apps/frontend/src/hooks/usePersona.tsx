@@ -1,10 +1,13 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 
+// Supported application personas. `null` means we couldn't resolve a valid role.
 type Persona = "Admin" | "Business Analyst" | "Underwriter" | "Actuarial Analyst" | "EXL Operations" | null;
 
+// Central list of valid persona strings used to validate values from storage/claims.
 const PERSONA_VALUES: Exclude<Persona, null>[] = ["Admin", "Business Analyst", "Underwriter", "Actuarial Analyst", "EXL Operations"];
 
+// Normalize a raw string from localStorage into a known Persona value.
 function asPersona(value: string | null): Persona {
     if (value && PERSONA_VALUES.includes(value as Exclude<Persona, null>)) {
         return value as Exclude<Persona, null>;
@@ -12,6 +15,8 @@ function asPersona(value: string | null): Persona {
     return null;
 }
 
+// Pick the highest-priority persona from a list of roles.
+// The order here matters: Admin wins over lower-privileged roles.
 function derivePersonaFromRoles(roles: string[]): Persona {
     if (roles.includes("Admin")) {
         return "Admin";
@@ -31,6 +36,8 @@ function derivePersonaFromRoles(roles: string[]): Persona {
     return null;
 }
 
+// Read role values from Auth0 claims, supporting multiple claim key shapes
+// so the hook can work across different Auth0 configurations.
 function extractRolesFromClaims(claims: Record<string, unknown>): string[] {
     const namespace = import.meta.env.VITE_AUTH0_CLAIMS_NAMESPACE || "https://example.com/claims";
     const possibleRoleKeys = [
@@ -61,33 +68,41 @@ function extractRolesFromClaims(claims: Record<string, unknown>): string[] {
 
 export const usePersona = (): Persona => {
     const { getIdTokenClaims, isAuthenticated, isLoading } = useAuth0();
+    // Start with the stored persona so the UI can render immediately on refresh.
     const [persona, setPersona] = useState<Persona>(asPersona(localStorage.getItem("persona")));
 
     useEffect(() => {
         const fetchPersona = async () => {
+            // If the user is not authenticated, fall back to whatever is stored locally.
             if (!isAuthenticated) {
                 setPersona(asPersona(localStorage.getItem("persona")));
                 return;
             }
 
             try {
+                // Read claims from the Auth0 ID token and derive the persona from role claims.
                 const claims = (await getIdTokenClaims()) as Record<string, unknown> | undefined;
                 const claimRoles = claims ? extractRolesFromClaims(claims) : [];
 
                 let derivedPersona = derivePersonaFromRoles(claimRoles);
+
+                // If claims do not contain a usable role, fall back to localStorage.
                 if (!derivedPersona) {
                     derivedPersona = asPersona(localStorage.getItem("persona"));
                 }
 
+                // Keep localStorage synchronized so future renders can reuse the same value.
                 setPersona(derivedPersona);
                 if (derivedPersona) {
                     localStorage.setItem("persona", derivedPersona);
                 }
             } catch {
+                // On any Auth0/claims failure, preserve the last known local value.
                 setPersona(asPersona(localStorage.getItem("persona")));
             }
         };
 
+        // Wait until Auth0 finishes loading before attempting to read claims.
         if (!isLoading) {
             fetchPersona();
         }

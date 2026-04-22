@@ -9,6 +9,7 @@ import ThemeToggle from "./ThemeToggle";
 import i18n from "../i18n.ts";
 import {useTranslation} from "react-i18next";
 
+// Lightweight fallback avatar shown when no custom profile picture is available.
 const placeholderProfilePicture =
     'data:image/svg+xml;charset=UTF-8,' +
     encodeURIComponent(
@@ -16,6 +17,7 @@ const placeholderProfilePicture =
     );
 
 export function Profile() {
+    // Initialize from localStorage so the header can render immediately on page load.
     const [profilePicture, setProfilePicture] = useState<string | undefined>(() => (
         localStorage.getItem('pfp_URL') ?? localStorage.getItem('profilePicture') ?? undefined
     ));
@@ -27,6 +29,7 @@ export function Profile() {
         localStorage.setItem('language', lang);
     };
 
+    // Prefer employee name, then username, then Auth0 nickname as the display label.
     const displayName =
         localStorage.getItem('first_name') && localStorage.getItem('first_name') !== 'undefined'
             ? localStorage.getItem('first_name')
@@ -35,12 +38,14 @@ export function Profile() {
                 : user?.nickname || 'User';
 
     useEffect(() => {
+        // Use the saved username first, then fall back to the Auth0 nickname.
         const username = localStorage.getItem('username') || user?.nickname;
-
+        
         if (!username) {
             return;
         }
 
+        // Refresh employee details from the backend so localStorage stays current.
         fetch(`${DOMAIN}/getEmployee`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -58,9 +63,11 @@ export function Profile() {
                     return;
                 }
 
+                // Keep the latest profile picture in state for immediate UI updates.
                 const url = employee.pfp_URL ?? undefined;
                 setProfilePicture(url);
 
+                // Sync commonly used profile fields into localStorage for the rest of the app.
                 if (employee.username) {
                     localStorage.setItem('username', employee.username);
                 }
@@ -74,6 +81,7 @@ export function Profile() {
                     localStorage.setItem('empid', String(employee.empid));
                 }
 
+                // Save the image URL when present; otherwise fall back to the placeholder avatar.
                 if (url) {
                     localStorage.setItem('pfp_URL', url);
                 } else {
@@ -86,19 +94,21 @@ export function Profile() {
             });
     }, [user?.nickname]);
 
+    // Clear local session data before sending the user back to the app's landing origin.
     function handleLogout() {
         localStorage.clear();
-        logout({logoutParams: {returnTo: window.location.origin}});
+        sessionStorage.removeItem('chatHistory');
+        logout({ logoutParams: { returnTo: window.location.origin } });
     }
 
+    // Hide the profile menu entirely for guest/unauthenticated visitors.
     if (localStorage.getItem('persona') !== 'Guest' || localStorage.getItem('username') !== null) {
         return (
             <>
-                <div className="profile-link" aria-label="Signed in user">
-                    <Menu transitionProps={{transition: 'pop-top-right'}} position="top-end" width={190}>
+                <div className="profile-link" aria-label="Signed in user" >
+                    <Menu transitionProps={{ transition: 'pop-top-right' }} position="top-end" width={190}>
                         <Menu.Target>
-                            <Button style={{height: '50px'}} rightSection={<IconChevronDown size={18}/>} pr={20}
-                                    variant="filled" color="primary">
+                            <Button style={{height: '50px'}} rightSection={<IconChevronDown size={18} />} pr={20} variant="filled" color="primary">
                                 <img
                                     id="profile-picture"
                                     src={profilePicture ?? placeholderProfilePicture}
@@ -116,6 +126,7 @@ export function Profile() {
                                         border: '1px solid var(--color-pale-sky)',
                                     }}
                                     onError={(event) => {
+                                        // Replace broken images with the fallback avatar.
                                         setProfilePicture(placeholderProfilePicture);
                                         event.currentTarget.src = placeholderProfilePicture;
                                     }}

@@ -6,6 +6,7 @@ import {IconDownload, IconEdit, IconStar, IconStarFilled, IconTrash} from "@tabl
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
 import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
+import {TagBadges} from "../Badges/TagBadges.tsx";
 
 interface DocCardProps extends RowCallbacks {
     doc: ContentForm;
@@ -13,7 +14,7 @@ interface DocCardProps extends RowCallbacks {
     onSelect: (id: number) => void;
 }
 
-export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onEdit, onDelete }: DocCardProps) {
+export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onDelete, onEdit, isFavorited }: DocCardProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     const isUrl = getFileType(doc.url) === 'Link';
     return (
@@ -32,8 +33,8 @@ export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite
                 <Checkbox checked={isSelected} onChange={() => onSelect(doc.id)} />
             </div>
             <div style={{ position: 'absolute', top: 6, right: 6 }} onClick={e => e.stopPropagation()}>
-                <ActionIcon variant="filled" color={doc.is_favorite ? 'yellow' : 'gray'} size="sm" onClick={() => onFavorite(doc)}>
-                    {doc.is_favorite ? <IconStarFilled size={14} /> : <IconStar size={14} />}
+                <ActionIcon variant="filled" color={isFavorited(doc.id) ? 'yellow' : 'gray'} size="sm" onClick={() => onFavorite(doc)}>
+                    {isFavorited(doc.id) ? <IconStarFilled size={14} /> : <IconStar size={14} />}
                 </ActionIcon>
             </div>
 
@@ -46,6 +47,7 @@ export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite
                     <PersonaBadges personas={doc.persona} />
                     <StatusBadge status={doc.status} size="xs" filter={false} />
                     <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
+                    <TagBadges tags={doc.jointagscontent} />
                 </Group>
                 <Group mt={6} gap="xs" onClick={e => e.stopPropagation()}>
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>

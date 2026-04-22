@@ -24,14 +24,17 @@ import {ConfirmModal} from "../components/content/ConfirmModal"
 import {useApi} from "../../src/components/api.ts";
 import type {
     RowCallbacks
-    , StagedFile, ContentForm, Employee
+    , StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import {getExt, getFileType, normalizeUrl} from "../components/content/Functions.tsx";
+import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
 import {DocCard} from "../components/content/DocCard.tsx";
 import {TableHead} from "../components/content/TableHead.tsx";
 import {DocRow} from "../components/content/DocRow.tsx";
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import {Error as ErrorMessage} from "../components/content/Error.tsx"
+import {ManageTags} from "../components/content/ManageTags.tsx";
 import {useTranslation} from "react-i18next";
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -50,6 +53,7 @@ export function Documents() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [createdTags, setCreatedTags] = useState<Metatag[]>([]);
 
     const [selectedFavIds, setSelectedFavIds] = useState<number[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -60,8 +64,9 @@ export function Documents() {
     const [filterOwner, setFilterOwner] = useState<string[]>([]);
     const [filterOpen, setFilterOpen] = useState(false);
     const [filterCheckout, setFilterCheckout] = useState<string[]>([]);
+    const [filterTags, setFilterTags] = useState<string[]>([]);
 
-    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterCheckout.length;
+    const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length;
 
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -133,10 +138,12 @@ export function Documents() {
     const [addData, setAddData] = useState({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: [] as string[]
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+    const [addError, setAddError] = useState<string>('');
+    const [editError, setEditError] = useState<string>('');
 
     function handleBulkFileSelect(files: File[]) {
         const newStaged: StagedFile[] = files.map(f => ({
@@ -160,6 +167,7 @@ export function Documents() {
         ));
     }
 
+
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
     }
@@ -173,7 +181,7 @@ export function Documents() {
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState({
         name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: ''
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', jointagscontent: [] as string[]
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -194,6 +202,10 @@ export function Documents() {
         const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
+
+    const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
+
+    const [advancedTagsOpen, setAdvancedTagsOpen] = useState(false);
 
     // Fetch Auth0 Persona
     useEffect(() => {
@@ -249,32 +261,22 @@ export function Documents() {
         loadCheckoutStatus();
     }, []);
 
+    useEffect(() => {
+        api(`${DOMAIN}/favorites`)
+            .then(res => res.json())
+            .then((forms: { id: number }[]) => setFavoritedIds(new Set(forms.map(f => f.id))));
+    }, []);
+
 
     async function loadTrash() {
-        const res = await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        trash`);
+        const res = await api(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
         setTrashDocs(data);
     }
 
     async function restoreDoc(id: number) {
         if (!window.confirm('Are you sure you want to restore?')) return;
-        await api(`
-        $
-        {
-            DOMAIN
-        }
-        /contentforms/
-        $
-        {
-            id
-        }
-        /restore`, {method: 'PATCH'});
+        await api(`${DOMAIN}/contentforms/${id}/restore`, {method: 'PATCH'});
         loadTrash();
         loadDocuments();
     }
@@ -291,8 +293,46 @@ export function Documents() {
             .then(data => {
                 const flat: ContentForm[] = Array.isArray(data) ? data :
                     [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+
+                //Also load docuemnt tags
+                for (const doc of flat) {
+                    api(`${DOMAIN}/grabformtags/${doc.name}`)
+                        .then(res => res.json())
+                        .then(tagData => {
+                            //const tags = tagData.data;
+                            if (tagData.data.length > 0) {
+                                //Tags are id and tag_name, we only want name
+                                const tagNames = [];
+                                for (const tag of tagData.data) {
+                                    tagNames.push(tag.tag_name)
+                                }
+                                doc.jointagscontent = tagNames
+                            }
+
+                        });
+                }
+
                 setDocuments(flat);
+                loadTags()
             });
+    }
+
+    function loadTags() {
+        api(`${DOMAIN}/getTags`)
+            .then(res => res.json())
+            .then(data => {
+                setCreatedTags(data.data);
+            }).catch(err => console.log("Error was", err));
+    }
+
+    //To display tags in multi select they have to be a list of strings
+    //So take the list of tags with id and name and get just the name
+    function getArrayTags() {
+        const tags: string[] = [];
+        for (const tag of createdTags) {
+            tags.push(tag.tag_name);
+        }
+        return tags;
     }
 
     function toggleSort(field: keyof ContentForm) {
@@ -319,13 +359,21 @@ export function Documents() {
         }
     }
 
+    const fileTypeOptions = useMemo(
+        () => [...new Set(documents.map(d => getFileType(d.url)))].sort(),
+        [documents]
+    );
+
     const filtered = useMemo(() => {
-        let result = [...documents];
-        if (search) result = result.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.owner.toLowerCase().includes(search.toLowerCase()));
+        let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
+        if (search) result = result.filter(d =>
+            d.name.toLowerCase().includes(search.toLowerCase()) ||
+            d.owner.toLowerCase().includes(search.toLowerCase()) ||
+            (d.jointagscontent ?? []).some(p => p.toLowerCase().includes(search.toLowerCase())));
         if (filterPersona.length > 0) result = result.filter(d => d.persona.some(p => filterPersona.includes(p)));
         if (filterStatus.length > 0) result = result.filter(d => filterStatus.includes(d.status));
         if (filterType.length > 0) result = result.filter(d => {
-            if (filterType.includes('link') && getFileType(d.url) === 'Link') return true;
+            if (filterType.includes('LINK') && getFileType(d.url) === 'LINK') return true;
             return filterType.map(t => t.toLowerCase()).includes(getExt(d.url));
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
@@ -347,6 +395,7 @@ export function Documents() {
                 result = result.filter(d => !checkedOutMap[d.id]);
             }
         }
+        if (filterTags.length > 0) result = result.filter(d => (d.jointagscontent ?? []).some(p => filterTags.includes(p)));
 
         if (sortField) {
             result.sort((a, b) => {
@@ -373,7 +422,7 @@ export function Documents() {
     }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, checkedOutMap]);
 
     const sortedFavorites = (() => {
-        const favs = filtered.filter(d => d.is_favorite);
+        const favs = filtered.filter(d => favoritedIds.has(d.id));
         if (!favSortField) return favs;
         return [...favs].sort((a, b) => {
             let aVal = String(a[favSortField] ?? '');
@@ -388,7 +437,7 @@ export function Documents() {
     })();
 
     const nonFavorites = filtered
-        .filter(d => !d.is_favorite)
+        .filter(d => !favoritedIds.has(d.id))
         .sort((a, b) => {
             if (filterCheckout.includes('checked out') && filterCheckout.includes('available')) {
                 const aChecked = !!checkedOutMap[a.id];
@@ -398,12 +447,13 @@ export function Documents() {
             }
             return 0;
         });
+
     const allSelected = selectedIds.length === nonFavorites.length && nonFavorites.length > 0;
     const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
     const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
     const selectedCount = selectedIds.length + selectedFavIds.length;
-    const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id)?.is_favorite);
-    const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !d.is_favorite));
+    const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => favoritedIds.has(id));
+    const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !favoritedIds.has(d.id)));
 
     async function handleAdd() {
         if (uploadMode === 'file' && !addFile) {
@@ -438,6 +488,36 @@ export function Documents() {
             setAddOpen(false);
             setAddFile(null);
             setAddUrl('');
+            //add any tags to the file before closing add
+            if (addData.jointagscontent.length > 0) {
+                //get Document id for the just created doc
+                const flat = await api(`${DOMAIN}/contentforms`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                            [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                        return newFlat;
+                    });
+                let docID = 0;
+                for (const doc of flat) {
+                    if (doc.name === addData.name) {
+                        docID = doc.id;
+                    }
+                }
+                for (const tagToAdd of addData.jointagscontent) {
+                    let tagID = 0;
+                    for (const tag of createdTags) {
+                        if (tag.tag_name === tagToAdd) {
+                            tagID = tag.metid;
+                        }
+                    }
+                    await api(`${DOMAIN}/assigntag`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({id: docID, metid: tagID})
+                    });
+                }
+            }
             setAddData({
                 name: '',
                 owner: persona === 'Admin' ? '' : username ?? '',
@@ -446,12 +526,17 @@ export function Documents() {
                 review_date: '',
                 expiration_date: '',
                 content_type: '',
-                status: ''
+                status: '',
+                jointagscontent: []
             });
             loadDocuments();
         } catch (err: any) {
-            if (err.status === 409) {
-                alert(`Error: ${err.message}`);
+            console.log('err.status:', err.status);
+            console.log('err.message:', err.message);
+            console.log('err.body:', err.body);
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setAddError(err.message)
+                return;
             } else {
                 throw err;
             }
@@ -473,32 +558,33 @@ export function Documents() {
         loadDocuments();
     }
 
+
     async function handleBulkAdd() {
-        if (stagedFiles.length === 0) {
-            alert(t('upload_error'));
-            return;
-        }
-        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) {
-            alert(t('missing_error'));
-            return;
-        }
         for (const sf of stagedFiles) {
-            const formPayload = new FormData();
-            formPayload.append('filename', sf.name);
-            formPayload.append('ownerUsername', sf.owner);
-            formPayload.append('persona', JSON.stringify(sf.persona));
-            formPayload.append('date_modified', sf.date_modified);
-            formPayload.append('expiration_date', sf.expiration_date);
-            formPayload.append('review_date', sf.review_date);
-            formPayload.append('content_type', sf.content_type);
-            formPayload.append('status', sf.status);
-            formPayload.append('file', sf.file);
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            try {
+                const formPayload = new FormData();
+                formPayload.append('filename', sf.name);
+                formPayload.append('ownerUsername', sf.owner);
+                formPayload.append('persona', JSON.stringify(sf.persona));
+                formPayload.append('date_modified', sf.date_modified);
+                formPayload.append('expiration_date', sf.expiration_date);
+                formPayload.append('review_date', sf.review_date);
+                formPayload.append('content_type', sf.content_type);
+                formPayload.append('status', sf.status);
+                formPayload.append('file', sf.file);
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                setBulkOpen(false);
+                setStagedFiles([]);
+                loadDocuments();
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message)
+                } else {
+                    throw err;
+                }
+                return;
+            }
         }
-        setBulkOpen(false);
-        setStagedFiles([]);
-        loadDocuments();
     }
 
     function openEdit(doc: ContentForm) {
@@ -521,47 +607,129 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
-                    status: doc.status
+                    status: doc.status,
+                    jointagscontent: doc.jointagscontent
                 });
                 setEditOpen(true);
             });
     }
 
+    async function handleSaveClick() {
+        if (!editId) return;
+        setEditError('');
+        try {
+            if (editFile) {
+                const formPayload = new FormData();
+                formPayload.append('filename', editData.name);
+                formPayload.append('ownerUsername', editData.owner);
+                formPayload.append('persona', JSON.stringify(editData.persona));
+                formPayload.append('date_modified', editData.date_modified);
+                formPayload.append('expiration_date', editData.expiration_date);
+                formPayload.append('review_date', editData.review_date);
+                formPayload.append('content_type', editData.content_type);
+                formPayload.append('status', editData.status);
+                formPayload.append('file', editFile);
+                await api(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
+            } else if (editUploadMode === 'url' && editUrl) {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...editData, url: normalizeUrl(editUrl) })
+                });
+            } else {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(editData)
+                });
+            }
+            setConfirmSaveOpen(true);
+        } catch (err: any) {
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setEditError(err.message);
+            } else {
+                throw err;
+            }
+        }
+    }
+
     async function handleEdit() {
         if (!editId) return;
-        if (editFile) {
-            const formPayload = new FormData();
-            formPayload.append('filename', editData.name);
-            formPayload.append('ownerUsername', editData.owner);
-            formPayload.append('persona', JSON.stringify(editData.persona));
-            formPayload.append('date_modified', editData.date_modified);
-            formPayload.append('expiration_date', editData.expiration_date);
-            formPayload.append('review_date', editData.review_date);
-            formPayload.append('content_type', editData.content_type);
-            formPayload.append('status', editData.status);
-            formPayload.append('file', editFile);
-            await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
-        } else if (editUploadMode === 'url' && editUrl) {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
-            });
 
-        } else {
-            await api(`${DOMAIN}/contentforms/${editId}`, {
-                method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(editData)
+        // tag logic
+        const flat = await api(`${DOMAIN}/contentforms`)
+            .then(res => res.json())
+            .then(data => {
+                const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                    [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                return newFlat;
+            });
+        let docID = 0;
+        const docTags: string[] = [];
+        for (const doc of flat) {
+            if (doc.name === editData.name) {
+                docID = doc.id;
+                await api(`${DOMAIN}/grabformtags/${doc.name}`)
+                    .then(res => res.json())
+                    .then(tagData => {
+                        if (tagData.data.length > 0) {
+                            //Tags are id and tag_name, we only want name
+                            for (const tag of tagData.data) {
+                                docTags.push(tag.tag_name);
+                            }
+                        }
+                    });
+            }
+        }
+
+        const toEdit: string[] = (editData.jointagscontent ?? []);
+        const wantedTags = new Set(toEdit);
+        const currentTags = new Set(docTags);
+
+        //Find what tags to remove
+        const tagsToRemove = docTags.filter(tag => !wantedTags.has(tag));
+        //Find what tags to add
+        const tagsToAdd = toEdit.filter(tag => !currentTags.has(tag));
+
+        //add needed tags
+        for (const tagToAdd of tagsToAdd) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToAdd) {
+                    tagID = tag.metid;
+                }
+                if (tag.tag_name === tagToAdd) tagID = tag.metid;
+            }
+            await api(`${DOMAIN}/assigntag`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
             });
         }
+
+        //remove needed tags
+        for (const tagToRemove of tagsToRemove) {
+            let tagID = 0;
+            for (const tag of createdTags) {
+                if (tag.tag_name === tagToRemove) {
+                    tagID = tag.metid;
+                }
+                if (tag.tag_name === tagToRemove) tagID = tag.metid;
+            }
+            await api(`${DOMAIN}/unassigntag`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: docID, metid: tagID})
+            });
+        }
+
+        //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
         });
         setEditFile(null);
         setConfirmSaveOpen(false);
         setEditOpen(false);
+        setEditError('');
         loadDocuments();
-    }
-
-    function closeEdit() {
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -570,6 +738,16 @@ export function Documents() {
         setEditOpen(false);
         setEditUrl('');
         setEditUploadMode('file');
+        setEditError('');
+        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username})
+        });
+        setEditOpen(false);
+        setEditUrl('');
+        setEditUploadMode('file');
+        setEditError('');
     }
 
     async function handleDelete() {
@@ -582,44 +760,59 @@ export function Documents() {
     }
 
     async function toggleFavorite(doc: ContentForm) {
-        await api(`${DOMAIN}/contentforms/${doc.id}/favorite`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({is_favorite: !doc.is_favorite})
+        const isFav = favoritedIds.has(doc.id);
+        await api(`${DOMAIN}/${isFav ? 'removeFavorite' : 'addFavorite'}`, {
+            method: isFav ? 'DELETE' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, formname: doc.name })
         });
-        loadDocuments();
+        setFavoritedIds(prev => {
+            const next = new Set(prev);
+            isFav ? next.delete(doc.id) : next.add(doc.id);
+            return next;
+        });
     }
 
     async function unfavoriteSelected() {
         const ids = [...selectedFavIds, ...selectedIds];
         await Promise.all(ids.map(id => {
-            const doc = documents.find(d => d.id === id && d.is_favorite);
+            const doc = documents.find(d => d.id === id && favoritedIds.has(d.id));
             if (!doc) return Promise.resolve();
-            return api(`${DOMAIN}/contentforms/${id}/favorite`, {
-                method: 'POST',
+            return api(`${DOMAIN}/removeFavorite`, {
+                method: 'DELETE',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({is_favorite: false})
+                body: JSON.stringify({ username, formname: doc.name })
             });
         }));
         setSelectedFavIds([]);
         setSelectedIds([]);
-        loadDocuments();
+        setFavoritedIds(prev => {
+            const next = new Set(prev);
+            ids.forEach(id => next.delete(id));
+            return next;
+        });
     }
 
     async function favoriteSelected() {
         const ids = [...selectedFavIds, ...selectedIds];
         await Promise.all(ids.map(id => {
-            const doc = documents.find(d => d.id === id && !d.is_favorite);
+            const doc = documents.find(d => d.id === id && !favoritedIds.has(d.id));
             if (!doc) return Promise.resolve();
-            return api(`${DOMAIN}/contentforms/${id}/favorite`, {
+            return api(`${DOMAIN}/addFavorite`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({is_favorite: true})
+                body: JSON.stringify({ username, formname: doc.name })
             });
         }));
         setSelectedFavIds([]);
         setSelectedIds([]);
-        loadDocuments();
+        setFavoritedIds(prev => {
+            const next = new Set(prev);
+            ids.forEach(id => next.add(id));
+            return next;
+        });
     }
+
 
     function toggleSelect(id: number) {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -653,11 +846,13 @@ export function Documents() {
     }
 
     function openViewer(url: string, label: string, id: number, isUrl: boolean) {
-        if (isUrl) {
+        // If it's explicitly a web URL or pickRenderer says to open externally, open in new tab
+        if (isUrl || !pickRenderer(url)) {
             recordView(id);
             window.open(url, '_blank');
             return;
         }
+        // Otherwise, open in modal viewer (has an inline renderer)
         recordView(id);
         setViewerUrl(url);
         setViewerLabel(label);
@@ -673,6 +868,7 @@ export function Documents() {
             setDeleteId(id);
             setDeleteOpen(true);
         },
+        isFavorited: (id: number) => favoritedIds.has(id),
     };
 
     const recentDocs = recentIds
@@ -757,6 +953,9 @@ export function Documents() {
                                                     onClick={() => setFilterType(p => p.filter(x => x !== v))}>{t('type')}: {v} ×</Badge>)}
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                        {filterTags.map(v => <Badge key={v} variant="filled" color="cyan"
+                                                     style={{cursor: 'pointer'}}
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('owner')}: {v} ×</Badge>)}
                         {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
                                                         style={{cursor: 'pointer'}}
@@ -768,6 +967,7 @@ export function Documents() {
                             setFilterType([]);
                             setFilterOwner([]);
                             setFilterCheckout([]);
+                            setFilterTags([]);
                         }}>Clear all</Badge>
                     </Group>
                 )}
@@ -973,9 +1173,38 @@ export function Documents() {
                             </button>
                         </div>
                         <div className="flex-1 overflow-auto">
-                            <DocViewer documents={[{uri: viewerUrl, fileName: viewerLabel}]}
-                                       pluginRenderers={DocViewerRenderers}
-                                       style={{height: '100%', minHeight: '600px'}}/>
+                            {pickRenderer(viewerUrl ?? '') === 'docviewer' && (
+                                <DocViewer documents={[{uri: viewerUrl, fileName: viewerLabel}]}
+                                           pluginRenderers={DocViewerRenderers}
+                                           style={{height: '100%', minHeight: '600px'}}/>
+                            )}
+                            {pickRenderer(viewerUrl ?? '') === 'player' && (
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    backgroundColor: '#000',
+                                    padding: '20px'
+                                }}>
+                                    {['MP3', 'M4A', 'WAV', 'OGG'].includes(getExt(viewerUrl ?? '').toUpperCase()) ? (
+                                        <audio controls style={{width: '100%', maxWidth: '600px'}}>
+                                            <source src={viewerUrl}/>
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    ) : (
+                                        <video controls style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            maxHeight: '100%',
+                                            objectFit: 'contain'
+                                        }}>
+                                            <source src={viewerUrl}/>
+                                            Your browser does not support the video element.
+                                        </video>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1004,6 +1233,9 @@ export function Documents() {
                                      label: t('available')
                                  }, {value: 'checked out', label: t('checked_out')},]}
                                  clearable/>
+                    <MultiSelect label="Content Tags" placeholder="Any Tags" value={filterTags}
+                                 onChange={setFilterTags} data={getArrayTags()}
+                                 clearable />
                     <Group justify="flex-end">
                         <Button className="invert-hover-outline" onClick={() => {
                             setFilterPersona([]);
@@ -1160,12 +1392,16 @@ export function Documents() {
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
                         <TextInput label={t('review_date')} type="date" value={addData.review_date}
                                    onChange={e => setAddData({...addData, review_date: e.target.value})}/>
-
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline"
-                                onClick={() => setAddOpen(false)}>✕ {t('cancel')}</Button>
-                        <Button onClick={handleAdd} className="invert-hover">+ {t('submit_doc')}</Button>
+                        {addError && (
+                            <ErrorMessage message={addError}/>
+                        )}
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAddOpen(false);
+                            setAddError('');
+                        }}>✕ Cancel Changes</Button>
+                        <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1198,13 +1434,41 @@ export function Documents() {
                         }
                     </Box>
                     {persona === 'Admin'
-                        ? <Select label={t('content_owner')} value={editData.owner}
-                                  onChange={val => setEditData({...editData, owner: val ?? ''})}
-                                  data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}/>
-                        : <TextInput label={t('content_owner')} value={editData.owner} readOnly/>}
-                    <MultiSelect label={t('job_position')} value={editData.persona}
-                                 onChange={val => setEditData({...editData, persona: val})} data={roles}
-                                 disabled={persona !== 'Admin'}/>
+                        ? <Select
+                            label={t('content_owner')}
+                            value={editData.owner}
+                            onChange={val => setEditData({...editData, owner: val ?? ''})}
+                            data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
+                        />
+                        : <TextInput
+                            label={t('content_owner')}
+                            value={editData.owner}
+                            readOnly
+                        />
+                    }
+                    <MultiSelect
+                        label={t('job_position')}
+                        value={editData.persona.filter(p => p !== 'Admin')}
+                        onChange={val => setEditData({...editData, persona: val})}
+                        data={roles.filter(r => r !== 'Admin')}
+                        disabled={persona !== 'Admin'}
+                    />
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect
+                            w="75%"
+                            label="Tags"
+                            value={editData.jointagscontent}
+                            onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})}
+                            data={getArrayTags()}
+                        />
+                        <Button
+                            className="invert-hover"
+                            style={{width: '20%', padding: '0 0px'}}
+                            onClick={() => setAdvancedTagsOpen(true)}
+                        >
+                            Advanced Tags
+                        </Button>
+                    </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Group grow>
                         <Select label={t('content_type')} value={editData.content_type}
@@ -1223,12 +1487,30 @@ export function Documents() {
                                    onChange={e => setEditData({...editData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
-                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ {t('cancel')}</Button>
-                        <Button onClick={() => setConfirmSaveOpen(true)}
-                                className="invert-hover">✓ {t('submit_doc')}</Button>
+                        {editError && (
+                            <ErrorMessage message={editError}/>
+                        )}
+                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
+                        <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
             </Modal>
+
+            {/* Advanced tag management (create and delete) tags modal */}
+            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)}
+                   title="Advanced Tag Management"
+                   size="lg">
+                <Stack>
+                    <ManageTags allTags={getArrayTags()}/>
+                    <Group justify="flex-end" mt="md">
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAdvancedTagsOpen(false);
+                            loadTags();
+                        }}> Done </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
 
             <ConfirmModal
                 opened={confirmSaveOpen}
