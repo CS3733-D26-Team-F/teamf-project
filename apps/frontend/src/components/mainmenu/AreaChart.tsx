@@ -52,21 +52,21 @@ export function AreaChart() {
         };
 
         getStatsData();
-    }, [api]);
+    }, []);
 
     return (
         <div
             style={{
-                height: '70vh',
+                height: '100%',
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center'
             }}
         >
-                <Paper withBorder p="md" radius="md" style={{ height: '100%', width:'90%' }}>
+                <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
                     <Text fw={700} size="lg" mb="md">
-                        My Updated Files
+                        Updated in the Past Week
                     </Text>
                         <MantineAreaChart
                             h={400}

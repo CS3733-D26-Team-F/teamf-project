@@ -51,6 +51,7 @@
     "@types/express": "^5.0.6",
     "ai": "^6.0.168",
     "cors": "^2.8.6",
+    "dayjs": "^1.11.20",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "express-oauth2-jwt-bearer": "^1.7.4",
