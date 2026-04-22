@@ -10,6 +10,35 @@ const distPath = path.resolve("../frontend/dist");
 
 const router = Router();
 
+function formatFolder(folder: {
+    id: number;
+    name: string;
+    persona: string[];
+    url: string | null;
+    updated_at: Date;
+    owner: { username: string };
+    documents: Array<{ id: number }>;
+}) {
+    return {
+        id: folder.id,
+        name: folder.name,
+        owner: folder.owner.username,
+        persona: folder.persona,
+        associated_docsIDs: folder.documents.map((doc) => doc.id),
+        date_modified: folder.updated_at.toISOString(),
+        url: folder.url ?? ''
+    };
+}
+
+function formatContentFormWithFolder(
+    contentForm: Record<string, unknown> & { folder?: { name: string } | null }
+) {
+    return {
+        ...contentForm,
+        folder: contentForm.folder?.name ?? ''
+    };
+}
+
 
 
 router.get('/api/auth/me', checkJWT, async (req, res) => {
@@ -23,9 +52,14 @@ router.get('/api/auth/me', checkJWT, async (req, res) => {
 router.get('/contentforms', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const contentForms = await prisma.contentform.findMany({
-        where: {is_deleted: false}
+        where: {is_deleted: false},
+        include: {
+            folder: {
+                select: {name: true}
+            }
+        }
     });
-    res.json(contentForms);
+    res.json(contentForms.map(formatContentFormWithFolder));
 });
 
 router.post('/updateContentForm', checkJWT, async (req, res) => {
@@ -166,8 +200,14 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             content_type,
             status
         } = req.body;
+        const rawFolderId = req.body.folder_id ?? req.body.folderId;
+        const folderId = rawFolderId !== undefined && rawFolderId !== '' ? Number(rawFolderId) : null;
         const file = req.file;
         const rawUrl = req.body.url;
+
+        if (folderId !== null && Number.isNaN(folderId)) {
+            return res.status(400).json({error: 'Invalid folder id'});
+        }
 
         if (!file && !rawUrl) {
             return res.status(400).json({error: 'File or URL is required'});
@@ -246,13 +286,19 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                review_date: new Date(review_date)
+                review_date: new Date(review_date),
+                ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
+            },
+            include: {
+                folder: {
+                    select: {name: true}
+                }
             }
         });
 
         return res.status(200).json({
             message: 'Content form created successfully',
-            data: content,
+            data: formatContentFormWithFolder(content),
             url: contentUrl
         });
 
@@ -450,9 +496,14 @@ router.get('/contentforms/archived', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
         const archived = await prisma.contentform.findMany({
-            where: {status: 'Archived', is_deleted: false}
+            where: {status: 'Archived', is_deleted: false},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
-        res.json(archived);
+        res.json(archived.map(formatContentFormWithFolder));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -464,9 +515,14 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
         const expired = await prisma.contentform.findMany({
-            where: {status: 'Expired', is_deleted: false}
+            where: {status: 'Expired', is_deleted: false},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
-        res.json(expired);
+        res.json(expired.map(formatContentFormWithFolder));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -493,11 +549,198 @@ router.patch('/contentforms/:id/status', async (req, res) => {
         if (!status) return res.status(400).json({error: 'status is required'});
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {status}
+            data: {status},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
-        res.json(updated);
+        res.json(formatContentFormWithFolder(updated));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.get('/folders', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folders = await prisma.folders.findMany({
+            where: employee.persona === 'Admin'
+                ? undefined
+                : {
+                    OR: [
+                        {owner_empid: employee.empid},
+                        {persona: {has: employee.persona ?? ''}}
+                    ]
+                },
+            include: {
+                owner: {select: {username: true}},
+                documents: {select: {id: true}}
+            },
+            orderBy: {updated_at: 'desc'}
+        });
+
+        return res.json(folders.map(formatFolder));
+    } catch (error) {
+        return res.status(500).json({error: 'Could not fetch folders'});
+    }
+});
+
+router.post('/folders', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {name, persona} = req.body as { name?: string; persona?: string[] };
+
+    if (!name || !name.trim()) {
+        return res.status(400).json({error: 'Folder name is required'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.create({
+            data: {
+                name: name.trim(),
+                owner_empid: employee.empid,
+                persona: Array.isArray(persona) && persona.length > 0
+                    ? persona
+                    : [employee.persona ?? ''].filter(Boolean)
+            },
+            include: {
+                owner: {select: {username: true}},
+                documents: {select: {id: true}}
+            }
+        });
+
+        return res.status(201).json(formatFolder(folder));
+    } catch (error: unknown) {
+        if ((error as { code?: string }).code === 'P2002') {
+            return res.status(409).json({error: 'Folder name already exists'});
+        }
+        return res.status(500).json({error: 'Could not create folder'});
+    }
+});
+
+router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {ids, folderId} = req.body as { ids?: number[]; folderId?: number | null };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({error: 'Document ids are required'});
+    }
+
+    if (folderId !== null && folderId !== undefined && Number.isNaN(Number(folderId))) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const normalizedFolderId = folderId === null || folderId === undefined ? null : Number(folderId);
+
+        if (normalizedFolderId !== null) {
+            const folder = await prisma.folders.findUnique({
+                where: {id: normalizedFolderId},
+                select: {id: true, owner_empid: true}
+            });
+
+            if (!folder) {
+                return res.status(404).json({error: 'Folder not found'});
+            }
+
+            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid) {
+                return res.status(403).json({error: 'Not allowed to use this folder'});
+            }
+        }
+
+        const updated = await prisma.contentform.updateMany({
+            where: {id: {in: ids}},
+            data: {folder_id: normalizedFolderId}
+        });
+
+        return res.json({updated: updated.count});
+    } catch (error) {
+        return res.status(500).json({error: 'Could not move documents'});
+    }
+});
+
+router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseInt(req.params.id);
+    const {folderId} = req.body as { folderId?: number | null };
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid document id'});
+    }
+
+    if (folderId !== null && folderId !== undefined && Number.isNaN(Number(folderId))) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const normalizedFolderId = folderId === null || folderId === undefined ? null : Number(folderId);
+
+        if (normalizedFolderId !== null) {
+            const folder = await prisma.folders.findUnique({
+                where: {id: normalizedFolderId},
+                select: {owner_empid: true}
+            });
+
+            if (!folder) {
+                return res.status(404).json({error: 'Folder not found'});
+            }
+
+            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid) {
+                return res.status(403).json({error: 'Not allowed to use this folder'});
+            }
+        }
+
+        const updated = await prisma.contentform.update({
+            where: {id},
+            data: {folder_id: normalizedFolderId},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
+        });
+
+        return res.json(formatContentFormWithFolder(updated));
+    } catch (error) {
+        return res.status(500).json({error: 'Could not move document'});
     }
 });
 
@@ -506,10 +749,15 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
-            where: {id}
+            where: {id},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
         if (!contentForm) return res.status(404).json({error: 'Not found'});
-        res.json(contentForm);
+        res.json(formatContentFormWithFolder(contentForm));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
