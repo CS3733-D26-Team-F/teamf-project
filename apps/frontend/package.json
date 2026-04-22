@@ -10,21 +10,29 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.170",
     "@auth0/auth0-react": "^2.16.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@iamjariwala/react-doc-viewer": "^1.8.0",
+    "@mantine/charts": "^9.1.0",
     "@mantine/core": "^9.1.0",
+    "@mantine/dates": "^9.1.0",
     "@mantine/modals": "^9.0.2",
+    "@mantine/schedule": "^9.1.0",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@tabler/icons-react": "^3.41.1",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.14.0",
+    "dayjs": "^1.11.20",
     "next": "^16.2.4",
+    "pdfjs-dist": "^5.6.205",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.2"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.13.2",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

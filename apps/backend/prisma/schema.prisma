@@ -89,6 +89,7 @@ model joinedfavorites {
 model joinednotice {
   empid         Int
   notid         Int
+  read          Boolean?
   employee      employee      @relation(fields: [empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
   notifications notifications @relation(fields: [notid], references: [notid], onDelete: Cascade, onUpdate: NoAction)
 
