@@ -3,8 +3,7 @@ import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import { Profile } from "./Profile.tsx";
 import { usePersona } from "../hooks/usePersona";
 import { Chatbot } from "./Chatbot.tsx";
-import { ActionIcon, Container, Group, Text } from '@mantine/core';
-import classes from "../FooterLinks.module.css";
+import { Text } from '@mantine/core';
 import {useTranslation} from "react-i18next";
 
 export function Header() {
@@ -18,32 +17,30 @@ export function Header() {
     const isEXLOperations = personaHook === 'EXL Operations';
 
     return (
-        <>
-            <header className="main-header">
+        <header className="main-header">
+            <div>
                 <div className="logo">
                     <Link to="/">
                         <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
                     </Link>
                 </div>
-                  <nav className="menu-links">
-                     <Link to="/menu">{t('home')}</Link>
-                      {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
-                      {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
-                          <Link to="/documents">{t('documents')}</Link>
-                          )}
-                    {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
-                          <Link to="/archive">{t('archive')}</Link>
-                )}
-                <Profile />
+                    <nav className="menu-links">
+                        <Link to="/menu">{t('home')}</Link>
+                        {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
+                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
+                            <Link to="/documents">{t('documents')}</Link>
+                        )}
+                        {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
+                            <Link to="/archive">{t('archive')}</Link>
+                        )}
+                  <Profile />
               </nav>
-                <Chatbot />
-            </header>
-            <header>
-                <Text size="sm" c="white" ta="center">
-                    {t('disclaimer')}
-                </Text>
-            </header>
-        </>
+              <Chatbot />
+            </div>
+            <Text size="sm" c="white" ta="center">
+                {t('disclaimer')}
+            </Text>
+        </header>
     );
 }
 

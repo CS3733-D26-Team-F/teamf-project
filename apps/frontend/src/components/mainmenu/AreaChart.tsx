@@ -11,6 +11,8 @@ export function AreaChart() {
     const [numFiles, setNumFiles] = useState(0);
     const api = useApi();
     const {t} = useTranslation();
+
+    console.log(numFiles);
     useEffect(() => {
         const getStatsData = async () => {
             const myPersona = localStorage.getItem('persona');

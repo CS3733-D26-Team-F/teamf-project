@@ -22,6 +22,7 @@ export default function ThemeToggle() {
     // Read the saved theme preference; default to the normal theme when none is stored.
     /* theme might not be in local storage yet, which would return it as null */
     const theme = localStorage.getItem("theme") === "high-visibility";
+    console.log(theme);
 
     // Controlled switch state so the UI stays in sync with the stored theme value.
     const [checked, setChecked] = React.useState(

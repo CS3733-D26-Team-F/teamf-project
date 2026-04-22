@@ -20,13 +20,9 @@ export function ManageTags({allTags}: ManageTagsProps) {
     const [currentTags, setCurrentTags] = useState<string[]>([]);
 
     async function updateTags() {
-        let data = await api(`${DOMAIN}/getTags`)
-        data = await data.json();
-        const iteratableTagPairs: Metatag = data.data;
-        const tags: string[] = [];
-        for (const tag of await iteratableTagPairs) {
-            tags.push(tag.tag_name);
-        }
+        const response = await api(`${DOMAIN}/getTags`)
+        const data: Metatag[] = await response.json();
+        const tags: string[] = data.map(tag => tag.tag_name);
         setCurrentTags(tags);
     }
 
@@ -45,7 +41,7 @@ export function ManageTags({allTags}: ManageTagsProps) {
     async function runDeleteTag() {
         await api(`${DOMAIN}/deletetag`, {method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: deleteTag}) });
         await updateTags();
-        setDeleteTag(null);
+        setDeleteTag("");
     }
 
     return(

@@ -26,6 +26,7 @@ model contentform {
   checkout_date     DateTime?         @db.Timestamptz(6)
   review_date       DateTime?         @db.Date
   folder_id         Int?
+  warning           Boolean?
   employee          employee?         @relation(fields: [empid], references: [empid])
   joinedfavorites   joinedfavorites[]
   jointagscontent   jointagscontent[]
