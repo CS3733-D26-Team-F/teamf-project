@@ -1,14 +1,18 @@
 import dotenv from 'dotenv';
+
+// Load environment variables used for Auth0 and database access.
 dotenv.config({ path: 'C:/Users/mrden/WebstormProjects/teamf-project2/apps/backend/.env' });
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+// Configure Prisma to talk to the PostgreSQL database.
 const adapter = new PrismaPg({
     connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL!,
 });
 const prisma = new PrismaClient({ adapter });
 
+// Request a machine-to-machine token so this script can call the Auth0 Management API.
 async function getManagementToken(): Promise<string> {
     const res = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
@@ -24,12 +28,13 @@ async function getManagementToken(): Promise<string> {
     return data.access_token;
 }
 
-// Use this to migrate a new employee over by hand, run this on its own with the employee username, password, and persona passed at the bottom
-
+// Use this script to manually sync a new employee from Auth0 into the database.
+// Run it with the employee's username, password, and persona near the bottom.
 async function addEmployee(username: string, password: string, persona: string) {
     const token = await getManagementToken();
 
-    // Try to create in Auth0, if already exists fetch them instead
+    // Try to create the user in Auth0 first; if the account already exists,
+    // fall back to looking it up by username.
     let auth0UserId: string;
 
     const createRes = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users`, {
@@ -50,11 +55,11 @@ async function addEmployee(username: string, password: string, persona: string) 
     const createData = await createRes.json();
 
     if (createData.user_id) {
-        // Successfully created
+        // Auth0 user created successfully.
         auth0UserId = createData.user_id;
         console.log(`✓ Created in Auth0: ${username}`);
     } else if (createData.statusCode === 409) {
-        // Already exists in Auth0 — fetch them by username instead
+        // Auth0 already has this user, so reuse the existing record.
         console.warn(`Already exists in Auth0, fetching existing user: ${username}`);
         const searchRes = await fetch(
             `https://${process.env.AUTH0_DOMAIN}/api/v2/users?q=username%3A${username}&search_engine=v3`,
@@ -69,11 +74,13 @@ async function addEmployee(username: string, password: string, persona: string) 
         auth0UserId = users[0].user_id;
         console.log(`✓ Found existing Auth0 user: ${username} → ${auth0UserId}`);
     } else {
+        // Stop early if Auth0 returns an unexpected response.
         console.error('Failed to create in Auth0:', createData);
         return;
     }
 
-    // Upsert into Supabase
+    // Upsert the employee into the local database so the Auth0 ID is stored
+    // alongside the application-specific employee profile.
     await prisma.employee.upsert({
         where:  { username },
         update: { auth0Id: auth0UserId },

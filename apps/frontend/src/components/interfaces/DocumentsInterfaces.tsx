@@ -13,6 +13,7 @@ export type ContentForm = {
     is_favorite: boolean;
     is_deleted: boolean;
     deleted_at: string | null;
+    jointagscontent: string[];
 };
 
 export type StagedFile = {
@@ -34,6 +35,11 @@ export type Employee = {
     persona: string;
 };
 
+export type Metatag = {
+    metid: number;
+    tag_name: string;
+};
+
 export interface RowCallbacks {
     persona: string | null;
     onView: (url: string, label: string, id: number, isUrl: boolean) => void;
@@ -41,6 +47,7 @@ export interface RowCallbacks {
     onDownload: (url: string, name: string) => void;
     onEdit: (doc: ContentForm) => void;
     onDelete: (id: number) => void;
+    isFavorited: (id: number) => boolean;
 }
 
 export interface RowCallbacks {

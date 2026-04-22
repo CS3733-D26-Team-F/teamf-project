@@ -1,12 +1,15 @@
-import { useAuth0 } from "@auth0/auth0-react";
-import { useEffect, useState } from 'react';
-import { Button, Menu, Modal, Text } from '@mantine/core';
-import { IconChevronDown } from '@tabler/icons-react';
-import { Link } from 'react-router-dom';
-import { DOMAIN } from '../const';
-import { useDisclosure } from "@mantine/hooks";
+import {useAuth0} from "@auth0/auth0-react";
+import {useEffect, useState} from 'react';
+import {Stack, Button, Menu, Modal, Select, Text} from '@mantine/core';
+import {IconChevronDown} from '@tabler/icons-react';
+import {Link} from 'react-router-dom';
+import {DOMAIN} from '../const';
+import {useDisclosure} from "@mantine/hooks";
 import ThemeToggle from "./ThemeToggle";
+import i18n from "../i18n.ts";
+import {useTranslation} from "react-i18next";
 
+// Lightweight fallback avatar shown when no custom profile picture is available.
 const placeholderProfilePicture =
     'data:image/svg+xml;charset=UTF-8,' +
     encodeURIComponent(
@@ -14,12 +17,19 @@ const placeholderProfilePicture =
     );
 
 export function Profile() {
+    // Initialize from localStorage so the header can render immediately on page load.
     const [profilePicture, setProfilePicture] = useState<string | undefined>(() => (
         localStorage.getItem('pfp_URL') ?? localStorage.getItem('profilePicture') ?? undefined
     ));
-    const { user, logout } = useAuth0();
-    const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
+    const {user, logout} = useAuth0();
+    const [settingsOpened, {open: openSettings, close: closeSettings}] = useDisclosure(false);
+    const {t} = useTranslation();
+    const translate = (lang: string) => {
+        i18n.changeLanguage(lang);
+        localStorage.setItem('language', lang);
+    };
 
+    // Prefer employee name, then username, then Auth0 nickname as the display label.
     const displayName =
         localStorage.getItem('first_name') && localStorage.getItem('first_name') !== 'undefined'
             ? localStorage.getItem('first_name')
@@ -28,16 +38,18 @@ export function Profile() {
                 : user?.nickname || 'User';
 
     useEffect(() => {
+        // Use the saved username first, then fall back to the Auth0 nickname.
         const username = localStorage.getItem('username') || user?.nickname;
         
         if (!username) {
             return;
         }
 
+        // Refresh employee details from the backend so localStorage stays current.
         fetch(`${DOMAIN}/getEmployee`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username }),
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username}),
         })
             .then((res) => {
                 if (!res.ok) {
@@ -51,9 +63,11 @@ export function Profile() {
                     return;
                 }
 
+                // Keep the latest profile picture in state for immediate UI updates.
                 const url = employee.pfp_URL ?? undefined;
                 setProfilePicture(url);
 
+                // Sync commonly used profile fields into localStorage for the rest of the app.
                 if (employee.username) {
                     localStorage.setItem('username', employee.username);
                 }
@@ -67,6 +81,7 @@ export function Profile() {
                     localStorage.setItem('empid', String(employee.empid));
                 }
 
+                // Save the image URL when present; otherwise fall back to the placeholder avatar.
                 if (url) {
                     localStorage.setItem('pfp_URL', url);
                 } else {
@@ -79,12 +94,14 @@ export function Profile() {
             });
     }, [user?.nickname]);
 
+    // Clear local session data before sending the user back to the app's landing origin.
     function handleLogout() {
         localStorage.clear();
         sessionStorage.removeItem('chatHistory');
         logout({ logoutParams: { returnTo: window.location.origin } });
     }
 
+    // Hide the profile menu entirely for guest/unauthenticated visitors.
     if (localStorage.getItem('persona') !== 'Guest' || localStorage.getItem('username') !== null) {
         return (
             <>
@@ -109,6 +126,7 @@ export function Profile() {
                                         border: '1px solid var(--color-pale-sky)',
                                     }}
                                     onError={(event) => {
+                                        // Replace broken images with the fallback avatar.
                                         setProfilePicture(placeholderProfilePicture);
                                         event.currentTarget.src = placeholderProfilePicture;
                                     }}
@@ -117,10 +135,10 @@ export function Profile() {
                             </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                            <Menu.Label>Username: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
-                            <Menu.Item component={Link} to="/profilePage">Profile</Menu.Item>
-                            <Menu.Item onClick={openSettings}>Settings</Menu.Item>
-                            <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
+                            <Menu.Label>{t('username')}: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
+                            <Menu.Item component={Link} to="/profilePage">{t('profile')}</Menu.Item>
+                            <Menu.Item onClick={openSettings}>{t('settings')}</Menu.Item>
+                            <Menu.Item onClick={handleLogout}>{t('logout')}</Menu.Item>
                         </Menu.Dropdown>
                     </Menu>
                 </div>
@@ -128,9 +146,28 @@ export function Profile() {
                 <Modal
                     opened={settingsOpened}
                     onClose={closeSettings}
-                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">Settings</Text>}
+                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">{t('settings')}</Text>}
                 >
-                    <ThemeToggle />
+                    <Stack>
+                        <ThemeToggle/>
+                        <Select
+                            label={t('language')}
+                            value={i18n.language ?? 'eng'}
+                            onChange={(val) => translate(val ?? 'eng')}
+                            data={[
+                                {value: 'eng', label: 'English'},
+                                {value: 'esp', label: 'Espanol'},
+                                {value: 'mandarin', label: 'Mandarin'},
+                                {value: 'hindi', label: 'Hindi'},
+                                {value: 'french', label: 'French'},
+                                {value: 'arabic', label: 'Arabic'},
+                                {value: 'bengali', label: 'Bengali'},
+                                {value: 'russian', label: 'Russian'},
+                                {value: 'turkish', label: 'Turkish'},
+                                {value: 'irish', label: 'Irish'},
+                            ]}
+                        />
+                    </Stack>
                 </Modal>
             </>
         );

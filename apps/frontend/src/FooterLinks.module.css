@@ -1,8 +1,8 @@
 .footer {
+    background: linear-gradient(to right, transparent, #00000064), var(--color-yale-blue);
     margin-top: 120px;
     padding-top: calc(var(--mantine-spacing-sm));
     padding-bottom: calc(var(--mantine-spacing-sm));
-    background-color: var(--yale-blue);
     border-top: 1px solid var(--mantine-color-white);
 }
 

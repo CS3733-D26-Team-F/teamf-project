@@ -3,6 +3,7 @@ import {getFileType} from "./Functions.tsx";
 import {ActionIcon, Checkbox, Group, Table, Tooltip} from "@mantine/core";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
+import {TagBadges} from "../Badges/TagBadges.tsx";
 import {
     IconDownload,
     IconEdit,
@@ -13,7 +14,6 @@ import {
     IconTrash,
     IconLock,
 } from "@tabler/icons-react";
-
 
 interface DocRowProps extends RowCallbacks {
     doc: ContentForm;
@@ -33,6 +33,7 @@ export function DocRow({
                            onSelect,
                            onView,
                            onFavorite,
+                           isFavorited,
                            onDownload,
                            onEdit,
                            onDelete,
@@ -46,11 +47,13 @@ export function DocRow({
     const isUrl = getFileType(doc.url) === 'Link';
     const isSelfCheckout = isCheckedOut && checkedOutBy === currentUsername;
     const isSomeoneCheckout = isCheckedOut && checkedOutBy !== currentUsername;
+    const canEdit = canModify && isSelfCheckout;
     return (
         <Table.Tr style={{
             cursor: 'pointer',
-            opacity: isCheckedOut ? 0.5 : 1,
-            backgroundColor: isCheckedOut ? 'var (--mantine-color-gray-10)' : undefined
+            opacity: isSomeoneCheckout ? 0.4 : 1,
+            backgroundColor: isSomeoneCheckout ? 'var(--mantine-color-gray-1)' : undefined,
+            pointerEvents: isSomeoneCheckout ? 'none' : undefined,
         }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected}
                                                                    onChange={() => onSelect(doc.id)}/></Table.Td>
@@ -61,23 +64,29 @@ export function DocRow({
             </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
-            <Table.Td><StatusBadge status={doc.status} size="sm" filter={false}/> </Table.Td>
+            <Table.Td><StatusBadge status={doc.status} size="sm" filter={false} /> </Table.Td>
+            <Table.Td><TagBadges tags={doc.jointagscontent}/> </Table.Td>
             <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
             <Table.Td>{doc.review_date?.split('T')[0]}</Table.Td>
             <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
             <Table.Td onClick={e => e.stopPropagation()}>
                 <Group gap="xs">
                     {isSomeoneCheckout ? (
-                        <Tooltip label={` This document is checked out by ${checkedOutBy}`}>
-                            <ActionIcon variant="subtle" color="gray" disabled>
+                        <Tooltip label={`This document is checked out by ${checkedOutBy}`}>
+                            <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                style={{ cursor: 'default', pointerEvents: 'all' }}
+                                onClick={e => e.stopPropagation()}
+                            >
                                 <IconLock size={16}/>
                             </ActionIcon>
                         </Tooltip>
                     ) : (
                         <>
-                            <Tooltip label={doc.is_favorite ? 'Unfavorite' : 'Favorite'}>
+                            <Tooltip label={isFavorited(doc.id) ? 'Unfavorite' : 'Favorite'}>
                                 <ActionIcon variant="subtle" color="yellow" onClick={() => onFavorite(doc)}>
-                                    {doc.is_favorite ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
+                                    {isFavorited(doc.id) ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
                                 </ActionIcon>
                             </Tooltip>
                             <Tooltip label={isUrl ? "Open URL" : "Download"}>
@@ -98,9 +107,15 @@ export function DocRow({
                                 )}
                             </Tooltip>
                             {canModify && (
-                                <Tooltip label="Edit">
-                                    <ActionIcon variant="subtle" onClick={() => onEdit(doc)}><IconEdit
-                                        size={16}/></ActionIcon>
+                                <Tooltip label={canEdit ? "Edit" : "Check out to edit"}>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        onClick={() => canEdit && onEdit(doc)}
+                                        color={canEdit ? undefined : "gray"}
+                                        style={{ opacity: canEdit ? 1 : 0.4, cursor: canEdit ? 'pointer' : 'not-allowed' }}
+                                    >
+                                        <IconEdit size={16}/>
+                                    </ActionIcon>
                                 </Tooltip>
                             )}
                             {canModify && (
@@ -112,9 +127,14 @@ export function DocRow({
                                 </Tooltip>
                             )}
                             {canModify && (
-                                <Tooltip label="Delete">
-                                    <ActionIcon variant="subtle" color="var(--color-neutral-red)"
-                                                onClick={() => onDelete(doc.id)}><IconTrash size={16}/>
+                                <Tooltip label={canEdit ? "Delete" : "Check out to delete"}>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color={canEdit ? "var(--color-neutral-red)" : "gray"}
+                                        onClick={() => canEdit && onDelete(doc.id)}
+                                        style={{ opacity: canEdit ? 1 : 0.4, cursor: canEdit ? 'pointer' : 'not-allowed' }}
+                                    >
+                                        <IconTrash size={16}/>
                                     </ActionIcon>
                                 </Tooltip>
                             )}
