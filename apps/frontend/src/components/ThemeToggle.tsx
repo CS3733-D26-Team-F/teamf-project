@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Switch from '@mui/material/Switch';
 import {styled} from "@mui/material";
+import {useTranslation} from "react-i18next";
 
 // Custom MUI switch styling so the active state matches the app's theme color.
 const ThemeSwitch = styled(Switch)(({ theme }) => ({
@@ -15,7 +16,9 @@ const ThemeSwitch = styled(Switch)(({ theme }) => ({
     },
 }));
 
+
 export default function ThemeToggle() {
+    const {t} = useTranslation();
     // Read the saved theme preference; default to the normal theme when none is stored.
     /* theme might not be in local storage yet, which would return it as null */
     const theme = localStorage.getItem("theme") === "high-visibility";
@@ -52,7 +55,7 @@ export default function ThemeToggle() {
     }
 
     return (
-        <div className={"outline outline-white outline-offset-4"}><label className={"text-black"}>Red-Green Colorblind Theme: </label><ThemeSwitch
+        <div className={"outline outline-white outline-offset-4" }><label className={"text-black"}>{t('theme')}: </label><ThemeSwitch
                                            checked={checked}
                                            onChange={handleChange}
                                            slotProps={{input: {'aria-label': 'controlled'}}}/>

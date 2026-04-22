@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { DOMAIN } from "../../const.ts";
 import { useApi } from "../api.ts";
 import {Paper, Text} from '@mantine/core';
+import {useTranslation} from "react-i18next";
+
 
 export function AreaChart() {
     const [chartData, setChartData] = useState<any[]>([]);
     const [numFiles, setNumFiles] = useState(0);
     const api = useApi();
-
+    const {t} = useTranslation();
     useEffect(() => {
         const getStatsData = async () => {
             const myPersona = localStorage.getItem('persona');
@@ -66,7 +68,7 @@ export function AreaChart() {
         >
                 <Paper withBorder p="md" radius="md" style={{ height: '100%', width:'90%' }}>
                     <Text fw={700} size="lg" mb="md">
-                        My Updated Files
+                        {t('my_updated_files')}
                     </Text>
                         <MantineAreaChart
                             h={400}

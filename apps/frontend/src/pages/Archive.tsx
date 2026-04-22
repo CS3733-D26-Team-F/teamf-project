@@ -12,6 +12,7 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import { useApi } from "../../src/components/api.ts";
 
 import { PageTitle } from "../components/Title.tsx"
+import {useTranslation} from "react-i18next";
 
 type ContentForm = {
     id: number;
@@ -46,13 +47,13 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
             <Table highlightOnHover withTableBorder withColumnBorders>
                 <Table.Thead>
                     <Table.Tr>
-                        <Table.Th>Document Name</Table.Th>
-                        <Table.Th>Persona</Table.Th>
-                        <Table.Th>Owner</Table.Th>
-                        <Table.Th>Content Type</Table.Th>
-                        <Table.Th>Date Modified</Table.Th>
-                        <Table.Th>Expiration Date</Table.Th>
-                        <Table.Th>Actions</Table.Th>
+                        <Table.Th>{t('doc_name')}</Table.Th>
+                        <Table.Th>{t('persona')}</Table.Th>
+                        <Table.Th>{t('owner')}</Table.Th>
+                        <Table.Th>{t('content_type')}</Table.Th>
+                        <Table.Th>{t('date_modified')}</Table.Th>
+                        <Table.Th>{t('expiration_date')}</Table.Th>
+                        <Table.Th>{t('actions')}</Table.Th>
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -68,7 +69,6 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
                             <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
                             <Table.Td>
                                 <Group gap="xs">
-                                    {/* Restore returns the document to the active workflow. */}
                                     <Tooltip label="Restore to In Progress">
                                         <ActionIcon variant="subtle" color="var(--color-yale-blue)" onClick={() => onRestore(doc.id)}>
                                             <IconRestore size={16} />
@@ -94,7 +94,7 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
 }
 
 export function Archive() {
-    // Persona is used for access control and to decide whether trash actions are allowed.
+    const {t} = useTranslation();
     const persona = localStorage.getItem('persona');
     const [expired, setExpired] = useState<ContentForm[]>([]);
     const [archived, setArchived] = useState<ContentForm[]>([]);
@@ -167,7 +167,7 @@ export function Archive() {
                         <Stack gap="sm">
                             {/* Expired items can be restored or trashed depending on role. */}
                             <Text size="sm" c="dimmed">
-                                Documents whose expiration date has passed. Restore them to put them back in active circulation, or move them to trash.
+                                {t('trash_message')}
                             </Text>
                             <DocTable docs={expired} userPersona={persona} onRestore={restoreDoc} onTrash={trashDoc} />
                         </Stack>
@@ -177,7 +177,7 @@ export function Archive() {
                         <Stack gap="sm">
                             {/* Manually archived items can be restored back to active status. */}
                             <Text size="sm" c="dimmed">
-                                Documents that have been manually archived. Restore them to put them back in active circulation.
+                                {t('archive_message')}
                             </Text>
                             <DocTable docs={archived} userPersona={persona} onRestore={restoreDoc} onTrash={trashDoc} />
                         </Stack>

@@ -6,7 +6,7 @@ export function Login() {
     return (
         <>
             <title>
-                Login - Hanover Insurance
+                t('page_title_login')
             </title>
             <LoginHeader />
             <LoginForm />

@@ -24,6 +24,7 @@
     "@mui/material": "^7.3.9",
     "@tabler/icons-react": "^3.41.1",
     "@tailwindcss/vite": "^4.2.2",
+    "ai": "^6.0.168",
     "axios": "^1.14.0",
     "dayjs": "^1.11.20",
     "next": "^16.2.4",

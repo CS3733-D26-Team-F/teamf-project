@@ -4,11 +4,14 @@ import {
 } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { DOMAIN } from '../../const';
+import { useTranslation } from 'react-i18next';
+
 
 // Fallback image shown when the user does not have a stored profile picture yet.
 const placeholder = '/default-profile-picture.png';
 
 export function ProfileComponent() {
+    const { t } = useTranslation();
     // Initialize from localStorage so the profile card can render immediately
     // without waiting for the network request.
     const [profileImage, setProfileImage] = useState<string>(() => (
@@ -57,9 +60,8 @@ export function ProfileComponent() {
                 
                 <thead id="profile-header" style={{ padding: '20px' }}>
                     <tr>
-                        {/* Basic identity details are read from localStorage for quick display. */}
-                        <th>User: {localStorage.getItem('first_name')}</th>
-                        <th>Role: {localStorage.getItem('persona')}</th>
+                        <th>{t('user')}: {localStorage.getItem('first_name')}</th>
+                        <th>{t('role')}: {localStorage.getItem('persona')}</th>
 
                     </tr>
                 </thead>
@@ -67,12 +69,11 @@ export function ProfileComponent() {
                     <tr>
                         {/* Profile image is loaded from the backend when available, otherwise fallback is used. */}
                         <td><Image src={profileImage} style={{ width: 200, height: 200 }} alt="Profile" /></td>
-                        <td>Email: {localStorage.getItem('email')}</td>
+                        <td>{t ('email')}: {localStorage.getItem('email')}</td>
                     </tr>
                     <tr>
-                        {/* Secondary account details shown for quick reference. */}
-                        <td>Username: {localStorage.getItem('username')}</td>
-                        <td>Employee ID: {localStorage.getItem('empid')}</td>
+                        <td>{t ('username')}: {localStorage.getItem('username')}</td>
+                        <td>{t ('employee_id')}: {localStorage.getItem('empid')}</td>
                     </tr>
                 </tbody>
 
