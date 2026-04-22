@@ -60,6 +60,7 @@ export interface RowCallbacks {
     onDownload: (url: string, name: string) => void;
     onEdit: (doc: ContentForm) => void;
     onDelete: (id: number) => void;
+    isFavorited: (id: number) => boolean;
 }
 
 export interface RowCallbacks {

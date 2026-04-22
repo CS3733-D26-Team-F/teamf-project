@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -294,7 +295,7 @@ export function Chatbot() {
                                     {[
                                         { label: '📄 My Documents', query: 'Show me my documents' },
                                         { label: '👥 Find Employee', query: 'How do I find an employee?' },
-                                        { label: '🔍 Search Docs', query: 'Search for a document' },
+                                        { label: '🔍 Search Docs', query: 'Show me a list of all current documents' },
                                     ].map((action, idx) => (
                                         <Button
                                             key={idx}

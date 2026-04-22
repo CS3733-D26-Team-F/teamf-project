@@ -12,6 +12,7 @@ import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import { useApi } from "../../src/components/api.ts";
 
 import { PageTitle } from "../components/Title.tsx"
+import {useTranslation} from "react-i18next";
 
 type ContentForm = {
     id: number;
@@ -26,6 +27,8 @@ type ContentForm = {
 };
 
 // ─── Module-level component — must NOT be defined inside Archive() ────────────
+// Keeping this table outside Archive() avoids recreating the component on every render
+// and keeps the list rendering logic reusable for both archive tabs.
 interface DocTableProps {
     docs: ContentForm[];
     userPersona: string | null;
@@ -34,21 +37,24 @@ interface DocTableProps {
 }
 
 function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
+    // Show a friendly empty state instead of rendering an empty table body.
+    const {t} = useTranslation();
     if (docs.length === 0) {
         return <Text c="dimmed" ta="center" py="xl">No documents here.</Text>;
     }
+
     return (
         <>
             <Table highlightOnHover withTableBorder withColumnBorders>
                 <Table.Thead>
                     <Table.Tr>
-                        <Table.Th>Document Name</Table.Th>
-                        <Table.Th>Persona</Table.Th>
-                        <Table.Th>Owner</Table.Th>
-                        <Table.Th>Content Type</Table.Th>
-                        <Table.Th>Date Modified</Table.Th>
-                        <Table.Th>Expiration Date</Table.Th>
-                        <Table.Th>Actions</Table.Th>
+                        <Table.Th>{t('doc_name')}</Table.Th>
+                        <Table.Th>{t('persona')}</Table.Th>
+                        <Table.Th>{t('owner')}</Table.Th>
+                        <Table.Th>{t('content_type')}</Table.Th>
+                        <Table.Th>{t('date_modified')}</Table.Th>
+                        <Table.Th>{t('expiration_date')}</Table.Th>
+                        <Table.Th>{t('actions')}</Table.Th>
                     </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -69,6 +75,8 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
                                             <IconRestore size={16} />
                                         </ActionIcon>
                                     </Tooltip>
+
+                                    {/* Only Admins can permanently move archived items to trash. */}
                                     {userPersona === 'Admin' && (
                                         <Tooltip label="Move to Trash">
                                             <ActionIcon variant="subtle" color="var(--color-neutral-red)" onClick={() => onTrash(doc.id)}>
@@ -87,17 +95,20 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
 }
 
 export function Archive() {
+    const {t} = useTranslation();
     const persona = localStorage.getItem('persona');
     const [expired, setExpired] = useState<ContentForm[]>([]);
     const [archived, setArchived] = useState<ContentForm[]>([]);
     const api = useApi();
 
+    // Load documents whose expiration date has passed.
     function loadExpired() {
         api(`${DOMAIN}/contentforms/expired`)
             .then(res => res.json())
             .then(data => setExpired(data));
     }
 
+    // Load documents that were archived manually.
     function loadArchived() {
         api(`${DOMAIN}/contentforms/archived`)
             .then(res => res.json())
@@ -105,6 +116,7 @@ export function Archive() {
     }
 
     useEffect(() => {
+        // Auto-expire documents first so the lists stay in sync with the backend state.
         api(`${DOMAIN}/contentforms/autoexpire`, { method: 'PATCH' });
         loadExpired();
         loadArchived();
@@ -122,6 +134,7 @@ export function Archive() {
         loadArchived();
     }
 
+    // Soft-delete moves the document out of archive without fully removing it.
     async function trashDoc(id: number) {
         await api(`${DOMAIN}/contentforms/${id}/softdelete`, {
             method: 'PATCH'
@@ -130,6 +143,7 @@ export function Archive() {
         loadArchived();
     }
 
+    // Only authenticated users with a persona can access this page.
     const allowedAccess = persona !== null;
     if (!allowedAccess) return <AccessDenied />;
 
@@ -137,22 +151,24 @@ export function Archive() {
         <>
             <Header />
             <Box p="md">
-                <PageTitle title="Archive" />
+                <PageTitle title= {t('archive')} />
 
                 <Tabs defaultValue="expired">
                     <Tabs.List mb="md">
+                        {/* Documents sorted here by expiration status. */}
                         <Tabs.Tab value="expired" leftSection={<IconClock size={16} />}>
-                            Expired ({expired.length})
+                            {t('expired')} ({expired.length})
                         </Tabs.Tab>
                         <Tabs.Tab value="archived" leftSection={<IconArchive size={16} />}>
-                            Archived ({archived.length})
+                        {t('archived')} ({archived.length})
                         </Tabs.Tab>
                     </Tabs.List>
 
                     <Tabs.Panel value="expired">
                         <Stack gap="sm">
+                            {/* Expired items can be restored or trashed depending on role. */}
                             <Text size="sm" c="dimmed">
-                                Documents whose expiration date has passed. Restore them to put them back in active circulation, or move them to trash.
+                                {t('trash_message')}
                             </Text>
                             <DocTable docs={expired} userPersona={persona} onRestore={restoreDoc} onTrash={trashDoc} />
                         </Stack>
@@ -160,8 +176,9 @@ export function Archive() {
 
                     <Tabs.Panel value="archived">
                         <Stack gap="sm">
+                            {/* Manually archived items can be restored back to active status. */}
                             <Text size="sm" c="dimmed">
-                                Documents that have been manually archived. Restore them to put them back in active circulation.
+                                {t('archive_message')}
                             </Text>
                             <DocTable docs={archived} userPersona={persona} onRestore={restoreDoc} onTrash={trashDoc} />
                         </Stack>
