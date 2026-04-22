@@ -163,7 +163,7 @@ export function Documents() {
     const [addData, setAddData] = useState<DocumentFormData>({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', folder: '', jointagscontent: []
+        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', folder: '', jointagscontent: [] as string[]
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -651,18 +651,6 @@ export function Documents() {
 
 
     async function handleBulkAdd() {
-        // if (stagedFiles.length === 0) { alert('Please upload at least one file.'); return; }
-        // const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        // if (missingData) { alert('Please fill in all dropdowns and dates for every file.'); return; }
-        if (stagedFiles.length === 0) {
-            alert('Please upload at least one file.');
-            return;
-        }
-        const missingData = stagedFiles.some(sf => !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status);
-        if (missingData) {
-            alert('Please fill in all dropdowns and dates for every file.');
-            return;
-        }
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
@@ -679,6 +667,9 @@ export function Documents() {
                 }
                 formPayload.append('file', sf.file);
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                setBulkOpen(false);
+                setStagedFiles([]);
+                loadDocuments();
             } catch (err: any) {
                 if (err.status === 409 || err.status === 400 || err.status === 406) {
                     setAddError(err.message)
@@ -710,19 +701,6 @@ export function Documents() {
         loadDocuments();
     }
 
-    async function handleSaveClick() {
-        const expiration = new Date(editData.expiration_date);
-        const review = new Date(editData.review_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
-            return;
-        }
-
-        setConfirmSaveOpen(true);
-    }
-
     function openEdit(doc: ContentForm) {
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
             method: 'POST',
@@ -751,8 +729,22 @@ export function Documents() {
             });
     }
 
-    async function handleEdit() {
+    async function handleSaveClick() {
+        
+        const expiration = new Date(editData.expiration_date);
+        const review = new Date(editData.review_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
+            return;
+        }
+
+        
+        
+        
         if (!editId) return;
+        setEditError('');
         try {
             if (editFile) {
                 const formPayload = new FormData();
@@ -766,11 +758,11 @@ export function Documents() {
                 formPayload.append('status', editData.status);
                 formPayload.append('folder', editData.folder);
                 formPayload.append('file', editFile);
-                await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+                await api(`${DOMAIN}/contentforms/${editId}`, { method: 'PUT', body: formPayload });
             } else if (editUploadMode === 'url' && editUrl) {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
+                    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...editData, url: normalizeUrl(editUrl) })
                 });
             } else {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
@@ -778,21 +770,22 @@ export function Documents() {
                     body: JSON.stringify(editData)
                 });
             }
+            setConfirmSaveOpen(true);
         } catch (err: any) {
             if (err.status === 409 || err.status === 400 || err.status === 406) {
                 setEditError(err.message);
-                console.log("error: ", editError)
             } else {
                 throw err;
             }
-            return;
         }
+    }
 
-        assignDocumentsToFolder([editId], editData.folder);
+    
 
-        //add/remove any tags to the file before closing edit
+    async function handleEdit() {
+        if (!editId) return;
 
-        //get Document id for what we are editing
+        // tag logic
         const flat = await api(`${DOMAIN}/contentforms`)
             .then(res => res.json())
             .then(data => {
@@ -805,25 +798,21 @@ export function Documents() {
         for (const doc of flat) {
             if (doc.name === editData.name) {
                 docID = doc.id;
-                //Also get what tags it had originally so we know what to remove/add
                 await api(`${DOMAIN}/grabformtags/${doc.name}`)
                     .then(res => res.json())
                     .then(tagData => {
                         if (tagData.data.length > 0) {
                             //Tags are id and tag_name, we only want name
                             for (const tag of tagData.data) {
-                                docTags.push(tag.tag_name)
+                                docTags.push(tag.tag_name);
                             }
                         }
-
                     });
             }
         }
-        //make sure jointagscontent is not undefined
-        const toEdit: string[] = (editData.jointagscontent ?? []);
 
-        //sets are faster
-        const wantedTags = new Set(toEdit)
+        const toEdit: string[] = (editData.jointagscontent ?? []);
+        const wantedTags = new Set(toEdit);
         const currentTags = new Set(docTags);
 
         //Find what tags to remove
@@ -838,6 +827,7 @@ export function Documents() {
                 if (tag.tag_name === tagToAdd) {
                     tagID = tag.metid;
                 }
+                if (tag.tag_name === tagToAdd) tagID = tag.metid;
             }
             await api(`${DOMAIN}/assigntag`, {
                 method: 'POST',
@@ -853,6 +843,7 @@ export function Documents() {
                 if (tag.tag_name === tagToRemove) {
                     tagID = tag.metid;
                 }
+                if (tag.tag_name === tagToRemove) tagID = tag.metid;
             }
             await api(`${DOMAIN}/unassigntag`, {
                 method: 'DELETE',
@@ -870,6 +861,20 @@ export function Documents() {
         setEditOpen(false);
         setEditError('');
         loadDocuments();
+        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username})
+        });
+        setEditOpen(false);
+        setEditUrl('');
+        setEditUploadMode('file');
+    }
+
+    function assignDocumentsToFolder(ids: number[], folderName: string) {
+        if (!folderName) return;
+    
+
     }
 
 
@@ -883,14 +888,6 @@ export function Documents() {
         setEditUrl('');
         setEditUploadMode('file');
         setEditError('');
-        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username})
-        });
-        setEditOpen(false);
-        setEditUrl('');
-        setEditUploadMode('file');
     }
 
     async function handleDelete() {
@@ -1679,8 +1676,8 @@ export function Documents() {
                                   onChange={val => setEditData({...editData, owner: val ?? ''})}
                                   data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}/>
                         : <TextInput label="Name of Content Owner" value={editData.owner} readOnly/>}
-                    <MultiSelect label="Job Position" value={editData.persona}
-                                 onChange={val => setEditData({...editData, persona: val})} data={roles}
+                    <MultiSelect label="Job Position" value={editData.persona.filter(p => p !== 'Admin')}
+                                 onChange={val => setEditData({...editData, persona: val})} data={roles.filter(r => r !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
                         <MultiSelect w="75%" label="Tags" value={editData.jointagscontent}
