@@ -33,9 +33,9 @@ export async function getManagementToken(): Promise<string> {
     const data = await res.json();
 
     // Fail fast if Auth0 does not return a usable access token.
-    if (!data.acess_token) {
+    if (!data.access_token) {
     throw new Error('No acess token provided');
     }
 
-    return data.acess_token;
+    return data.access_token;
 }
