@@ -51,9 +51,8 @@ export function DocRow({
     return (
         <Table.Tr style={{
             cursor: 'pointer',
-            opacity: isSomeoneCheckout ? 0.4 : 1,
+            opacity: isSomeoneCheckout ? 0.7 : 1,
             backgroundColor: isSomeoneCheckout ? 'var(--mantine-color-gray-1)' : undefined,
-            pointerEvents: isSomeoneCheckout ? 'none' : undefined,
         }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
             <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected}
                                                                    onChange={() => onSelect(doc.id)}/></Table.Td>
