@@ -6,6 +6,8 @@ import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
 import {Documents} from "./pages/Documents";
 import { Archive } from './pages/Archive';
+import { About} from "./pages/About.tsx";
+import {Footer} from "./components/Footer.tsx";
 
 // Top-level application shell:
 // - configures Auth0 once for the whole app
@@ -39,7 +41,9 @@ export default function App() {
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
                     <Route path="/profilePage" element={<ProfilePage />}/>
+                    <Route path="/about" element={<About />}/>
                 </Routes>
+                <Footer />
             </BrowserRouter>
         </Auth0Provider>
     );
