@@ -898,6 +898,40 @@ function Documents() {
         );
     }
 
+    const FavoriteTable = (
+            <>
+                {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
+                    <Accordion.Item value={"favorites"} key={"favorites"}>
+                        <Accordion.Control aria-label={"favorites"}>
+                            <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                            <Box>
+                                <Table highlightOnHover withTableBorder withColumnBorders>
+                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
+                                               currentDir={favSortDir}
+                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                               allChecked={allFavSelected}
+                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
+                                    <Table.Tbody>
+                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                            isSelected={selectedFavIds.includes(doc.id)}
+                                                                            onSelect={toggleFavSelect}
+                                                                            currentUsername={localStorage.getItem('username') ?? ''}
+                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                            onCheckOut={checkOutHandle}
+                                                                            onCheckIn={checkInHandle}
+                                                                            {...rowCallbacks} />)}
+                                    </Table.Tbody>
+                                </Table>
+                            </Box>
+                        </Accordion.Panel>
+                    </Accordion.Item>
+                )}
+            </>
+    )
+
     return (
         <>
             <title>
@@ -1021,31 +1055,10 @@ function Documents() {
                 {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
-                        {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
-                            <Box>
-                                <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
-                                <Table highlightOnHover withTableBorder withColumnBorders>
-                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
-                                               currentDir={favSortDir}
-                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
-                                               allChecked={allFavSelected}
-                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
-                                    <Table.Tbody>
-                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                            isSelected={selectedFavIds.includes(doc.id)}
-                                                                            onSelect={toggleFavSelect}
-                                                                            currentUsername={localStorage.getItem('username') ?? ''}
-                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                            onCheckOut={checkOutHandle}
-                                                                            onCheckIn={checkInHandle}
-                                                                            {...rowCallbacks} />)}
-                                    </Table.Tbody>
-                                </Table>
-                            </Box>
-                        )}
+
                         <Stack>
-                            <Accordion defaultValue={persona}>
+                            <Accordion multiple defaultValue={["favorites", persona]}>
+                                {FavoriteTable}
                                 {allPersonas.map(p => EmployeeTable(p))}
                             </Accordion>
                         </Stack>
