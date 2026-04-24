@@ -95,6 +95,17 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             where: {name: name},
             data: updateData
         });
+
+        const transaction = await prisma.changes.create({
+            data: {
+                name: contentForm.name,
+                change: "Updated Document",
+                date: new Date()
+            }
+        });
+
+        console.log(transaction);
+
         return res.status(200).json({
             message: 'Content form updated successfully',
             data: contentForm
@@ -250,6 +261,14 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             }
         });
 
+        const transaction = await prisma.changes.create({
+            data: {
+                name: content.name,
+                change: "Added Document",
+                date: new Date(date_modified)
+            }
+        })
+
         return res.status(200).json({
             message: 'Content form created successfully',
             data: content,
@@ -391,6 +410,13 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
         const updated = await prisma.contentform.update({
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
+        });
+        const transaction = await prisma.changes.create({
+            data: {
+                name: updated.name,
+                change: "Deleted Document",
+                date: new Date()
+            }
         });
         res.json(updated);
     } catch (error) {
@@ -736,6 +762,14 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             data: updateData
         });
 
+        const transaction = await prisma.changes.create({
+            data: {
+                name: updated.name,
+                change: "Updated Document",
+                date: new Date()
+            }
+        })
+
         res.json(updated);
     } catch (error) {
         console.error('Error updating document:', error);
@@ -1019,6 +1053,17 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
     } catch (error) {
         return res.status(500).json({error: 'Could not remove document from favorites'});
     }
+})
+
+router.post('/transactionDates', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const today = new Date();
+
+    const transactions = await prisma.changes.findMany({
+        where: {date: today}
+    })
+
+    return(transactions);
 })
 
 router.use((req, res) => {
