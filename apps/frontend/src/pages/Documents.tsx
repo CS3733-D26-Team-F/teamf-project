@@ -858,6 +858,38 @@ export function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
+    function EmployeeTable(givenPersona: string) {
+        const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
+        if (existingDocuments.length == 0) {
+            return (
+                <>
+                </>
+            );
+        }
+        return (
+            <Box>
+                <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
+                <Table highlightOnHover withTableBorder withColumnBorders>
+                    <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                               onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                               allChecked={allSelected}
+                               indeterminate={selectedIds.length > 0 && !allSelected}/>
+                    <Table.Tbody>
+                        {existingDocuments.map(doc => <DocRow key={doc.id} doc={doc}
+                                                         isSelected={selectedIds.includes(doc.id)}
+                                                         onSelect={toggleSelect}
+                                                         currentUsername={localStorage.getItem('username') ?? ''}
+                                                         isCheckedOut={!!checkedOutMap[doc.id]}
+                                                         checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                         onCheckOut={checkOutHandle}
+                                                         onCheckIn={checkInHandle}
+                                                         {...rowCallbacks} />)}
+                    </Table.Tbody>
+                </Table>
+            </Box>
+        );
+    }
+
     return (
         <>
             <title>
@@ -1004,26 +1036,9 @@ export function Documents() {
                                 </Table>
                             </Box>
                         )}
-                        <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
-                            <Table highlightOnHover withTableBorder withColumnBorders>
-                                <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
-                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
-                                           allChecked={allSelected}
-                                           indeterminate={selectedIds.length > 0 && !allSelected}/>
-                                <Table.Tbody>
-                                    {nonFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                     isSelected={selectedIds.includes(doc.id)}
-                                                                     onSelect={toggleSelect}
-                                                                     currentUsername={localStorage.getItem('username') ?? ''}
-                                                                     isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                     checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                     onCheckOut={checkOutHandle}
-                                                                     onCheckIn={checkInHandle}
-                                                                     {...rowCallbacks} />)}
-                                </Table.Tbody>
-                            </Table>
-                        </Box>
+                        <Stack>
+                            {allPersonas.map(p => EmployeeTable(p))}
+                        </Stack>
                     </Stack>
                 )}
 
