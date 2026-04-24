@@ -33,6 +33,7 @@ export function Header() {
                         {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
                             <Link to="/archive">{t('archive')}</Link>
                         )}
+                        {!(personaHook==null) && (<Link to="/about">{t('About')}</Link>)}
                   <Profile />
               </nav>
               <Chatbot />
