@@ -1510,9 +1510,9 @@ export function Documents() {
                     }
                     <MultiSelect
                         label={t('job_position')}
-                        value={editData.persona}
+                        value={editData.persona.filter(p => p !== 'Admin')}
                         onChange={val => setEditData({...editData, persona: val})}
-                        data={roles}
+                        data={roles.filter(r => r !== 'Admin')}
                         disabled={persona !== 'Admin'}
                     />
                     <Group preventGrowOverflow={false}>
