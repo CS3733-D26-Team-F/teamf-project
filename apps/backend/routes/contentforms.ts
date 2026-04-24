@@ -2,15 +2,9 @@ import { Router } from 'express';
 import {prisma} from '../setup/prisma.js';
 import {supabase} from '../setup/supabase.js';
 import {upload} from '../setup/upload.js';
-import {checkJWT, management, getManagementToken} from '../setup/auth0.js';
-import path from 'path';
-import app from "../app.js";
-
-const distPath = path.resolve("../frontend/dist");
+import {checkJWT} from '../setup/auth0.js';
 
 const router = Router();
-
-
 
 router.get('/api/auth/me', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
@@ -1020,9 +1014,5 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
         return res.status(500).json({error: 'Could not remove document from favorites'});
     }
 })
-
-router.use((req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-});
 
 export default router;
