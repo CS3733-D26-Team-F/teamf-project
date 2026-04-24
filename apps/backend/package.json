@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.170",
+    "@ai-sdk/mistral": "^3.0.30",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@supabase/supabase-js": "^2.102.1",

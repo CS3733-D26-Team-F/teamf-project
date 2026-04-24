@@ -1,105 +1,135 @@
-# Backend Run Commands
+# Backend Overview
 
-## Use these commands every time
+This package contains the Express API for the project, including:
 
-From repo root (PowerShell):
+- HTTP routes for employees and content forms
+- authentication-related endpoints
+- Prisma database access
+- Supabase/Auth0 integration helpers
+- file upload and other backend setup utilities
 
-```powershell
-Set-Location .\apps\backend
-$env:DATABASE_URL="<your-postgres-connection-string>"
-npm run dev
-```
-For API Calls:
-- Use api("{$DOMAIN}/call) **not** fetch for authentification purposes
+## Running the backend
 
-Backend starts at:
-- http://localhost:3000
+### Prerequisites
 
-Main API endpoints:
-- http://localhost:3000/api/auth/login
-- http://localhost:3000/employees
-- http://localhost:3000/contentforms
+- Node.js
+- npm
+- A Postgres connection string
+- PowerShell on Windows, or another terminal that can run npm scripts
 
-## Database Correlations
-Main Employee:
-- username (unique, VARCHAR(50))
-- password (VARCHAR(20))
-- persona (VARCAR(20), CHECK ('Admin', 'Underwriter', 'Business Analyst'))
-- admin (admin?)
+### 1) Install dependencies
 
-Admin
-- adid (foreign key only, nothing else unique right now)
+From the repository root:
+`npm install`
 
-Basic Functions
-- "/api/auth/login" is the login call
-- "/api/auth/me" pulls up the logged in profile
-- "api/auth/logout" is a placeholder for any logout functionality
-- "/employees" gets all the employee data
-- "/contentforms" gets all the non-soft deleted content forms
-- "/getEmployee" posts a single employee
-- "/updateEmployee" patch updates an employee's data in both the supabase and auth0
-- "/addEmployee" adds a new employee
-- "/deleteEmployee/:username" deletes an employee based on the username (replace :username with the name in question)
-- "/employees/:empid/profile-picture" updates an employee's picture
-- "/updateTheme" updates the theme toggle
-- "/updateContentForm" updates a content form
-- "/addFileToBucket" adds a file to the appropriate bucket for content
-- "/contentforms" post updates files in the buckets
-- "/deleteContentForm/:id" deletes a content from (hard)
-- "/contentforms/persona/:persona" gets the persona(s) of a content form
-- "/contentforms/admin" gets all the contentforms for admin
-- "/contentforms/persona/:persona/:field" gets a field of a forms based on a persona
-- "/contentforms/filter/:persona/:file_type" gets the file type
-- "/contentforms/trash" gets the trash (soft deleted files)
-- "/contentforms/:id/softdelete" is the soft delete
-- "/contentforms/:id/restore" removes the soft delete of a form
-- "/contentforms/:id/permanent" ensures full hard deletion
-- "/contentforms/autoexpire" auto-expires any forms that are set to expire
-- "/contentforms/archived" gets all forms that are archived
-- "/contentforms/expired" gets all the expired content forms
-- "/contentforms/:id/status" gets all the forms of a status
-- "/contentforms/:id" retrieves forms by id
-- "/contentforms/:id/checkout" checks out forms based on id
-- "/contentforms/:id/checkin" checks in forms
-- "/contentforms/:id/checkout_status" displays whether a form is checked out
-- "/contentforms/checkout/all" displays all checked out forms
-- "/contentforms/:id" PUT puts a new file into the content form at that id
-- "/contentforms/employee/:empid" gets all of an employee's content forms
-- "/contentforms/:id/favorite" makes a content form a favorite
-- "/ba-files" is a soon to be implemented view of the ba file size
-- "/uw-files" is a soon to be implemented view of the uw file size
-- "/uw-files/:name" soon to be implemented gets a specific form's file size uw
-- "/ba-files/:name" soon to be implemented gets a specific form's file size ba
-
-## First-time setup only
-
-From repo root:
-
-```powershell
-npm install
-```
-
-If Prisma client looks out of sync:
-
-```powershell
-Set-Location .\apps\backend
-npx prisma db pull
-npx prisma generate
-```
-
-## Optional: avoid setting DATABASE_URL each time
+### 2) Configure environment variables
 
 Create `apps/backend/.env` and add:
+- DATABASE_URL="<your-postgres-connection-string>"
+- DIRECT_URL="<your-postgres-connection-string>"
+- Also add the appropriate AUTH0, Supabase, and Mistral constants
 
-```dotenv
-DATABASE_URL="<your-postgres-connection-string>"
-DIRECT_URL="<your-postgres-url-string>"
-AUTH0 CALLS
-```
+Notes:
 
-Then each run is just:
+- `DIRECT_URL` is preferred when present.
+- If `DIRECT_URL` is missing, the backend falls back to `DATABASE_URL`.
+- Keep both values pointed to the same database.
 
-```powershell
-Set-Location .\apps\backend
-npm run dev
-```
+### 3) Start the backend
+
+From the repository root: `npm run dev`
+
+Or run the backend directly: \apps\backend npm run dev
+
+The backend should be available at:
+
+- `http://localhost:3000`
+
+## Useful backend scripts
+
+- `dev` — starts the backend in watch mode
+- `start` — starts the backend normally
+- `build` — refreshes Prisma schema/client artifacts
+
+## How the backend is organized
+
+### Main entry point
+
+- `app.ts` — application startup and server wiring
+
+### Routes
+
+API routes are organized in:
+
+- `routes/` — route handlers for features like login, employees, content forms, and chat
+
+### Setup and shared helpers
+
+Backend support code is stored in:
+
+- `setup/` — external service and infrastructure setup
+- `src/` — shared backend source files, if used by the app
+- `requireRole.ts` — role-based access helper (unused)
+- `migration.ts` — database-related migration for raw migrations
+- `prisma/` — Prisma schema and database files
+
+
+## API endpoints
+
+Common routes exposed by the backend include:
+
+- `/`
+- `/employees`
+- `/contentforms`
+
+Authentication and user-related routes are also available, along with content form routes for reading, updating, uploading, checking out, and deleting records.
+Most API functions take in a checkJWT from Auth0 in order to help verify that the user who is logged in can use them.
+
+## Where API logic lives
+
+A quick map of common backend responsibilities:
+
+- `routes/login.ts` — login/auth-related endpoints
+- `routes/employees.ts` — employee endpoints
+- `routes/contentforms.ts` — content form endpoints
+- `routes/chat.ts` — chat-related endpoints
+- `setup/prisma.ts` — Prisma client/database wiring
+- `setup/auth0.ts` — Auth0-related configuration
+- `setup/supabase.ts` — Supabase integration
+- `setup/upload.ts` — upload handling
+- `setup/checkout.ts` — checkout/check-in related helpers
+
+## Prisma troubleshooting
+
+### Prisma client looks out of sync
+
+Try regenerating Prisma artifacts: `\apps\backend npx prisma generate`
+
+If the schema should be refreshed from the database, run: `\apps\backend npx prisma db pull`
+
+### Database connection issues
+
+If Prisma cannot connect:
+
+1. Check `apps/backend/.env`
+2. Confirm `DATABASE_URL` and `DIRECT_URL` are correct
+3. Make sure the database is reachable from your network
+4. Try: `npm run db:pull`
+
+### Common Prisma symptoms
+
+- `P1001` usually means the database host cannot be reached
+- Routes may return `500` if the database is unavailable
+- A schema mismatch often means you need `db:pull` or `db:generate`
+
+### Notes on backend behavior
+
+- The root route should still respond even if the database is unavailable
+- Data-heavy routes depend on Prisma connectivity
+- File and content routes may require proper auth/session setup depending on the endpoint
+
+## Stopping the backend
+
+Use: `Ctrl+C`
+
+in the terminal running the server.

@@ -13,12 +13,13 @@
     --color-sapphire: var(--sapphire);
     --color-sapphire-light: var(--sapphire-light);
     --color-pacific-blue: var(--pacific-blue);
+    --color-star-command: var(--star-command);
 
     --color-admin: var(--color-yale-blue);
     --color-underwriter: var(--color-sapphire);
     --color-businessAnalyst: var(--color-fresh-sky);
     --color-actuarialAnalyst: var(--color-sapphire-light);
-    --color-exlOperations: var(--color-fresh-sky-light);
+    --color-exlOperations: var(--color-star-command);
 }
 
 :root {
@@ -32,6 +33,7 @@
     --sapphire: #3A6FBF;
     --sapphire-light: #7FA4BF;
     --pacific-blue: #62B6CB;
+    --star-command: #0077B6;
 }
 
 [data-theme="high-visibility"] {
@@ -64,12 +66,10 @@ a {
     color: white;
 }
 
-header {
-    &.main-header, &.login-header {
-        background: linear-gradient(to right, transparent, #00000064), var(--color-yale-blue);
-    }
+header.main-header {
+    background: linear-gradient(to right, transparent, #00000064), var(--color-yale-blue);
 
-    &.main-header {
+    > div {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
@@ -148,18 +148,6 @@ header {
                     border: 1px solid var(--color-pale-sky);
                 }
             }
-        }
-    }
-
-    &.login-header {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        img {
-            padding: 2rem;
-            max-width: 750px;
-            height: auto;
         }
     }
 }

@@ -661,6 +661,27 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
+        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+            return res.status(406).json({ error: 'Make sure all fields are filled in' });
+        }
+
+        if (!Array.isArray(persona) || persona.length === 0) {
+            return res.status(406).json({ error: 'At least one job position is required' });
+        }
+
+        const expiration = new Date(expiration_date);
+        const review = new Date(review_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (expiration < today && status !== 'Expired') {
+            return res.status(409).json({ error: 'Document is expired' });
+        }
+
+        if (review < today) {
+            return res.status(409).json({ error: 'Review date should be in the future' });
+        }
+
         const updateData: any = {
             name,
             owner: resolvedOwner,
@@ -735,76 +756,6 @@ router.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
-
-router.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
-    const id = parseInt(req.params.id);
-    const {is_favorite} = req.body;
-    try {
-        const updated = await prisma.contentform.update({
-            where: {id},
-            data: {is_favorite}
-        });
-        res.json(updated);
-    } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
-    }
-});
-
-router.get('/ba-files', async (req, res) => {
-    const {data, error} = await supabase
-        .from('ba_files_with_size')
-        .select('name, file_size_kb')
-        .not('file_size_kb', 'is', null)
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file size'})
-    }
-
-    res.json(data)
-})
-
-router.get('/uw-files', async (req, res) => {
-    const {data, error} = await supabase
-        .from('underwriter_files_with_size')
-        .select('name, file_size_kb')
-        .not('file_size_kb', 'is', null)
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file size'})
-    }
-
-    res.json(data)
-})
-
-
-router.get('/uw-files/:name', async (req, res) => {
-    const {name} = req.params;
-    const {data, error} = await supabase
-        .from('underwriter_files_with_size') // your VIEW
-        .select('name, file_size_kb')
-        .eq('name', name)
-        .single()
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file'})
-    }
-    res.json(data)
-})
-
-router.get('/ba-files/:name', async (req, res) => {
-    const {name} = req.params;
-    const {data, error} = await supabase
-        .from('ba_files_with_size') // your VIEW
-        .select('name, file_size_kb')
-        .eq('name', name)
-        .single()
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file'})
-    }
-    res.json(data)
-})
 
 router.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
@@ -983,6 +934,92 @@ router.get('/getTags', async (req, res) => {
 
     return res.json({data: tags})
 });
+
+router.get('/favorites', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id}
+        })
+
+        if (!employee) return res.status(404).json({ error: 'No employee found' });
+
+        const favRows = await prisma.joinedfavorites.findMany({
+            where: { empid: employee.empid }
+        });
+
+        const ids = favRows.map(r => r.id);
+
+        const forms = await prisma.contentform.findMany({
+            where: { id: { in: ids } }
+        });
+
+        return res.json(forms);
+    } catch (err) {
+        res.status(500).json({ error: 'No favorite documents found' });
+    }
+});
+
+router.post('/addFavorite', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {username, formname} = req.body;
+
+    const employee = await prisma.employee.findUnique({
+        where: {username: username}
+    })
+
+    const document = await prisma.contentform.findUnique({
+        where: {name: formname}
+    })
+
+    if (!document || !employee) {
+        return res.status(404).json({error: 'No document/employee found with this name'});
+    }
+
+    try {
+        const addFavorite = await prisma.joinedfavorites.create({
+            data: {
+                empid: employee.empid,
+                id: document.id
+
+            },
+        });
+        console.log("added favorite");
+        return res.json(addFavorite);
+    } catch (error) {
+        return res.status(500).json({error: 'Could not add document to favorites'});
+    }
+})
+
+router.delete('/removeFavorite', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {username, formname} = req.body;
+
+    const employee = await prisma.employee.findUnique({
+        where: {username: username}
+    })
+
+    const document = await prisma.contentform.findUnique({
+        where: {name: formname}
+    })
+
+    if (!document || !employee) {
+        return res.status(404).json({error: 'No document/employee found with this name'});
+    }
+    try {
+        const removed = await prisma.joinedfavorites.deleteMany({
+            where: {
+                empid: employee.empid,
+                id: document.id
+            }
+        })
+
+        return res.json(removed);
+    } catch (error) {
+        return res.status(500).json({error: 'Could not remove document from favorites'});
+    }
+})
 
 router.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));

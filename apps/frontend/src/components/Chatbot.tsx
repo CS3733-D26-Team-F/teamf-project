@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
@@ -117,6 +118,29 @@ export function Chatbot() {
             }, 100);
         }
     });
+
+    useEffect(() => {
+        for (const m of messages) {
+            const parts = m.parts as any[];
+            if (!parts) continue;
+            for (const part of parts) {
+                if (
+                    part.type === 'tool-changeTheme' &&
+                    part.state === 'output-available' &&
+                    part.output?.themeChange
+                ) {
+                    const newTheme = part.output.themeChange;
+                    console.log('applying theme:', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    document.documentElement.setAttribute(
+                        'data-theme',
+                        newTheme === 'high-visibility' ? 'high-visibility' : ' '
+                    );
+                    window.dispatchEvent(new CustomEvent('themeChange', { detail: newTheme }));
+                }
+            }
+        }
+    }, [messages]);
 
     useEffect(() => {
         if (messages.length > 0) {
@@ -271,7 +295,7 @@ export function Chatbot() {
                                     {[
                                         { label: '📄 My Documents', query: 'Show me my documents' },
                                         { label: '👥 Find Employee', query: 'How do I find an employee?' },
-                                        { label: '🔍 Search Docs', query: 'Search for a document' },
+                                        { label: '🔍 Search Docs', query: 'Show me a list of all current documents' },
                                     ].map((action, idx) => (
                                         <Button
                                             key={idx}
