@@ -92,6 +92,8 @@ export function Documents() {
     const [editFolderPersona, setEditFolderPersona] = useState<string[]>([]);
     const [editFolderUsers, setEditFolderUsers] = useState<string[]>([]);
     const [editFolderError, setEditFolderError] = useState('');
+    const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
+    const [deleteFolderId, setDeleteFolderId] = useState<number | null>(null);
 
     const [filterPersona, setFilterPersona] = useState<string[]>([]);
     const [filterStatus, setFilterStatus] = useState<string[]>([]);
@@ -368,6 +370,27 @@ export function Documents() {
         setFolders(Array.isArray(fetchedFolders) ? fetchedFolders : []);
 
         console.log("Loaded folders:", Array.isArray(fetchedFolders) ? fetchedFolders : []);
+    }
+
+    async function deleteFolder(folderId: number) {
+        // Show only documents that belong to the selected folder.
+        const folder = folders.find(f => f.id === folderId);
+        const containedDocs = documents.filter(d => d.folder_id === folderId);
+        try {
+            await api(`${DOMAIN}/folders/${folderId}`, {method: 'DELETE'});
+            setDeleteFolderOpen(false);
+            setDeleteFolderId(null);
+            setSelectedIds(prev => prev.filter(id => !containedDocs.some(doc => doc.id === id)));
+            setSelectedFavIds(prev => prev.filter(id => !containedDocs.some(doc => doc.id === id)));
+            if (selectedFolderId === folderId) {
+                setSelectedFolderId(null);
+            }
+            loadDocuments();
+            loadFolders();
+        } catch (err: any) {
+            alert(err?.message ?? 'Could not delete folder');
+        }
+
     }
 
     // checkall
@@ -1164,6 +1187,15 @@ export function Documents() {
                                                         >
                                                             Edit Folder
                                                         </Menu.Item>
+                                                        <Menu.Item
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDeleteFolderId(folder.id);
+                                                                setDeleteFolderOpen(true);
+                                                            }}
+                                                        >
+                                                            Delete Folder
+                                                        </Menu.Item>
                                                     </Menu.Dropdown>
                                                 </Menu>
                                             )}
@@ -1185,6 +1217,8 @@ export function Documents() {
                         </div>
                     </Box>
                 )}
+
+                
 
                 {/* list view */}
 
@@ -1876,6 +1910,23 @@ export function Documents() {
                 message={<>{t('delete_message')}</>}
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteOpen(false)}
+            />
+            <ConfirmModal
+                opened={deleteFolderOpen}
+                onClose={() => {
+                    setDeleteFolderOpen(false);
+                    setDeleteFolderId(null);
+                }}
+                title={t('delete_form')}
+                message={<>{t('delete_message_folder')}</>}
+                onConfirm={async () => {
+                    if (deleteFolderId === null) return;
+                    await deleteFolder(deleteFolderId);
+                }}
+                onCancel={() => {
+                    setDeleteFolderOpen(false);
+                    setDeleteFolderId(null);
+                }}
             />
         </>
     );

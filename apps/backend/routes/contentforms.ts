@@ -734,6 +734,67 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
     }
 });
 
+router.delete('/folders/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseInt(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.findUnique({
+            where: {id},
+            select: {id: true, name: true, owner_empid: true}
+        });
+
+        if (!folder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to delete this folder'});
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const softDeleted = await tx.contentform.updateMany({
+                where: {
+                    folder_id: id,
+                    is_deleted: false
+                },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date()
+                }
+            });
+
+            await tx.folders.delete({where: {id}});
+
+            return {
+                softDeletedCount: softDeleted.count,
+                folderName: folder.name
+            };
+        });
+
+        return res.json({
+            message: 'Folder deleted and contents moved to trash',
+            ...result
+        });
+    } catch (error: unknown) {
+        console.error('folders delete error:', error);
+        return res.status(500).json({error: 'Could not delete folder'});
+    }
+});
+
 router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const {ids, folderId} = req.body as { ids?: number[]; folderId?: number | null };

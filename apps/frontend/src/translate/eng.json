@@ -133,6 +133,7 @@
   "delete_form": "Delete Form",
   "change_message": "Are you sure you want to save these changes?",
   "delete_message": "Are you sure you want to delete this file?",
+  "delete_message_folder": "Are you sure you want to delete this folder? All documents within the folder will be moved to trash.",
   "add_files": "Add Files",
   "file_name": "File Name",
   "modified": "Modified",
