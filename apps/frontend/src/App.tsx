@@ -4,7 +4,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
-import {Documents} from "./pages/Documents";
+import Documents from "./pages/Documents";
 import { Archive } from './pages/Archive';
 import { About} from "./pages/About.tsx";
 import {Footer} from "./components/Footer.tsx";
