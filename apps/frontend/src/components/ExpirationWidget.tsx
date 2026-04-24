@@ -64,13 +64,16 @@ export function ExpirationWidget() {
 
             const now = new Date();
             const in48hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+            const nowDay = now.toISOString().split('T')[0];
+            const in48hoursDay = in48hours.toISOString().split('T')[0];
 
             const expiringSoon = data
                 .filter(form => {
                     const expiration = new Date(form.expiration_date);
+                    const expirationDay = expiration.toISOString().split('T')[0];
                     return (
-                        expiration > now &&
-                        expiration <= in48hours &&
+                        expirationDay > nowDay &&
+                        expirationDay <= in48hoursDay &&
                         (form.persona.includes(currentPersona as string) || currentPersona === 'Admin') &&
                         form.status !== 'Expired'
                     );
@@ -91,7 +94,7 @@ export function ExpirationWidget() {
         <>
             <Paper shadow="sm" radius="md" withBorder p="2xl">
                 <Stack gap="md" style={{ padding: '1.25rem' }}>
-                <Title>Documents Expiring in the Next 48 Hours</Title>
+                <Title order={3}>Documents Expiring in the Next 48 Hours</Title>
                 <Group>
                     <Text>View: {value}</Text>
                     <Switch
@@ -124,7 +127,7 @@ export function ExpirationWidget() {
                                         <Table.Td>{form.owner}</Table.Td>
                                         <Table.Td>{form.content_type}</Table.Td>
                                         <Table.Td>{form.persona}</Table.Td>
-                                        <Table.Td>{new Date(form.expiration_date).toLocaleString()}</Table.Td>
+                                        <Table.Td>{new Date(form.expiration_date).toLocaleDateString()}</Table.Td>
                                         <Table.Td>{form.status}</Table.Td>
                                     </Table.Tr>
                                 ))
