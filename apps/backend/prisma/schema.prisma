@@ -26,6 +26,7 @@ model contentform {
   checkout_date     DateTime?         @db.Timestamptz(6)
   review_date       DateTime?         @db.Date
   folder_id         Int?
+  warning           Boolean?
   employee          employee?         @relation(fields: [empid], references: [empid])
   folders           folders?          @relation(fields: [folder_id], references: [id], onUpdate: NoAction)
   joinedfavorites   joinedfavorites[]
@@ -46,6 +47,7 @@ model employee {
   last_name       String?
   created_at      DateTime?         @default(now()) @db.Timestamp(6)
   pfp_URL         String?           @unique @db.VarChar
+  widgets         String[]
   admin           admin?
   contentform     contentform[]
   folders         folders[]
@@ -113,15 +115,16 @@ model notifications {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model folders {
-  id          Int           @id @default(autoincrement())
-  name        String        @db.VarChar(100)
-  owner_empid Int
-  persona     String[]      @db.VarChar
-  created_at  DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime      @db.Timestamptz(6)
-  url         String?       @db.VarChar(2083)
-  contentform contentform[]
-  employee    employee      @relation(fields: [owner_empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(100)
+  owner_empid   Int
+  persona       String[]      @db.VarChar
+  created_at    DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime      @db.Timestamptz(6)
+  url           String?       @db.VarChar(2083)
+  allowed_users String[]      @default([]) @db.VarChar
+  contentform   contentform[]
+  employee      employee      @relation(fields: [owner_empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([owner_empid, name], map: "uq_folders_owner_name")
   @@index([owner_empid], map: "idx_folders_owner_empid")

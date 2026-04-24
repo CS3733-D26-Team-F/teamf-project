@@ -1,36 +1,13 @@
 import { Header } from "../components/Header"
-import { AccessDenied } from "../components/AccessDenied.tsx"
 import { PageTitle } from "../components/Title.tsx";
-import { usePersona } from "../hooks/usePersona";
-import { useAuth0 } from "@auth0/auth0-react";
 import { PeopleCard } from "../components/PeopleCard";
 import {Group, Stack, Text, Center} from "@mantine/core";
 
 export function About() {
-    //The usual
-    const persona = usePersona();
-    // Auth0 loading state is used so we can show a brief access-check message
-    // before deciding whether to render the page or deny access.
-    const { isLoading } = useAuth0();
-
-    // Allow anyone logged in to view the page
-    const allowedAccess = persona != null || localStorage.getItem('persona') != null;
-
-    // Show loading state while Auth0 is still resolving
-    if (isLoading && !allowedAccess) {
-        return (
-            <>
-                <Header />
-                <PageTitle title="About"/>
-                <p style={{ textAlign: 'center' }}>Checking access...</p>
-            </>
-        );
-    }
 
     const imageGap = 40;
 
     // Display the About Page
-    if (allowedAccess) {
         return (
             <>
                 <title>
@@ -118,9 +95,5 @@ export function About() {
                     </Text>
                 </Stack>
             </>
-        );
-    } else {
-        // Not allowed users are blocked from this page.
-        return <AccessDenied />;
-    }
+        )
 }
