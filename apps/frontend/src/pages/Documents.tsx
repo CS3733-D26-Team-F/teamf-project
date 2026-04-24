@@ -6,7 +6,7 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip, SegmentedControl
+    Tooltip, SegmentedControl, Accordion
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
@@ -38,7 +38,7 @@ import {useTranslation} from "react-i18next";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-export function Documents() {
+function Documents() {
     const roles = allPersonas
 
     const api = useApi();
@@ -867,26 +867,34 @@ export function Documents() {
             );
         }
         return (
-            <Box>
-                <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
-                <Table highlightOnHover withTableBorder withColumnBorders>
-                    <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
-                               onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
-                               allChecked={allSelected}
-                               indeterminate={selectedIds.length > 0 && !allSelected}/>
-                    <Table.Tbody>
-                        {existingDocuments.map(doc => <DocRow key={doc.id} doc={doc}
-                                                         isSelected={selectedIds.includes(doc.id)}
-                                                         onSelect={toggleSelect}
-                                                         currentUsername={localStorage.getItem('username') ?? ''}
-                                                         isCheckedOut={!!checkedOutMap[doc.id]}
-                                                         checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                         onCheckOut={checkOutHandle}
-                                                         onCheckIn={checkInHandle}
-                                                         {...rowCallbacks} />)}
-                    </Table.Tbody>
-                </Table>
-            </Box>
+            <>
+                <Accordion.Item value={givenPersona} key={givenPersona}>
+                    <Accordion.Control aria-label={givenPersona}>
+                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        <Box>
+                            <Table highlightOnHover withTableBorder withColumnBorders>
+                                <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                                           allChecked={allSelected}
+                                           indeterminate={selectedIds.length > 0 && !allSelected}/>
+                                <Table.Tbody>
+                                    {existingDocuments.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                          isSelected={selectedIds.includes(doc.id)}
+                                                                          onSelect={toggleSelect}
+                                                                          currentUsername={localStorage.getItem('username') ?? ''}
+                                                                          isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                          checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                          onCheckOut={checkOutHandle}
+                                                                          onCheckIn={checkInHandle}
+                                                                          {...rowCallbacks} />)}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    </Accordion.Panel>
+                </Accordion.Item>
+            </>
         );
     }
 
@@ -1037,7 +1045,9 @@ export function Documents() {
                             </Box>
                         )}
                         <Stack>
-                            {allPersonas.map(p => EmployeeTable(p))}
+                            <Accordion defaultValue={persona}>
+                                {allPersonas.map(p => EmployeeTable(p))}
+                            </Accordion>
                         </Stack>
                     </Stack>
                 )}
@@ -1618,3 +1628,5 @@ export function Documents() {
         </>
     );
 }
+
+export default Documents
