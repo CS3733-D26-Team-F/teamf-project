@@ -968,6 +968,7 @@ export function Documents() {
                                         color: 'var(--color-yale-blue)'
                                     }}>
                                         {doc.name}
+
                                     </Text>
                                     <FileTypeBadge fileType={getFileType(doc.url)} size="sm"/>
                                     <PersonaBadges personas={doc.persona}/>
