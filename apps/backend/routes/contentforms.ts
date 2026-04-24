@@ -661,6 +661,28 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
+
+        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+            return res.status(406).json({ error: 'Make sure all fields are filled in' });
+        }
+
+        if (!Array.isArray(persona) || persona.length === 0) {
+            return res.status(406).json({ error: 'At least one job position is required' });
+        }
+
+        const expiration = new Date(expiration_date);
+        const review = new Date(review_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (expiration < today && status !== 'Expired') {
+            return res.status(409).json({ error: 'Document is expired' });
+        }
+
+        if (review < today) {
+            return res.status(409).json({ error: 'Review date should be in the future' });
+        }
+
         const updateData: any = {
             name,
             owner: resolvedOwner,
