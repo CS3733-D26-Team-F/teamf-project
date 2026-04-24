@@ -6,7 +6,7 @@ import {checkJWT, management, getManagementToken} from '../setup/auth0.js';
 
 const router = Router();
 
-
+// Return the currently logged-in employee record using the Auth0 subject ID.
 router.get('/api/auth/me', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const employee = await prisma.employee.findUnique({where: {auth0Id}});
@@ -15,6 +15,7 @@ router.get('/api/auth/me', checkJWT, async (req, res) => {
     res.json({employee});
 });
 
+// Fetch every employee record for admin-style views and dropdowns.
 router.get('/employees', async (req, res) => {
     //const auth0Id = req.auth!.payload.sub as string;
     const employees = await prisma.employee.findMany();
@@ -22,6 +23,7 @@ router.get('/employees', async (req, res) => {
     res.json(employees);
 });
 
+// Lookup a single employee by username.
 router.post('/getEmployee', async (req, res) => {
     //const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
@@ -45,7 +47,7 @@ router.post('/getEmployee', async (req, res) => {
     }
 });
 
-//update employee takes the current username and then optionally any data that want to be changed
+// Update employee fields locally and mirror certain changes back to Auth0.
 router.patch('/updateEmployee', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const token = await getManagementToken();
@@ -55,6 +57,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
         return res.status(400).send('Current username is required');
     }
 
+    // Build the update payload only with fields that were actually provided.
     const updateData: {
         username?: string;
         password?: string;
@@ -82,6 +85,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
             data: updateData,
         });
 
+        // Keep the Auth0 username in sync when the local username changes.
         if (newUsername) {
             const usernameUpdate = {
                 connection: "Username-Password-Authentication",
@@ -108,6 +112,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
             }
         }
 
+        // Update the Auth0 profile fields as well, so login claims stay consistent.
         if (newUsername) {
             const usernameUpdate = {
                 connection: "Username-Password-Authentication",
@@ -135,7 +140,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
             }
         }
 
-
+        // Password changes must be pushed to Auth0, since Auth0 is the identity source.
         if (password) {
             const passwordUpdate = {
                 connection: "Username-Password-Authentication",
@@ -161,6 +166,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
             }
         }
 
+        // Update role assignment in Auth0 to match the selected persona.
         if (persona) {
             const allRolesRes = await fetch(
                 `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
@@ -215,6 +221,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
         }
         ;
 
+        // Maintain the local admin relationship table when persona changes.
         if (persona == 'Admin') {
             await prisma.admin.create({
                 data: {
@@ -236,6 +243,7 @@ router.patch('/updateEmployee', checkJWT, async (req, res) => {
     }
 });
 
+// Create a new employee in Auth0 first, then store the matching local record.
 router.post('/addEmployee', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
@@ -267,6 +275,7 @@ router.post('/addEmployee', checkJWT, async (req, res) => {
         const userData = await createRes.json();
         const auth0UserId = userData.user_id;
 
+        // Assign the Auth0 role that matches the selected persona.
         const rolesRes = await fetch(
             `https://${process.env.AUTH0_DOMAIN}/api/v2/roles`,
             {
@@ -295,6 +304,7 @@ router.post('/addEmployee', checkJWT, async (req, res) => {
             );
         }
 
+        // Admin users get an extra local admin record for fast role checks.
         if (persona.trim() == 'Admin') {
             const newAdmin = await prisma.employee.create({
                 data: {
@@ -339,6 +349,7 @@ router.post('/addEmployee', checkJWT, async (req, res) => {
     }
 });
 
+// Remove the employee from Auth0 first, then delete the local database row.
 router.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
@@ -383,6 +394,7 @@ router.delete('/deleteEmployee/:name', checkJWT, async (req, res) => {
     }
 });
 
+// Upload and store a profile picture in Supabase, then save the public URL locally.
 router.post('/employees/:empid/profile-picture', upload.single('file'), async (req, res) => {
     try {
         const empid = Number(req.params.empid);
@@ -415,6 +427,7 @@ router.post('/employees/:empid/profile-picture', upload.single('file'), async (r
     }
 });
 
+// Update the employee's theme preference in the local database.
 router.post('/updateTheme', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const {empid, theme} = req.body;

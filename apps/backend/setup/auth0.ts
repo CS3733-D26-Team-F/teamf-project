@@ -1,8 +1,12 @@
 import { auth } from 'express-oauth2-jwt-bearer';
 import { ManagementClient } from 'auth0'
 import dotenv from 'dotenv'
+
+// Load environment variables before creating Auth0 clients.
 dotenv.config()
 
+// Middleware that validates incoming JWTs against the Auth0 tenant.
+// This protects API routes that require authenticated requests.
 export const checkJWT = auth({
     audience: process.env.AUTH0_AUDIENCE,
     issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}/`,
@@ -27,8 +31,11 @@ export async function getManagementToken(): Promise<string> {
         }),
     });
     const data = await res.json();
-    if (!data.acess_token) {
+
+    // Fail fast if Auth0 does not return a usable access token.
+    if (!data.access_token) {
     throw new Error('No acess token provided');
     }
-    return data.acess_token;
+
+    return data.access_token;
 }

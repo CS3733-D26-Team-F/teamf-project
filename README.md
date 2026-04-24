@@ -1,120 +1,190 @@
 # CS3733 - Hanover Insurance Content Management System
 
-## Running the Project
+This repository contains the full application stack for the project:
 
+- `apps/frontend` — React frontend
+- `apps/backend` — Express API
 
-
-### What's needed
+## What you need
 
 - Node.js
-- A Postgres connection string
-- PowerShell
+- npm
+- A Postgres connection string for the backend
+- PowerShell on Windows, or another terminal that can run npm scripts
+
+## Project setup
 
 ### 1) Install dependencies
 
-From the repo root:
+From the repository root: `npm install`
 
-```powershell
-npm install
-```
+### 2) Configure backend environment variables
 
-### 2) Set up backend env
-
-Create `apps/backend/.env` with:
-
-```dotenv
-DATABASE_URL="<your-postgres-connection-string>"
-DIRECT_URL="<your-postgres-connection-string>"
-```
-
-Important:
-
-- Backend uses `DIRECT_URL` first.
-- If `DIRECT_URL` is missing, it falls back to `DATABASE_URL`.
-- Keep both pointed to the same DB to avoid confusing behavior.
-
-### 3) Start everything
-
-From the repo root:
-
-```powershell
-npm run dev
-```
-
-Expected URLs:
-
-- Frontend: http://localhost:5173 (or next available port)
-- Backend: http://localhost:3000
-
-### 4) Optional: run apps separately
-
-If separate terminals/process control:
-
-Backend terminal:
-
-```powershell
-Set-Location .\apps\backend
-npm run dev
-```
-
-Frontend terminal:
-
-```powershell
-Set-Location .\apps\frontend
-npm run dev
-```
-
-### 5) Stop servers
-
-Use `Ctrl + C` in each terminal.
-
-## API Endpoints
-
-- http://localhost:3000/
-- http://localhost:3000/employees
-- http://localhost:3000/contentforms
-- http://localhost:3000/employee_manage
-- http://localhost:3000/login
+Create `apps/backend/.env` and add the required database connection values:
+- DATABASE_URL="<your-postgres-connection-string>"
+- DIRECT_URL="<your-postgres-connection-string>"
+- AUTH0, Supabase, and Mistral keys 
 
 Notes:
+- `DIRECT_URL` is preferred when present.
+- If `DIRECT_URL` is missing, the backend falls back to `DATABASE_URL`.
+- Keep both database values pointed at the same database to avoid confusing behavior.
 
-- `/` should return 200 even if DB is down.
-- Data routes depend on DB connectivity and may return 500 if Prisma cannot connect.
+## Running the project
 
-## Prisma Commands
+### Start everything from the repository root
+`npm run dev`
 
-Run these from repo root:
+This usually starts:
 
-```powershell
-npm run db:generate
-npm run db:pull
-npm run db:push
-npm run db:migrate:dev
-npm run db:migrate:reset
-npm run db:studio
-```
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
 
-These root scripts read `apps/backend/.env` and pass DB env vars to the `db` workspace automatically.
+If a port is already in use, one of the apps may move to the next available port.
+
+### Run apps separately
+
+If you want separate terminals or need to restart one app without affecting the other:
+
+#### Backend
+`.\apps\backend npm run dev`
+#### Frontend
+`.\apps\frontend npm run dev`
+
+## App organization
+
+### `apps/frontend`
+
+The frontend is the user-facing React app. It includes:
+
+- page-level screens
+- shared UI components
+- login and access control flows
+- document/content views
+- employee management views
+- shared hooks, constants, and styles
+- static assets in `public/`
+
+Good places to look:
+
+- `src/main.tsx` — app entry point
+- `src/App.tsx` — top-level app wiring
+- `src/pages/` — page-level screens
+- `src/components/` — reusable UI pieces
+- `src/hooks/` — custom hooks
+- `public/` — static assets
+
+### `apps/backend`
+
+The backend is the Express API. It includes:
+
+- HTTP routes for employees and content forms
+- authentication-related endpoints
+- Prisma database access
+- integration helpers and backend setup code
+- upload and checkout/check-in related utilities
+
+Common areas:
+
+- main application startup and server wiring
+- route handlers for major features
+- Prisma and database configuration
+- service/integration setup
+
+## API and frontend request behavior
+
+The frontend should use the shared API helper for requests rather than calling `fetch` directly. That keeps request behavior consistent and reduces duplicated setup.
 
 ## Troubleshooting
 
-Backend starts but data routes fail:
+## Frontend issues
 
-1. Confirm `DIRECT_URL` / `DATABASE_URL` are correct in `apps/backend/.env`.
-2. Run `npm run db:pull` to test DB connectivity.
-3. If you see Prisma `P1001`, the DB host is not reachable from your current network.
+### The frontend does not start
 
-Frontend is up but no data appears:
+Check:
 
-1. Make sure backend is running on port 3000.
-2. Test backend endpoint directly in browser (for example `/employees`).
+- dependencies are installed
+- Node.js is working correctly
+- the Vite dev port is not already in use
 
-## Project Structure Notes
+Try: `npm install cd apps/frontend`
+`npm run dev`
 
-1. one clear backend entrypoint (`app.ts` vs `src/server.ts`).
-2. Keep dependencies in the package that actually uses them.
-3. Keep package manager metadata and lockfile aligned (currently npm + package-lock).
-4. Document folder ownership clearly:
-   - `apps/frontend` = React UI
-   - `apps/backend` = Express API
-   - `packages/db` = Prisma/shared DB client
+### The page loads, but no data appears
+
+Usually this means the frontend cannot reach the backend.
+
+Check:
+
+- the backend is running
+- the backend URL is correct
+- browser dev tools for failed network requests
+- the shared API helper is pointed at the correct domain
+
+### Styles, images, or icons are broken
+
+Check:
+
+- files exist in `apps/frontend/public/`
+- imports point to the correct paths
+- there are no console errors about missing assets
+
+### Build or type errors in the frontend
+
+Look for:
+
+- broken imports
+- invalid component props
+- TypeScript errors in the terminal
+- stale generated or cached files
+
+## Backend issues
+
+### Backend starts, but data routes fail
+
+Check:
+
+- `apps/backend/.env` exists
+- `DATABASE_URL` and `DIRECT_URL` are correct
+- the database is reachable from your network
+
+If needed, run Prisma commands from the repo root to verify the schema and connection.
+
+### Prisma looks out of sync
+
+Symptoms may include schema mismatches or unexpected runtime failures.
+
+Try:
+
+- regenerating Prisma artifacts
+- refreshing the schema from the database
+
+### A route returns 500
+
+This often means the backend cannot reach the database or an integration dependency is misconfigured.
+
+Check backend terminal logs first, then confirm the environment variables.
+
+## Recommended workflow
+
+1. Install dependencies once from the repo root.
+2. Configure backend environment variables.
+3. Start the backend if the frontend depends on live data.
+4. Start the frontend.
+5. Use browser dev tools and terminal output together when debugging.
+
+## Useful checks while troubleshooting
+
+- verify the frontend and backend are on the expected ports
+- confirm the backend is reachable from the browser
+- inspect terminal logs for TypeScript, Vite, Prisma, or network errors
+- confirm static assets exist before importing them
+- keep frontend requests going through the shared API helper
+
+## Contributing notes
+
+- keep page-level logic in `apps/frontend/src/pages/`
+- keep reusable UI in `apps/frontend/src/components/`
+- keep backend route logic in the backend route files
+- keep database/schema changes in the Prisma area
+- update the relevant README when a folder layout or startup step changes

@@ -1006,6 +1006,92 @@ router.get('/getTags', async (req, res) => {
     return res.json({data: tags})
 });
 
+router.get('/favorites', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id}
+        })
+
+        if (!employee) return res.status(404).json({ error: 'No employee found' });
+
+        const favRows = await prisma.joinedfavorites.findMany({
+            where: { empid: employee.empid }
+        });
+
+        const ids = favRows.map(r => r.id);
+
+        const forms = await prisma.contentform.findMany({
+            where: { id: { in: ids } }
+        });
+
+        return res.json(forms);
+    } catch (err) {
+        res.status(500).json({ error: 'No favorite documents found' });
+    }
+});
+
+router.post('/addFavorite', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {username, formname} = req.body;
+
+    const employee = await prisma.employee.findUnique({
+        where: {username: username}
+    })
+
+    const document = await prisma.contentform.findUnique({
+        where: {name: formname}
+    })
+
+    if (!document || !employee) {
+        return res.status(404).json({error: 'No document/employee found with this name'});
+    }
+
+    try {
+        const addFavorite = await prisma.joinedfavorites.create({
+            data: {
+                empid: employee.empid,
+                id: document.id
+
+            },
+        });
+        console.log("added favorite");
+        return res.json(addFavorite);
+    } catch (error) {
+        return res.status(500).json({error: 'Could not add document to favorites'});
+    }
+})
+
+router.delete('/removeFavorite', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {username, formname} = req.body;
+
+    const employee = await prisma.employee.findUnique({
+        where: {username: username}
+    })
+
+    const document = await prisma.contentform.findUnique({
+        where: {name: formname}
+    })
+
+    if (!document || !employee) {
+        return res.status(404).json({error: 'No document/employee found with this name'});
+    }
+    try {
+        const removed = await prisma.joinedfavorites.deleteMany({
+            where: {
+                empid: employee.empid,
+                id: document.id
+            }
+        })
+
+        return res.json(removed);
+    } catch (error) {
+        return res.status(500).json({error: 'Could not remove document from favorites'});
+    }
+})
+
 router.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
 });

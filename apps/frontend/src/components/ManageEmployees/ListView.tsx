@@ -24,6 +24,7 @@ type Employee = {
 const personas = allPersonas;
 const MAX_PROFILE_PICTURE_SIZE = 80 * 1024;
 
+// Persona-specific badge colors keep the list easy to scan at a glance.
 const personaColors: Record<string, string> = {
     "Admin": "var(--color-admin)",
     "Underwriter": "var(--color-underwriter)",
@@ -32,6 +33,7 @@ const personaColors: Record<string, string> = {
     "EXL Operations": "var(--color-exlOperations)",
 };
 
+// Prevent oversized image uploads before they reach the backend.
 function validateProfilePicture(file: File | null): File | null {
     if (file && file.size > MAX_PROFILE_PICTURE_SIZE) {
         window.alert('Profile picture must be 80 KB or smaller.');
@@ -70,9 +72,11 @@ export function EmployeeListView() {
     const [employeeTarget, setEmployeeTarget] = useState<Employee | null>(null);
     const [imageLoadError, setImageLoadError] = useState(false);
 
+    // Used to highlight the current user's own row with a "You" badge.
     const authorUsername = localStorage.getItem('username') ?? '';
     const today = new Date().toISOString().split('T')[0];
 
+    // Fetch the full employee directory from the backend.
     function loadEmployees() {
         api(`${DOMAIN}/employees`)
             .then(res => res.json())
@@ -83,6 +87,7 @@ export function EmployeeListView() {
         loadEmployees();
     }, []);
 
+    // Prepare a clean form state whenever the Add Employee modal opens.
     function openAdd(persona: string) {
         setAddPersona(persona);
         setAddData({ username: '', password: '', first_name: '', last_name: '', pfp_URL: null });
@@ -90,6 +95,7 @@ export function EmployeeListView() {
         setAddOpen(true);
     }
 
+    // Create the account first, then upload the optional profile image if needed.
     async function handleAdd() {
         setAddSaving(true);
         setAddError('');
@@ -135,6 +141,7 @@ export function EmployeeListView() {
         }
     }
 
+    // Copy the selected employee into the edit form so only changed fields are saved.
     function openEdit(emp: Employee) {
         setEditTarget(emp);
         setEditData({ newUsername: emp.username, password: '', persona: emp.persona, newPfp_URL: null });
@@ -142,6 +149,7 @@ export function EmployeeListView() {
         setEditOpen(true);
     }
 
+    // Save account changes and optional photo upload in separate steps.
     async function handleEdit() {
         if (!editTarget) return;
         setEditSaving(true);
@@ -154,6 +162,7 @@ export function EmployeeListView() {
             const hasAccountChanges = Boolean(newUsername || newPassword || newPersona);
             const hasPictureChange = Boolean(editData.newPfp_URL);
 
+            // Avoid sending an update when the user hasn't changed anything.
             if (!hasAccountChanges && !hasPictureChange) {
                 setEditError('No changes to save.');
                 return;
@@ -201,11 +210,13 @@ export function EmployeeListView() {
         }
     }
 
+    // Open a delete confirmation modal before permanently removing the employee.
     function openDelete(emp: Employee) {
         setDeleteTarget(emp);
         setDeleteOpen(true);
     }
 
+    // Delete the selected employee and refresh the list afterwards.
     async function handleDelete() {
         if (!deleteTarget) return;
         await api(`${DOMAIN}/deleteEmployee/${deleteTarget.username}`, {
@@ -215,12 +226,14 @@ export function EmployeeListView() {
         loadEmployees();
     }
 
+    // Open the detail modal and reset any previous broken-image state.
     function openEmployee(emp: Employee) {
         setEmployeeTarget(emp);
         setImageLoadError(false);
         setEmployeeOpen(true);
     }
 
+    // Filter the employee list by username or name as the user types.
     const filtered = employees.filter(e =>
         e.username?.toLowerCase().includes(search.toLowerCase()) ||
         e.first_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -240,6 +253,7 @@ export function EmployeeListView() {
 
             {/* Grouped sections */}
             {personas.map(persona => {
+                // Split employees by persona and sort each group alphabetically by last name.
                 const group = filtered.filter(e => e.persona===persona).sort((a,b)=>a.last_name.localeCompare(b.last_name));
                 return (
                     <Box
@@ -277,6 +291,7 @@ export function EmployeeListView() {
                                        }}
                                 >
                                     <Group>
+                                        {/* Clickable initials badge opens the employee detail modal. */}
                                         <Badge
                                             component="button"
                                             onClick={() => openEmployee(emp)}
@@ -293,6 +308,7 @@ export function EmployeeListView() {
                                         )}
                                     </Group>
                                     <Group gap="xs">
+                                        {/* Edit and delete actions are grouped together for quick admin workflows. */}
                                         <Button
                                             size="xs"
                                             leftSection={<IconEdit size={14} />}
@@ -404,6 +420,7 @@ export function EmployeeListView() {
             >
                 {editTarget && (
                     <Stack>
+                        {/* Show current values so admins can compare before saving changes. */}
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>Current Details</Text>
                             <Text size="sm">Current Username: {editTarget.username}</Text>
@@ -440,6 +457,7 @@ export function EmployeeListView() {
                         {editError && (
                             <Text c="red" size="sm">{editError}</Text>
                         )}
+                        {/* Show audit-style metadata for the selected employee. */}
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>Account History</Text>
                             <Group>
@@ -493,6 +511,7 @@ export function EmployeeListView() {
                     <>
                         <Center>
                             {imageLoadError ? (
+                                // Fall back to initials if the profile image fails to load.
                                 <Badge
                                     color={personaColors[employeeTarget.persona] ?? 'gray'}
                                     variant="light"
@@ -521,6 +540,7 @@ export function EmployeeListView() {
                             )}
                         </Center>
                         <Stack>
+                            {/* Read-only summary of the selected employee's account details. */}
                             <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                                 <Text fw={600} mb={4}>{employeeTarget.first_name} {employeeTarget.last_name}</Text>
                                 <Text>Username: {employeeTarget.username}</Text>
@@ -537,6 +557,3 @@ export function EmployeeListView() {
         </Box>
     );
 }
-
-
-
