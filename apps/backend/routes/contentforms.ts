@@ -10,6 +10,10 @@ const distPath = path.resolve("../frontend/dist");
 
 const router = Router();
 
+function isAdminPersona(persona: string | null | undefined) {
+    return (persona ?? '').toLowerCase() === 'admin';
+}
+
 function formatFolder(folders: {
     id: number;
     name: string;
@@ -578,7 +582,7 @@ router.get('/folders', checkJWT, async (req, res) => {
         }
 
         const folders = await prisma.folders.findMany({
-            where: employee.persona === 'Admin'
+            where: isAdminPersona(employee.persona)
                 ? undefined
                 : {
                     OR: [
@@ -596,6 +600,7 @@ router.get('/folders', checkJWT, async (req, res) => {
 
         return res.json(folders.map(formatFolder));
     } catch (error) {
+        console.error('folders fetch error:', error);
         return res.status(500).json({error: 'Could not fetch folders'});
     }
 });
@@ -627,7 +632,8 @@ router.post('/folders', checkJWT, async (req, res) => {
                     : [employee.persona ?? ''].filter(Boolean),
                 allowed_users: Array.isArray(allowedUsers)
                     ? Array.from(new Set(allowedUsers.filter(Boolean)))
-                    : []
+                    : [],
+                    updated_at: new Date()
             },
             include: {
                 employee: {select: {username: true}},
@@ -640,6 +646,10 @@ router.post('/folders', checkJWT, async (req, res) => {
         if ((error as { code?: string }).code === 'P2002') {
             return res.status(409).json({error: 'Folder name already exists'});
         }
+        if ((error as { code?: string }).code === 'P2022') {
+            return res.status(500).json({error: 'Database schema is out of date. Run prisma db push.'});
+        }
+        console.error('folders create error:', error);
         return res.status(500).json({error: 'Could not create folder'});
     }
 });
@@ -672,7 +682,7 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
             return res.status(404).json({error: 'Folder not found'});
         }
 
-        if (employee.persona !== 'Admin' && existingFolder.owner_empid !== employee.empid) {
+        if (!isAdminPersona(employee.persona) && existingFolder.owner_empid !== employee.empid) {
             return res.status(403).json({error: 'Not allowed to edit this folder'});
         }
 
@@ -716,6 +726,10 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
         if ((error as { code?: string }).code === 'P2002') {
             return res.status(409).json({error: 'Folder name already exists'});
         }
+        if ((error as { code?: string }).code === 'P2022') {
+            return res.status(500).json({error: 'Database schema is out of date. Run prisma db push.'});
+        }
+        console.error('folders update error:', error);
         return res.status(500).json({error: 'Could not update folder'});
     }
 });
@@ -757,7 +771,7 @@ router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {
             const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
             const hasUserAccess = folder.allowed_users.includes(employee.username);
 
-            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+            if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
                 return res.status(403).json({error: 'Not allowed to use this folder'});
             }
         }
@@ -811,7 +825,7 @@ router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
             const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
             const hasUserAccess = folder.allowed_users.includes(employee.username);
 
-            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+            if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
                 return res.status(403).json({error: 'Not allowed to use this folder'});
             }
         }
@@ -1092,76 +1106,6 @@ router.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
-
-router.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
-    const id = parseInt(req.params.id);
-    const {is_favorite} = req.body;
-    try {
-        const updated = await prisma.contentform.update({
-            where: {id},
-            data: {is_favorite}
-        });
-        res.json(updated);
-    } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
-    }
-});
-
-router.get('/ba-files', async (req, res) => {
-    const {data, error} = await supabase
-        .from('ba_files_with_size')
-        .select('name, file_size_kb')
-        .not('file_size_kb', 'is', null)
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file size'})
-    }
-
-    res.json(data)
-})
-
-router.get('/uw-files', async (req, res) => {
-    const {data, error} = await supabase
-        .from('underwriter_files_with_size')
-        .select('name, file_size_kb')
-        .not('file_size_kb', 'is', null)
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file size'})
-    }
-
-    res.json(data)
-})
-
-
-router.get('/uw-files/:name', async (req, res) => {
-    const {name} = req.params;
-    const {data, error} = await supabase
-        .from('underwriter_files_with_size') // your VIEW
-        .select('name, file_size_kb')
-        .eq('name', name)
-        .single()
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file'})
-    }
-    res.json(data)
-})
-
-router.get('/ba-files/:name', async (req, res) => {
-    const {name} = req.params;
-    const {data, error} = await supabase
-        .from('ba_files_with_size') // your VIEW
-        .select('name, file_size_kb')
-        .eq('name', name)
-        .single()
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file'})
-    }
-    res.json(data)
-})
 
 router.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;

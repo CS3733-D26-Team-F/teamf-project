@@ -1129,7 +1129,7 @@ export function Documents() {
                         }}>
                             {folders.map(folder => {
                                 const isActive = selectedFolderId === folder.id;
-                                const canEditFolder = persona === 'Admin' || folder.owner === (username ?? '');
+                                const canEditFolder = (persona ?? '').toLowerCase() === 'admin' || folder.owner === (username ?? '');
                                 return (
                                     <Box
                                         key={folder.id}

@@ -25,6 +25,7 @@ model contentform {
   review_date       DateTime?         @db.Date
   folder_id         Int?
   folder            folders?          @relation(fields: [folder_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  warning           Boolean?
   employee          employee?         @relation(fields: [empid], references: [empid])
   joinedfavorites   joinedfavorites[]
   jointagscontent   jointagscontent[]
@@ -63,6 +64,7 @@ model employee {
   last_name       String?
   created_at      DateTime?         @default(now()) @db.Timestamp(6)
   pfp_URL         String?           @unique @db.VarChar
+  widgets         String[]
   admin           admin?
   contentform     contentform[]
   folders         folders[]
