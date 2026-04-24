@@ -6,7 +6,7 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip, SegmentedControl
+    Tooltip, SegmentedControl, Accordion
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
@@ -858,6 +858,86 @@ export function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
+    function contentTable (documentsToDisplay: ContentForm[]) {
+        return (
+            <Box>
+                <Table highlightOnHover withTableBorder withColumnBorders>
+                    <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                               onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                               allChecked={allSelected}
+                               indeterminate={selectedIds.length > 0 && !allSelected}/>
+                    <Table.Tbody>
+                        {documentsToDisplay.map(doc => <DocRow key={doc.id} doc={doc}
+                                                              isSelected={selectedIds.includes(doc.id)}
+                                                              onSelect={toggleSelect}
+                                                              currentUsername={localStorage.getItem('username') ?? ''}
+                                                              isCheckedOut={!!checkedOutMap[doc.id]}
+                                                              checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                              onCheckOut={checkOutHandle}
+                                                              onCheckIn={checkInHandle}
+                                                              {...rowCallbacks} />)}
+                    </Table.Tbody>
+                </Table>
+            </Box>
+        )
+    }
+
+    function personaAccordion(givenPersona: string) {
+        const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
+        if (existingDocuments.length == 0) {
+            return (
+                <>
+                </>
+            );
+        }
+        return (
+            <>
+                <Accordion.Item value={givenPersona} key={givenPersona}>
+                    <Accordion.Control aria-label={givenPersona}>
+                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        {contentTable(existingDocuments)}
+                    </Accordion.Panel>
+                </Accordion.Item>
+            </>
+        );
+    }
+
+    const favoriteAccordion = (
+            <>
+                {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
+                    <Accordion.Item value={"favorites"} key={"favorites"}>
+                        <Accordion.Control aria-label={"favorites"}>
+                            <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                            <Box>
+                                <Table highlightOnHover withTableBorder withColumnBorders>
+                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
+                                               currentDir={favSortDir}
+                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                               allChecked={allFavSelected}
+                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
+                                    <Table.Tbody>
+                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                            isSelected={selectedFavIds.includes(doc.id)}
+                                                                            onSelect={toggleFavSelect}
+                                                                            currentUsername={localStorage.getItem('username') ?? ''}
+                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                            onCheckOut={checkOutHandle}
+                                                                            onCheckIn={checkInHandle}
+                                                                            {...rowCallbacks} />)}
+                                    </Table.Tbody>
+                                </Table>
+                            </Box>
+                        </Accordion.Panel>
+                    </Accordion.Item>
+                )}
+            </>
+    )
+
     return (
         <>
             <title>
@@ -981,49 +1061,17 @@ export function Documents() {
                 {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
-                        {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
-                            <Box>
-                                <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
-                                <Table highlightOnHover withTableBorder withColumnBorders>
-                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
-                                               currentDir={favSortDir}
-                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
-                                               allChecked={allFavSelected}
-                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
-                                    <Table.Tbody>
-                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                            isSelected={selectedFavIds.includes(doc.id)}
-                                                                            onSelect={toggleFavSelect}
-                                                                            currentUsername={localStorage.getItem('username') ?? ''}
-                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                            onCheckOut={checkOutHandle}
-                                                                            onCheckIn={checkInHandle}
-                                                                            {...rowCallbacks} />)}
-                                    </Table.Tbody>
-                                </Table>
-                            </Box>
-                        )}
-                        <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
-                            <Table highlightOnHover withTableBorder withColumnBorders>
-                                <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
-                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
-                                           allChecked={allSelected}
-                                           indeterminate={selectedIds.length > 0 && !allSelected}/>
-                                <Table.Tbody>
-                                    {nonFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                     isSelected={selectedIds.includes(doc.id)}
-                                                                     onSelect={toggleSelect}
-                                                                     currentUsername={localStorage.getItem('username') ?? ''}
-                                                                     isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                     checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                     onCheckOut={checkOutHandle}
-                                                                     onCheckIn={checkInHandle}
-                                                                     {...rowCallbacks} />)}
-                                </Table.Tbody>
-                            </Table>
-                        </Box>
+                        {!search ?
+                            <Accordion multiple defaultValue={["favorites", persona]}>
+                                {favoriteAccordion}
+                                {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
+                            </Accordion>
+                        :
+                            <>
+                                <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                {contentTable(nonFavorites)}
+                            </>
+                        }
                     </Stack>
                 )}
 
@@ -1603,3 +1651,5 @@ export function Documents() {
         </>
     );
 }
+
+export default Documents
