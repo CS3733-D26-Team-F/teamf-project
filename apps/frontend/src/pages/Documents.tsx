@@ -320,7 +320,10 @@ export function Documents() {
 
     async function loadFolders() {
         const fetchedFolders = await api(`${DOMAIN}/folders`).then(res => res.json()) as Folder[];
+
         setFolders(Array.isArray(fetchedFolders) ? fetchedFolders : []);
+
+        console.log("Loaded folders:", Array.isArray(fetchedFolders) ? fetchedFolders : []);
     }
 
     // checkall
@@ -1115,6 +1118,9 @@ export function Documents() {
                 )}
 
                 {/* list view */}
+
+
+
                 {viewMode === 'list' && (
                     <Stack gap="lg">
                         {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
