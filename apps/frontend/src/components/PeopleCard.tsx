@@ -27,7 +27,7 @@ export function PeopleCard({ firstName, lastName, position, photoURL }: PersonaB
                 />
                 <Center>
                     <Text>
-                        {firstName}, {lastName}
+                        {firstName} {lastName}
                     </Text>
                 </Center>
                 <Center>
