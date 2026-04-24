@@ -38,7 +38,7 @@ import {useTranslation} from "react-i18next";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-function Documents() {
+export function Documents() {
     const roles = allPersonas
 
     const api = useApi();
