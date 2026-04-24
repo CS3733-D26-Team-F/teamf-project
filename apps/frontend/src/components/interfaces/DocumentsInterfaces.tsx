@@ -23,6 +23,7 @@ export type Folder = {
     name: string;
     owner: string;
     persona: string[]; // Access control based on user roles, can be null or empty for public folders or specific access lists
+    allowed_users: string[];
     associated_docsIDs: number[]; // List of document IDs that are contained within this folder
     date_modified: string;
     url: string;

@@ -5,12 +5,12 @@ import {Header} from "../components/Header";
 import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
-    Badge, Stack, Box, Table, Checkbox, ActionIcon,
+    Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
     Tooltip, SegmentedControl
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
-    IconFilter, IconClock, IconFolder
+    IconFilter, IconClock, IconFolder, IconDotsVertical
 } from '@tabler/icons-react';
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -84,7 +84,14 @@ export function Documents() {
 
     const [folderName, setFolderName] = useState<string>('');
     const [folderPersona, setFolderPersona] = useState<string[]>([]);
+    const [folderUsers, setFolderUsers] = useState<string[]>([]);
     const [folderModalError, setFolderModalError] = useState('');
+    const [editFolderOpen, setEditFolderOpen] = useState(false);
+    const [editFolderId, setEditFolderId] = useState<number | null>(null);
+    const [editFolderName, setEditFolderName] = useState('');
+    const [editFolderPersona, setEditFolderPersona] = useState<string[]>([]);
+    const [editFolderUsers, setEditFolderUsers] = useState<string[]>([]);
+    const [editFolderError, setEditFolderError] = useState('');
 
     const [filterPersona, setFilterPersona] = useState<string[]>([]);
     const [filterStatus, setFilterStatus] = useState<string[]>([]);
@@ -280,7 +287,7 @@ export function Documents() {
         }));
     }, [persona, username]);
 
-    async function createFolder(name: string, personaList: string[]) {
+    async function createFolder(name: string, personaList: string[], allowedUsers: string[] = []) {
         const trimmedName = name.trim();
         if (!trimmedName) return null;
 
@@ -294,7 +301,7 @@ export function Documents() {
             const createdFolder = await api(`${DOMAIN}/folders`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: trimmedName, persona: personaList})
+                body: JSON.stringify({name: trimmedName, persona: personaList, allowedUsers})
             }).then(res => res.json()) as Folder;
 
             setFolders(prev => [createdFolder, ...prev]);
@@ -303,6 +310,43 @@ export function Documents() {
         } catch (err: any) {
             setFolderModalError(err?.message ?? 'Could not create folder.');
             return null;
+        }
+    }
+
+    function openEditFolder(folder: Folder) {
+        setEditFolderId(folder.id);
+        setEditFolderName(folder.name);
+        setEditFolderPersona(folder.persona ?? []);
+        setEditFolderUsers(folder.allowed_users ?? []);
+        setEditFolderError('');
+        setEditFolderOpen(true);
+    }
+
+    async function updateFolder(id: number, name: string, personaList: string[], allowedUsers: string[]) {
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            setEditFolderError('Folder name is required.');
+            return;
+        }
+
+        const existing = folders.some(f => f.id !== id && f.name.toLowerCase() === trimmedName.toLowerCase());
+        if (existing) {
+            setEditFolderError('Folder name already exists.');
+            return;
+        }
+
+        try {
+            const updatedFolder = await api(`${DOMAIN}/folders/${id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: trimmedName, persona: personaList, allowedUsers})
+            }).then(res => res.json()) as Folder;
+
+            setFolders(prev => prev.map(folder => folder.id === id ? updatedFolder : folder));
+            setEditFolderOpen(false);
+            setEditFolderError('');
+        } catch (err: any) {
+            setEditFolderError(err?.message ?? 'Could not update folder.');
         }
     }
 
@@ -1085,6 +1129,7 @@ export function Documents() {
                         }}>
                             {folders.map(folder => {
                                 const isActive = selectedFolderId === folder.id;
+                                const canEditFolder = persona === 'Admin' || folder.owner === (username ?? '');
                                 return (
                                     <Box
                                         key={folder.id}
@@ -1097,7 +1142,31 @@ export function Documents() {
                                             cursor: 'pointer'
                                         }}
                                     >
-                                        <Group gap={8} wrap="nowrap" align="center">
+                                        <Group gap={8} wrap="nowrap" align="center" justify="space-between">
+                                            {canEditFolder && (
+                                                <Menu shadow="md" width={170} withinPortal>
+                                                    <Menu.Target>
+                                                        <ActionIcon
+                                                            variant="subtle"
+                                                            color="gray"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            aria-label="Folder actions"
+                                                        >
+                                                            <IconDotsVertical size={14}/>
+                                                        </ActionIcon>
+                                                    </Menu.Target>
+                                                    <Menu.Dropdown>
+                                                        <Menu.Item
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openEditFolder(folder);
+                                                            }}
+                                                        >
+                                                            Edit Folder
+                                                        </Menu.Item>
+                                                    </Menu.Dropdown>
+                                                </Menu>
+                                            )}
                                             <ActionIcon variant={isActive ? 'filled' : 'light'} color={isActive ? 'blue' : 'gray'}>
                                                 <IconFolder size={16}/>
                                             </ActionIcon>
@@ -1334,22 +1403,77 @@ export function Documents() {
             <Modal opened={addFolderOpen} onClose={() => {
                 setAddFolderOpen(false);
                 setFolderModalError('');
+                setFolderUsers([]);
             }} title="Create Folder">
                 <Stack>
                     <TextInput label="Folder Name" placeholder="Enter folder name" value={folderName} onChange={e => setFolderName(e.target.value)} />
                     <MultiSelect label="Persona" placeholder="Select personas" value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
+                    <MultiSelect
+                        label="Restricted Users"
+                        placeholder="Select users who can access this folder"
+                        value={folderUsers}
+                        onChange={setFolderUsers}
+                        data={[...new Set(employees.map(e => e.username))]}
+                        searchable
+                        clearable
+                    />
                     {folderModalError && <ErrorMessage message={folderModalError} />}
                     <Group justify="flex-end">
                         <Button className="invert-hover" onClick={async () => {
                             const personas = folderPersona.length > 0 ? folderPersona : [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(folderName, personas);
+                            const created = await createFolder(folderName, personas, folderUsers);
                             if (created) {
                                 setAddFolderOpen(false);
                                 setFolderName('');
                                 setFolderPersona([]);
+                                setFolderUsers([]);
                                 setFolderModalError('');
                             }
                         }}>Create</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            <Modal opened={editFolderOpen} onClose={() => {
+                setEditFolderOpen(false);
+                setEditFolderError('');
+            }} title="Edit Folder">
+                <Stack>
+                    <TextInput
+                        label="Folder Name"
+                        placeholder="Enter folder name"
+                        value={editFolderName}
+                        onChange={e => setEditFolderName(e.target.value)}
+                    />
+                    <MultiSelect
+                        label="Persona"
+                        placeholder="Select personas"
+                        value={editFolderPersona}
+                        onChange={setEditFolderPersona}
+                        data={roles}
+                        clearable
+                    />
+                    <MultiSelect
+                        label="Restricted Users"
+                        placeholder="Select users who can access this folder"
+                        value={editFolderUsers}
+                        onChange={setEditFolderUsers}
+                        data={[...new Set(employees.map(e => e.username))]}
+                        searchable
+                        clearable
+                    />
+                    {editFolderError && <ErrorMessage message={editFolderError} />}
+                    <Group justify="flex-end">
+                        <Button className="invert-hover-outline" onClick={() => setEditFolderOpen(false)}>Cancel</Button>
+                        <Button
+                            className="invert-hover"
+                            onClick={async () => {
+                                if (!editFolderId) return;
+                                await updateFolder(editFolderId, editFolderName, editFolderPersona, editFolderUsers);
+                            }}
+                        >
+                            Save Changes
+                        </Button>
                     </Group>
                 </Stack>
             </Modal>
