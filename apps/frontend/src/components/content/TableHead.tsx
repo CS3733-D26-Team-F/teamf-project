@@ -43,6 +43,7 @@ export function TableHead({ onSort, currentField, currentDir, onSelectAll, allCh
                 <SortTh field="file_name" label={t('document_type')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="persona" label={t('persona')}icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="owner" label={t('owner')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
+                <SortTh field="folder" label="Folder" icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="content_type" label={t('content_type')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="status" label={t('status')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="jointagscontent" label={t('doc_tag')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />

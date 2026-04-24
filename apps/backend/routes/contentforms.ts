@@ -10,23 +10,23 @@ const distPath = path.resolve("../frontend/dist");
 
 const router = Router();
 
-function formatFolder(folder: {
+function formatFolder(folders: {
     id: number;
     name: string;
     persona: string[];
     url: string | null;
     updated_at: Date;
-    owner: { username: string };
-    documents: Array<{ id: number }>;
+    employee: { username: string };
+    contentform: Array<{ id: number }>;
 }) {
     return {
-        id: folder.id,
-        name: folder.name,
-        owner: folder.owner.username,
-        persona: folder.persona,
-        associated_docsIDs: folder.documents.map((doc) => doc.id),
-        date_modified: folder.updated_at.toISOString(),
-        url: folder.url ?? ''
+        id: folders.id,
+        name: folders.name,
+        owner: folders.employee.username,
+        persona: folders.persona,
+        associated_docsIDs: folders.contentform.map((doc) => doc.id),
+        date_modified: folders.updated_at.toISOString(),
+        url: folders.url ?? ''
     };
 }
 
@@ -585,8 +585,8 @@ router.get('/folders', checkJWT, async (req, res) => {
                     ]
                 },
             include: {
-                owner: {select: {username: true}},
-                documents: {select: {id: true}}
+                employee: {select: {username: true}},
+                contentform: {select: {id: true}}
             },
             orderBy: {updated_at: 'desc'}
         });
@@ -624,8 +624,8 @@ router.post('/folders', checkJWT, async (req, res) => {
                     : [employee.persona ?? ''].filter(Boolean)
             },
             include: {
-                owner: {select: {username: true}},
-                documents: {select: {id: true}}
+                employee: {select: {username: true}},
+                contentform: {select: {id: true}}
             }
         });
 

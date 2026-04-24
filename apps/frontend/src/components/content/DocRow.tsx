@@ -1,6 +1,6 @@
 import type {ContentForm, RowCallbacks} from "../interfaces/DocumentsInterfaces.tsx";
 import {getFileType} from "./Functions.tsx";
-import {ActionIcon, Checkbox, Group, Table, Tooltip} from "@mantine/core";
+import {ActionIcon, Badge, Checkbox, Group, Table, Tooltip} from "@mantine/core";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
 import {TagBadges} from "../Badges/TagBadges.tsx";
@@ -64,6 +64,21 @@ export function DocRow({
                 <PersonaBadges personas={doc.persona}/>
             </Table.Td>
             <Table.Td>{doc.owner}</Table.Td>
+            <Table.Td onClick={e => e.stopPropagation()}>
+                {doc.folder_id !== null ? (
+                    <Badge
+                        variant="light"
+                        color="grape"
+                        style={{cursor: 'pointer'}}
+                        leftSection={<IconFolder size={12} />}
+                        onClick={() => onFolderClick(doc.folder_id)}
+                    >
+                        {doc.folder || 'Folder'}
+                    </Badge>
+                ) : (
+                    '-'
+                )}
+            </Table.Td>
             <Table.Td>{doc.content_type}</Table.Td>
             <Table.Td><StatusBadge status={doc.status} size="sm" filter={false} /> </Table.Td>
             <Table.Td><TagBadges tags={doc.jointagscontent}/> </Table.Td>
