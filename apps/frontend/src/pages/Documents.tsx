@@ -858,7 +858,31 @@ function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
-    function EmployeeTable(givenPersona: string) {
+    function contentTable (documentsToDisplay: ContentForm[]) {
+        return (
+            <Box>
+                <Table highlightOnHover withTableBorder withColumnBorders>
+                    <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                               onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                               allChecked={allSelected}
+                               indeterminate={selectedIds.length > 0 && !allSelected}/>
+                    <Table.Tbody>
+                        {documentsToDisplay.map(doc => <DocRow key={doc.id} doc={doc}
+                                                              isSelected={selectedIds.includes(doc.id)}
+                                                              onSelect={toggleSelect}
+                                                              currentUsername={localStorage.getItem('username') ?? ''}
+                                                              isCheckedOut={!!checkedOutMap[doc.id]}
+                                                              checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                              onCheckOut={checkOutHandle}
+                                                              onCheckIn={checkInHandle}
+                                                              {...rowCallbacks} />)}
+                    </Table.Tbody>
+                </Table>
+            </Box>
+        )
+    }
+
+    function personaAccordion(givenPersona: string) {
         const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
         if (existingDocuments.length == 0) {
             return (
@@ -873,32 +897,14 @@ function Documents() {
                         <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
                     </Accordion.Control>
                     <Accordion.Panel>
-                        <Box>
-                            <Table highlightOnHover withTableBorder withColumnBorders>
-                                <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
-                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
-                                           allChecked={allSelected}
-                                           indeterminate={selectedIds.length > 0 && !allSelected}/>
-                                <Table.Tbody>
-                                    {existingDocuments.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                          isSelected={selectedIds.includes(doc.id)}
-                                                                          onSelect={toggleSelect}
-                                                                          currentUsername={localStorage.getItem('username') ?? ''}
-                                                                          isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                          checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                          onCheckOut={checkOutHandle}
-                                                                          onCheckIn={checkInHandle}
-                                                                          {...rowCallbacks} />)}
-                                </Table.Tbody>
-                            </Table>
-                        </Box>
+                        {contentTable(existingDocuments)}
                     </Accordion.Panel>
                 </Accordion.Item>
             </>
         );
     }
 
-    const FavoriteTable = (
+    const favoriteAccordion = (
             <>
                 {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
                     <Accordion.Item value={"favorites"} key={"favorites"}>
@@ -1055,13 +1061,17 @@ function Documents() {
                 {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
-
-                        <Stack>
+                        {!search ?
                             <Accordion multiple defaultValue={["favorites", persona]}>
-                                {FavoriteTable}
-                                {allPersonas.map(p => EmployeeTable(p))}
+                                {favoriteAccordion}
+                                {allPersonas.map(p => personaAccordion(p))}
                             </Accordion>
-                        </Stack>
+                        :
+                            <>
+                                <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                {contentTable(nonFavorites)}
+                            </>
+                        }
                     </Stack>
                 )}
 
