@@ -38,18 +38,19 @@ export function About() {
                 </title>
                 <Header />
                 <PageTitle title="About Us"/>
-                <Stack gap={40}>
-                    <Text>
+                <Stack m={20} gap={40}>
+                    <Text size={"xl"}>
                         This website was created as a part of CS3733-D26 Software Engineering for the WPI Computer Science Department
                     </Text>
-                    <Text>
+                    <Text size={"xl"}>
                         Class Instructor: Prof. Wilson Wong
+                    </Text >
+                    <Text size={"xl"}>
+                        Team Coach: Phuong Tran
                     </Text>
-                    <Text>
-                        Team Coach: Tran
-                    </Text>
-                    <Text>
-                        Our Team:
+                    <br/>
+                    <Text size={"xl"}>
+                        Meet Our Team:
                     </Text>
                     <Center>
 
@@ -110,8 +111,10 @@ export function About() {
                             </Group>
                         </Stack>
                     </Center>
-                    <Text>
-                        We would like to Thank Hanover Insurance and their representatives, Brandon Roche, Deputy CIO, and Meaghan Jenket, Principle Business Architect for the opportunity to work on this project
+                    <br/>
+                    <Text size={"xl"}>
+                        We would like to Thank Hanover Insurance for the opportunity to have worked on this project.
+                        With a special thanks to their representatives, Brandon Roche, Deputy CIO, and Meaghan Jenket, Principle Business Architect, who helped make this project possible.
                     </Text>
                 </Stack>
             </>
