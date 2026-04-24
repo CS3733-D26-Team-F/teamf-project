@@ -1064,7 +1064,7 @@ function Documents() {
                         {!search ?
                             <Accordion multiple defaultValue={["favorites", persona]}>
                                 {favoriteAccordion}
-                                {allPersonas.map(p => personaAccordion(p))}
+                                {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
                             </Accordion>
                         :
                             <>
