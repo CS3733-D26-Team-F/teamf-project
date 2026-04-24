@@ -1,9 +1,14 @@
 import type {ContentForm} from "./interfaces/DocumentsInterfaces.tsx"
-import {Title, Text, Box, Table, Stack, Paper, Group} from '@mantine/core';
+import {Text, Paper, Group, Pagination} from '@mantine/core';
 import { useToggle } from '@mantine/hooks';
 import * as React from "react";
 import Switch from "@mui/material/Switch";
 import {useApi} from "./api.ts";
+import {IconClock} from "@tabler/icons-react";
+import dayjs from "dayjs";
+import {FileTypeBadge} from "./Badges/FileTypeBadge.tsx";
+import {PersonaBadges} from "./Badges/PersonaBadge.tsx";
+import {getFileType} from "./content/Functions.tsx";
 
 export function ContentCurrencyWidget() {
     const [ownerModified, setOwnerModified] = React.useState<ContentForm[]>([]);
@@ -11,6 +16,13 @@ export function ContentCurrencyWidget() {
     const currentUsername = localStorage.getItem('username');
     const currentPersona = localStorage.getItem('persona');
     const [value, toggle] = useToggle(['Owner', 'Role'] as const);
+    const [page, setPage] = React.useState(1);
+    const PAGE_SIZE = 3;
+
+    React.useEffect(() => {
+        setPage(1);
+    }, [value]);
+
     const token = localStorage.getItem('token');
     const api = useApi();
 
@@ -90,53 +102,75 @@ export function ContentCurrencyWidget() {
 
     const displayed = value === 'Owner' ? ownerModified : roleModified;
 
+    const paginated = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const totalPages = Math.ceil(displayed.length / PAGE_SIZE);
+
     return (
-        <>
-            <Paper shadow="sm" radius="md" withBorder p="2xl">
-                <Stack gap="md" style={{ padding: '1.25rem' }}>
-                    <Title order={3}>Documents Modified Within the Past 48 Hours</Title>
-                    <Group>
-                        <Text>View: {value}</Text>
-                        <Switch
-                            checked={value === 'Owner'}
-                            onChange={() => toggle()}
+    <>
+        <Paper
+            withBorder
+            radius="md"
+            p="md"
+            style={{
+                width: "50%",
+                marginLeft: "auto",
+                marginRight: 20,
+                marginTop: 20
+            }}
+        >
+            <Group gap={6} mb="xs">
+                <IconClock size={14} color="gray" />
+                <Text fw={700} size="sm" c="dimmed">Modified Within the Past 48 Hours</Text>
+            </Group>
+
+            <Group>
+                <Text fw={700} size="sm" c="dimmed">View: {value}</Text>
+                <Switch
+                    checked={value === 'Owner'}
+                    onChange={() => toggle()}
+                />
+            </Group>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {paginated.length === 0 ? (
+                    <Text>No documents modified within the past 48 hours</Text>
+                ) : (
+                paginated.map(doc => (
+                    <Paper
+                        withBorder
+                        radius="md"
+                        p="md"
+                        key={doc.id}
+                        onClick={() => window.open(doc.url, "_blank")}
+                        style={{ cursor: "pointer" }}
+                    >
+
+                        <Group justify="space-between">
+                            <Text fw={600} size="sm">{doc.name}</Text>
+                            <Text size="sm" c="dimmed">
+                                Last Modified: {dayjs(doc.date_modified).format("MMM D, YYYY")}
+                            </Text>
+                        </Group>
+
+                        <Group mt="xs">
+                            <FileTypeBadge fileType={getFileType(doc.url)} size="sm" />
+                            <PersonaBadges personas={doc.persona} />
+                        </Group>
+                    </Paper>
+                )))}
+
+                {totalPages > 1 && (
+                    <Group justify="center" mt="sm">
+                        <Pagination
+                            value={page}
+                            onChange={setPage}
+                            total={totalPages}
+                            size="sm"
                         />
                     </Group>
-
-                    <Box>
-                        <Table highlightOnHover withTableBorder withColumnBorders>
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>Name</Table.Th>
-                                    <Table.Th>Owner</Table.Th>
-                                    <Table.Th>Content Type</Table.Th>
-                                    <Table.Th>Persona</Table.Th>
-                                    <Table.Th>Last Modified</Table.Th>
-                                    <Table.Th>Status</Table.Th>
-                                </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {displayed.length === 0 ? (
-                                    <Table.Tr>
-                                        <Table.Td colSpan={5}>No documents modified within the past 48 hours</Table.Td>
-                                    </Table.Tr>
-                                ) : (
-                                    displayed.map(form => (
-                                        <Table.Tr key={form.id}>
-                                            <Table.Td>{form.name}</Table.Td>
-                                            <Table.Td>{form.owner}</Table.Td>
-                                            <Table.Td>{form.content_type}</Table.Td>
-                                            <Table.Td>{form.persona}</Table.Td>
-                                            <Table.Td>{new Date(form.date_modified).toLocaleDateString()}</Table.Td>
-                                            <Table.Td>{form.status}</Table.Td>
-                                        </Table.Tr>
-                                    ))
-                                )}
-                            </Table.Tbody>
-                        </Table>
-                    </Box>
-                </Stack>
-            </Paper>
-        </>
-    )
+                )}
+            </div>
+        </Paper>
+    </>
+        )
 }
