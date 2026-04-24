@@ -426,10 +426,54 @@ router.get('/contentforms/filter/:persona/:file_type', checkJWT, async (req, res
 router.get('/contentforms/trash', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const trashed = await prisma.contentform.findMany({
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const trashedDocuments = await prisma.contentform.findMany({
             where: {is_deleted: true}
         });
-        res.json(trashed);
+
+        const trashedFolders = await prisma.folders.findMany({
+            where: {
+                is_deleted: true,
+                ...(isAdminPersona(employee.persona)
+                    ? {}
+                    : {
+                        OR: [
+                            {owner_empid: employee.empid},
+                            {persona: {has: employee.persona ?? ''}},
+                            {allowed_users: {has: employee.username}}
+                        ]
+                    })
+            },
+            include: {
+                employee: {select: {username: true}},
+                contentform: {
+                    where: {is_deleted: true},
+                    include: {
+                        folder: {select: {name: true}}
+                    },
+                    orderBy: {deleted_at: 'desc'}
+                }
+            },
+            orderBy: {deleted_at: 'desc'}
+        });
+
+        res.json({
+            documents: trashedDocuments,
+            folders: trashedFolders.map(folder => ({
+                ...formatFolder(folder),
+                is_deleted: folder.is_deleted,
+                deleted_at: folder.deleted_at,
+                documents: folder.contentform.map(formatContentFormWithFolder)
+            }))
+        });
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -455,9 +499,30 @@ router.patch('/contentforms/:id/restore', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
         const id = parseInt(req.params.id);
+        const existing = await prisma.contentform.findUnique({
+            where: {id},
+            select: {folder_id: true}
+        });
+
+        if (!existing) {
+            return res.status(404).json({error: 'Document not found'});
+        }
+
+        let folderIdForRestore: number | null = existing.folder_id;
+        if (existing.folder_id !== null) {
+            const parentFolder = await prisma.folders.findUnique({
+                where: {id: existing.folder_id},
+                select: {is_deleted: true}
+            });
+            if (parentFolder?.is_deleted) {
+                // If folder is still in trash, restore document outside folder.
+                folderIdForRestore = null;
+            }
+        }
+
         const restored = await prisma.contentform.update({
             where: {id},
-            data: {is_deleted: false, deleted_at: null}
+            data: {is_deleted: false, deleted_at: null, folder_id: folderIdForRestore}
         });
         res.json(restored);
     } catch (error) {
@@ -534,19 +599,6 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
     }
 });
 
-// Trash - get all soft deleted (admin only)
-// NOTE: must stay above GET /contentforms/:id
-router.get('/contentforms/trash', async (req, res) => {
-    try {
-        const trashed = await prisma.contentform.findMany({
-            where: {is_deleted: true}
-        });
-        res.json(trashed);
-    } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
-    }
-});
-
 // Patch just the status field — used by Archive page restore
 router.patch('/contentforms/:id/status', async (req, res) => {
     try {
@@ -582,15 +634,18 @@ router.get('/folders', checkJWT, async (req, res) => {
         }
 
         const folders = await prisma.folders.findMany({
-            where: isAdminPersona(employee.persona)
-                ? undefined
-                : {
-                    OR: [
-                        {owner_empid: employee.empid},
-                        {persona: {has: employee.persona ?? ''}},
-                        {allowed_users: {has: employee.username}}
-                    ]
-                },
+            where: {
+                is_deleted: false,
+                ...(isAdminPersona(employee.persona)
+                    ? {}
+                    : {
+                        OR: [
+                            {owner_empid: employee.empid},
+                            {persona: {has: employee.persona ?? ''}},
+                            {allowed_users: {has: employee.username}}
+                        ]
+                    })
+            },
             include: {
                 employee: {select: {username: true}},
                 contentform: {select: {id: true}}
@@ -754,11 +809,15 @@ router.delete('/folders/:id', checkJWT, async (req, res) => {
 
         const folder = await prisma.folders.findUnique({
             where: {id},
-            select: {id: true, name: true, owner_empid: true}
+            select: {id: true, name: true, owner_empid: true, is_deleted: true}
         });
 
         if (!folder) {
             return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (folder.is_deleted) {
+            return res.status(409).json({error: 'Folder is already in trash'});
         }
 
         if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
@@ -777,7 +836,14 @@ router.delete('/folders/:id', checkJWT, async (req, res) => {
                 }
             });
 
-            await tx.folders.delete({where: {id}});
+            await tx.folders.update({
+                where: {id},
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    updated_at: new Date()
+                }
+            });
 
             return {
                 softDeletedCount: softDeleted.count,
@@ -793,6 +859,119 @@ router.delete('/folders/:id', checkJWT, async (req, res) => {
         console.error('folders delete error:', error);
         return res.status(500).json({error: 'Could not delete folder'});
     }
+});
+
+router.patch('/folders/:id/restore', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseInt(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.findUnique({
+            where: {id},
+            select: {owner_empid: true, is_deleted: true}
+        });
+
+        if (!folder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to restore this folder'});
+        }
+
+        if (!folder.is_deleted) {
+            return res.status(409).json({error: 'Folder is not in trash'});
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            await tx.folders.update({
+                where: {id},
+                data: {
+                    is_deleted: false,
+                    deleted_at: null,
+                    updated_at: new Date()
+                }
+            });
+
+            const restoredDocs = await tx.contentform.updateMany({
+                where: {folder_id: id, is_deleted: true},
+                data: {is_deleted: false, deleted_at: null}
+            });
+
+            return {restoredDocsCount: restoredDocs.count};
+        });
+
+        return res.json({message: 'Folder restored', ...result});
+    } catch (error) {
+        return res.status(500).json({error: 'Could not restore folder'});
+    }
+});
+
+router.delete('/folders/:id/permanent', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseInt(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.findUnique({
+            where: {id},
+            select: {owner_empid: true, is_deleted: true}
+        });
+
+        if (!folder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to permanently delete this folder'});
+        }
+
+        if (!folder.is_deleted) {
+            return res.status(409).json({error: 'Folder must be in trash before permanent delete'});
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const deletedDocs = await tx.contentform.deleteMany({where: {folder_id: id}});
+            await tx.folders.delete({where: {id}});
+            return {deletedDocsCount: deletedDocs.count};
+        });
+
+        return res.json({message: 'Folder permanently deleted', ...result});
+    } catch (error) {
+        return res.status(500).json({error: 'Could not permanently delete folder'});
+    }
+});
+
+router.copy('/folders/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {id, folderId} = req.body as { id?: number; folderId?: number | null };
+
+    
 });
 
 router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {

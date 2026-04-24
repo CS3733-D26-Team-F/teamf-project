@@ -94,6 +94,9 @@ export function Documents() {
     const [editFolderError, setEditFolderError] = useState('');
     const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
     const [deleteFolderId, setDeleteFolderId] = useState<number | null>(null);
+    const [SelectedIdsFolder, setSelectedIdsFolder] = useState<number[]>([]);
+    const [duplicateFolderOpen, setDuplicateFolderOpen] = useState(false);
+    const [duplicateFolderId, setDuplicateFolderId] = useState<number | null>(null);
 
     const [filterPersona, setFilterPersona] = useState<string[]>([]);
     const [filterStatus, setFilterStatus] = useState<string[]>([]);
@@ -234,13 +237,23 @@ export function Documents() {
 
     const [trashOpen, setTrashOpen] = useState(false);
     const [trashDocs, setTrashDocs] = useState<ContentForm[]>([]);
+    const [trashFolders, setTrashFolders] = useState<Folder[]>([]);
     const [trashSearch, setTrashSearch] = useState('');
     const [trashPersonaFilter, setTrashPersonaFilter] = useState('');
     const [trashSelected, setTrashSelected] = useState<number[]>([]);
+    const [expandedTrashFolderIds, setExpandedTrashFolderIds] = useState<number[]>([]);
 
     const filteredTrash = trashDocs.filter(doc => {
+        const belongsToTrashedFolder = doc.folder_id !== null && trashFolders.some(folder => folder.id === doc.folder_id);
+        if (belongsToTrashedFolder) return false;
         const matchSearch = !trashSearch || doc.name.toLowerCase().includes(trashSearch.toLowerCase()) || doc.owner.toLowerCase().includes(trashSearch.toLowerCase());
         const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
+        return matchSearch && matchPersona;
+    });
+
+    const filteredTrashFolders = trashFolders.filter(folder => {
+        const matchSearch = !trashSearch || folder.name.toLowerCase().includes(trashSearch.toLowerCase()) || folder.owner.toLowerCase().includes(trashSearch.toLowerCase());
+        const matchPersona = !trashPersonaFilter || (folder.persona ?? []).includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
 
@@ -374,13 +387,14 @@ export function Documents() {
 
     async function deleteFolder(folderId: number) {
         // Show only documents that belong to the selected folder.
-        const folder = folders.find(f => f.id === folderId);
+        // const folder = folders.find(f => f.id === folderId);
         const containedDocs = documents.filter(d => d.folder_id === folderId);
+        const containedFolders = folders.filter(f => f.folder_id === folderId); // call for nested folders
         try {
             await api(`${DOMAIN}/folders/${folderId}`, {method: 'DELETE'});
             setDeleteFolderOpen(false);
             setDeleteFolderId(null);
-            setSelectedIds(prev => prev.filter(id => !containedDocs.some(doc => doc.id === id)));
+            setSelectedIdsFolder(prev => prev.filter(id => !containedFolders.some(doc => doc.id === id)));
             setSelectedFavIds(prev => prev.filter(id => !containedDocs.some(doc => doc.id === id)));
             if (selectedFolderId === folderId) {
                 setSelectedFolderId(null);
@@ -417,7 +431,16 @@ export function Documents() {
     async function loadTrash() {
         const res = await api(`${DOMAIN}/contentforms/trash`);
         const data = await res.json();
-        setTrashDocs(data);
+
+        if (Array.isArray(data)) {
+            // Backward compatibility with legacy backend response.
+            setTrashDocs(data);
+            setTrashFolders([]);
+            return;
+        }
+
+        setTrashDocs(Array.isArray(data.documents) ? data.documents : []);
+        setTrashFolders(Array.isArray(data.folders) ? data.folders : []);
     }
 
     async function restoreDoc(id: number) {
@@ -431,6 +454,21 @@ export function Documents() {
         if (!window.confirm('Permanently delete this document? This cannot be undone.')) return;
         await api(`${DOMAIN}/contentforms/${id}/permanent`, {method: 'DELETE'});
         loadTrash();
+    }
+
+    async function restoreFolderFromTrash(folderId: number) {
+        await api(`${DOMAIN}/folders/${folderId}/restore`, {method: 'PATCH'});
+        loadTrash();
+        loadFolders();
+        loadDocuments();
+    }
+
+    async function permanentDeleteFolderFromTrash(folderId: number) {
+        if (!window.confirm('Permanently delete this folder and all of its documents?')) return;
+        await api(`${DOMAIN}/folders/${folderId}/permanent`, {method: 'DELETE'});
+        loadTrash();
+        loadFolders();
+        loadDocuments();
     }
 
     function loadDocuments() {
@@ -696,7 +734,6 @@ export function Documents() {
             }
         }
     }
-
 
     async function handleBulkAdd() {
         for (const sf of stagedFiles) {
@@ -1196,6 +1233,15 @@ export function Documents() {
                                                         >
                                                             Delete Folder
                                                         </Menu.Item>
+                                                        <Menu.Item
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDuplicateFolderId(folder.id);
+                                                                setDuplicateFolderOpen(true);
+                                                            }}
+                                                        >
+                                                            Duplicate Folder
+                                                        </Menu.Item>
                                                     </Menu.Dropdown>
                                                 </Menu>
                                             )}
@@ -1597,6 +1643,7 @@ export function Documents() {
                 setTrashOpen(false);
                 setTrashSearch('');
                 setTrashSelected([]);
+                setExpandedTrashFolderIds([]);
             }} title={t('trash_delete')} size="xl">
                 <Stack gap="sm">
                     <Group gap="sm">
@@ -1634,52 +1681,126 @@ export function Documents() {
                             )}
                         </Group>
                     )}
-                    {filteredTrash.length === 0 ? (
-                        <Text c="dimmed" ta="center" py="xl">No deleted documents.</Text>
-                    ) : (
-                        <Stack gap="xs">
-                            {filteredTrash.map(doc => (
-                                <Box key={doc.id} p="sm" style={{
-                                    border: trashSelected.includes(doc.id) ? '1.5px solid var(--color-fresh-sky, #3b82f6)' : '1px solid #eee',
-                                    borderRadius: 8,
-                                    background: trashSelected.includes(doc.id) ? '#f0f7ff' : 'white'
-                                }}>
-                                    <Group justify="space-between" align="flex-start">
-                                        <Group gap="sm" align="flex-start">
-                                            <Checkbox mt={2} checked={trashSelected.includes(doc.id)}
-                                                      onChange={() => setTrashSelected(prev => prev.includes(doc.id) ? prev.filter(i => i !== doc.id) : [...prev, doc.id])}/>
-                                            <div>
-                                                <Text fw={600}>{doc.name}</Text>
-                                                <Text size="xs" c="dimmed">
-                                                    Owner: {doc.owner} ·
-                                                    Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
-                                                </Text>
-                                                <Group gap={4} mt={4}>
-                                                    <PersonaBadges personas={doc.persona}/>
-                                                    <StatusBadge status={doc.status} size="xs" filter={false}/>
-                                                    <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
+                    {filteredTrashFolders.length > 0 && (
+                        <Box>
+                            <Text fw={700} size="sm" c="dimmed" mb="xs">Deleted folders</Text>
+                            <Stack gap="xs">
+                                {filteredTrashFolders.map(folder => {
+                                    const folderDocs = Array.isArray(folder.documents) ? folder.documents : [];
+                                    const expanded = expandedTrashFolderIds.includes(folder.id);
+                                    return (
+                                        <Box key={`folder-trash-${folder.id}`} p="sm" style={{border: '1px solid #e4e8ef', borderRadius: 8, background: '#f8fafc'}}>
+                                            <Group justify="space-between" align="flex-start">
+                                                <div>
+                                                    <Text fw={600}>{folder.name}</Text>
+                                                    <Text size="xs" c="dimmed">
+                                                        Owner: {folder.owner} · Deleted: {folder.deleted_at ? new Date(folder.deleted_at).toLocaleDateString() : 'Unknown'}
+                                                    </Text>
+                                                    <Text size="xs" c="dimmed">{folderDocs.length} deleted document(s)</Text>
+                                                </div>
+                                                <Group gap="xs">
+                                                    <Button size="xs" variant="subtle" onClick={() => {
+                                                        setExpandedTrashFolderIds(prev => prev.includes(folder.id)
+                                                            ? prev.filter(id => id !== folder.id)
+                                                            : [...prev, folder.id]);
+                                                    }}>{expanded ? 'Hide contents' : 'Show contents'}</Button>
+                                                    <Button size="xs" variant="outline" color="var(--color-yale-blue)"
+                                                            onClick={() => restoreFolderFromTrash(folder.id)}>Restore Folder</Button>
+                                                    <Button size="xs" color="var(--color-neutral-red)"
+                                                            onClick={() => permanentDeleteFolderFromTrash(folder.id)}>Delete Folder Permanently</Button>
                                                 </Group>
-                                            </div>
+                                            </Group>
+
+                                            {expanded && (
+                                                <Stack gap="xs" mt="sm">
+                                                    {folderDocs.length === 0 ? (
+                                                        <Text c="dimmed" size="sm">No deleted documents in this folder.</Text>
+                                                    ) : folderDocs.map(doc => (
+                                                        <Box key={`folder-${folder.id}-doc-${doc.id}`} p="xs" style={{border: '1px solid #e9edf3', borderRadius: 6, background: 'white'}}>
+                                                            <Group justify="space-between" align="flex-start">
+                                                                <div>
+                                                                    <Text fw={600} size="sm">{doc.name}</Text>
+                                                                    <Text size="xs" c="dimmed">
+                                                                        Owner: {doc.owner} · Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
+                                                                    </Text>
+                                                                </div>
+                                                                <Group gap="xs">
+                                                                    <Tooltip label="Preview document">
+                                                                        <ActionIcon variant="subtle" onClick={() => {
+                                                                            setViewerUrl(doc.url);
+                                                                            setViewerLabel(doc.name);
+                                                                        }}>
+                                                                            <IconSearch size={16}/>
+                                                                        </ActionIcon>
+                                                                    </Tooltip>
+                                                                    <Button size="xs" variant="outline" color="var(--color-yale-blue)"
+                                                                            onClick={() => restoreDoc(doc.id)}>Restore</Button>
+                                                                    <Button size="xs" color="var(--color-neutral-red)"
+                                                                            onClick={() => permanentDelete(doc.id)}>Delete Permanently</Button>
+                                                                </Group>
+                                                            </Group>
+                                                        </Box>
+                                                    ))}
+                                                </Stack>
+                                            )}
+                                        </Box>
+                                    );
+                                })}
+                            </Stack>
+                        </Box>
+                    )}
+
+                    {filteredTrash.length > 0 && (
+                        <Box>
+                            <Text fw={700} size="sm" c="dimmed" mb="xs">Deleted standalone documents</Text>
+                            <Stack gap="xs">
+                                {filteredTrash.map(doc => (
+                                    <Box key={doc.id} p="sm" style={{
+                                        border: trashSelected.includes(doc.id) ? '1.5px solid var(--color-fresh-sky, #3b82f6)' : '1px solid #eee',
+                                        borderRadius: 8,
+                                        background: trashSelected.includes(doc.id) ? '#f0f7ff' : 'white'
+                                    }}>
+                                        <Group justify="space-between" align="flex-start">
+                                            <Group gap="sm" align="flex-start">
+                                                <Checkbox mt={2} checked={trashSelected.includes(doc.id)}
+                                                          onChange={() => setTrashSelected(prev => prev.includes(doc.id) ? prev.filter(i => i !== doc.id) : [...prev, doc.id])}/>
+                                                <div>
+                                                    <Text fw={600}>{doc.name}</Text>
+                                                    <Text size="xs" c="dimmed">
+                                                        Owner: {doc.owner} ·
+                                                        Deleted: {doc.deleted_at ? new Date(doc.deleted_at).toLocaleDateString() : 'Unknown'}
+                                                    </Text>
+                                                    <Group gap={4} mt={4}>
+                                                        <PersonaBadges personas={doc.persona}/>
+                                                        <StatusBadge status={doc.status} size="xs" filter={false}/>
+                                                        <FileTypeBadge fileType={getFileType(doc.url)} size="xs"/>
+                                                    </Group>
+                                                </div>
+                                            </Group>
+                                            <Group gap="xs">
+                                                <Tooltip label="Preview document">
+                                                    <ActionIcon variant="subtle" onClick={() => {
+                                                        setViewerUrl(doc.url);
+                                                        setViewerLabel(doc.name);
+                                                    }}>
+                                                        <IconSearch size={16}/>
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                                <Button size="xs" variant="outline" color="var(--color-yale-blue)"
+                                                        onClick={() => restoreDoc(doc.id)}>Restore</Button>
+                                                <Button size="xs" color="var(--color-neutral-red)"
+                                                        onClick={() => permanentDelete(doc.id)}>Delete
+                                                    Permanently</Button>
+                                            </Group>
                                         </Group>
-                                        <Group gap="xs">
-                                            <Tooltip label="Preview document">
-                                                <ActionIcon variant="subtle" onClick={() => {
-                                                    setViewerUrl(doc.url);
-                                                    setViewerLabel(doc.name);
-                                                }}>
-                                                    <IconSearch size={16}/>
-                                                </ActionIcon>
-                                            </Tooltip>
-                                            <Button size="xs" variant="outline" color="var(--color-yale-blue)"
-                                                    onClick={() => restoreDoc(doc.id)}>Restore</Button>
-                                            <Button size="xs" color="var(--color-neutral-red)"
-                                                    onClick={() => permanentDelete(doc.id)}>Delete
-                                                Permanently</Button>
-                                        </Group>
-                                    </Group>
-                                </Box>
-                            ))}
-                        </Stack>
+                                    </Box>
+                                ))}
+                            </Stack>
+                        </Box>
+                    )}
+
+                    {filteredTrash.length === 0 && filteredTrashFolders.length === 0 && (
+                        <Text c="dimmed" ta="center" py="xl">No deleted documents or folders.</Text>
                     )}
                 </Stack>
             </Modal>

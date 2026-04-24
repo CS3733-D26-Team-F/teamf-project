@@ -27,6 +27,9 @@ export type Folder = {
     associated_docsIDs: number[]; // List of document IDs that are contained within this folder
     date_modified: string;
     url: string;
+    is_deleted?: boolean;
+    deleted_at?: string | null;
+    documents?: ContentForm[];
 };
 
 export type StagedFile = {
