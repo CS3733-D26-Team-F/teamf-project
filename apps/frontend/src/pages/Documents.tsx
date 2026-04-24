@@ -1676,7 +1676,7 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false);setAddError(''); setStagedFiles([]); }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('Documents')}
                         </Button>
                     </Group>
                 </Stack>
