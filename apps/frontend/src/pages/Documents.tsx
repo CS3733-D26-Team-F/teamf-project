@@ -544,6 +544,33 @@ export function Documents() {
         }
     }
 
+    async function handleBulkAdd() {
+        for (const sf of stagedFiles) {
+            try {
+                const formPayload = new FormData();
+                formPayload.append('filename', sf.name);
+                formPayload.append('ownerUsername', sf.owner);
+                formPayload.append('persona', JSON.stringify(sf.persona));
+                formPayload.append('date_modified', sf.date_modified);
+                formPayload.append('expiration_date', sf.expiration_date);
+                formPayload.append('review_date', sf.review_date);
+                formPayload.append('content_type', sf.content_type);
+                formPayload.append('status', sf.status);
+                formPayload.append('file', sf.file);
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                setBulkOpen(false);
+                setStagedFiles([]);
+                loadDocuments();
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message)
+                } else {
+                    throw err;
+                }
+                return;
+            }
+        }
+    }
 
     function openEdit(doc: ContentForm) {
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
@@ -1641,9 +1668,9 @@ export function Documents() {
                             setAddError('');
                             setStagedFiles([]);
                         }}>✕ {t('cancel')}</Button>
-                        <Button onClick={handleSaveClick} className="invert-hover"
+                        <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('files')}
                         </Button>
                     </Group>
                 </Stack>
