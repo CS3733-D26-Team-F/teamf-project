@@ -14,6 +14,7 @@ function formatFolder(folders: {
     id: number;
     name: string;
     persona: string[];
+    allowed_users: string[];
     url: string | null;
     updated_at: Date;
     employee: { username: string };
@@ -24,6 +25,7 @@ function formatFolder(folders: {
         name: folders.name,
         owner: folders.employee.username,
         persona: folders.persona,
+        allowed_users: folders.allowed_users,
         associated_docsIDs: folders.contentform.map((doc) => doc.id),
         date_modified: folders.updated_at.toISOString(),
         url: folders.url ?? ''
@@ -568,7 +570,7 @@ router.get('/folders', checkJWT, async (req, res) => {
     try {
         const employee = await prisma.employee.findUnique({
             where: {auth0Id},
-            select: {empid: true, persona: true}
+            select: {empid: true, persona: true, username: true}
         });
 
         if (!employee) {
@@ -581,7 +583,8 @@ router.get('/folders', checkJWT, async (req, res) => {
                 : {
                     OR: [
                         {owner_empid: employee.empid},
-                        {persona: {has: employee.persona ?? ''}}
+                        {persona: {has: employee.persona ?? ''}},
+                        {allowed_users: {has: employee.username}}
                     ]
                 },
             include: {
@@ -599,7 +602,7 @@ router.get('/folders', checkJWT, async (req, res) => {
 
 router.post('/folders', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const {name, persona} = req.body as { name?: string; persona?: string[] };
+    const {name, persona, allowedUsers} = req.body as { name?: string; persona?: string[]; allowedUsers?: string[] };
 
     if (!name || !name.trim()) {
         return res.status(400).json({error: 'Folder name is required'});
@@ -608,7 +611,7 @@ router.post('/folders', checkJWT, async (req, res) => {
     try {
         const employee = await prisma.employee.findUnique({
             where: {auth0Id},
-            select: {empid: true, persona: true}
+            select: {empid: true, persona: true, username: true}
         });
 
         if (!employee) {
@@ -621,7 +624,10 @@ router.post('/folders', checkJWT, async (req, res) => {
                 owner_empid: employee.empid,
                 persona: Array.isArray(persona) && persona.length > 0
                     ? persona
-                    : [employee.persona ?? ''].filter(Boolean)
+                    : [employee.persona ?? ''].filter(Boolean),
+                allowed_users: Array.isArray(allowedUsers)
+                    ? Array.from(new Set(allowedUsers.filter(Boolean)))
+                    : []
             },
             include: {
                 employee: {select: {username: true}},
@@ -635,6 +641,82 @@ router.post('/folders', checkJWT, async (req, res) => {
             return res.status(409).json({error: 'Folder name already exists'});
         }
         return res.status(500).json({error: 'Could not create folder'});
+    }
+});
+
+router.patch('/folders/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseInt(req.params.id);
+    const {name, persona, allowedUsers} = req.body as { name?: string; persona?: string[]; allowedUsers?: string[] };
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const existingFolder = await prisma.folders.findUnique({
+            where: {id},
+            select: {owner_empid: true}
+        });
+
+        if (!existingFolder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (employee.persona !== 'Admin' && existingFolder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to edit this folder'});
+        }
+
+        const updateData: {
+            name?: string;
+            persona?: string[];
+            allowed_users?: string[];
+        } = {};
+
+        if (name !== undefined) {
+            const trimmedName = name.trim();
+            if (!trimmedName) {
+                return res.status(400).json({error: 'Folder name is required'});
+            }
+            updateData.name = trimmedName;
+        }
+
+        if (Array.isArray(persona)) {
+            updateData.persona = persona.filter(Boolean);
+        }
+
+        if (Array.isArray(allowedUsers)) {
+            updateData.allowed_users = Array.from(new Set(allowedUsers.filter(Boolean)));
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({error: 'No changes provided'});
+        }
+
+        const updatedFolder = await prisma.folders.update({
+            where: {id},
+            data: updateData,
+            include: {
+                employee: {select: {username: true}},
+                contentform: {select: {id: true}}
+            }
+        });
+
+        return res.json(formatFolder(updatedFolder));
+    } catch (error: unknown) {
+        if ((error as { code?: string }).code === 'P2002') {
+            return res.status(409).json({error: 'Folder name already exists'});
+        }
+        return res.status(500).json({error: 'Could not update folder'});
     }
 });
 
@@ -653,7 +735,7 @@ router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {
     try {
         const employee = await prisma.employee.findUnique({
             where: {auth0Id},
-            select: {empid: true, persona: true}
+            select: {empid: true, persona: true, username: true}
         });
 
         if (!employee) {
@@ -665,14 +747,17 @@ router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {
         if (normalizedFolderId !== null) {
             const folder = await prisma.folders.findUnique({
                 where: {id: normalizedFolderId},
-                select: {id: true, owner_empid: true}
+                select: {id: true, owner_empid: true, persona: true, allowed_users: true}
             });
 
             if (!folder) {
                 return res.status(404).json({error: 'Folder not found'});
             }
 
-            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid) {
+            const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+            const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
                 return res.status(403).json({error: 'Not allowed to use this folder'});
             }
         }
@@ -704,7 +789,7 @@ router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
     try {
         const employee = await prisma.employee.findUnique({
             where: {auth0Id},
-            select: {empid: true, persona: true}
+            select: {empid: true, persona: true, username: true}
         });
 
         if (!employee) {
@@ -716,14 +801,17 @@ router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
         if (normalizedFolderId !== null) {
             const folder = await prisma.folders.findUnique({
                 where: {id: normalizedFolderId},
-                select: {owner_empid: true}
+                select: {owner_empid: true, persona: true, allowed_users: true}
             });
 
             if (!folder) {
                 return res.status(404).json({error: 'Folder not found'});
             }
 
-            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid) {
+            const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+            const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+            if (employee.persona !== 'Admin' && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
                 return res.status(403).json({error: 'Not allowed to use this folder'});
             }
         }

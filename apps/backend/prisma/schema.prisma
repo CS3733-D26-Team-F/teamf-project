@@ -37,6 +37,7 @@ model folders {
   name        String        @db.VarChar(100)
   owner_empid Int
   persona     String[]      @db.VarChar
+  allowed_users String[]    @default([]) @db.VarChar
   created_at  DateTime      @default(now()) @db.Timestamptz(6)
   updated_at  DateTime      @db.Timestamptz(6)
   url         String?       @db.VarChar(2083)
