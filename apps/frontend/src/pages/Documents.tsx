@@ -1674,7 +1674,7 @@ export function Documents() {
                     )}
                     <Group justify="flex-end" mt="md">
                         <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false);setAddError(''); setStagedFiles([]); }}>✕ {t('cancel')}</Button>
-                        <Button onClick={handleSaveClick} className="invert-hover"
+                        <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
                             + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
                         </Button>
