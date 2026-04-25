@@ -93,6 +93,16 @@ export function Documents() {
 
         return path;
     }, [selectedFolderId, folderMap]);
+
+    useEffect(() => {
+        if (selectedFolderPath.length === 0) return;
+
+        setExpandedFolderIds(prev => {
+            const next = new Set(prev);
+            selectedFolderPath.forEach(folder => next.add(folder.id));
+            return Array.from(next);
+        });
+    }, [selectedFolderPath]);
     
 
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -150,6 +160,15 @@ export function Documents() {
     const rootFolders = useMemo(
         () => folders.filter(folder => (folder.parent_folder_id ?? null) === null).sort((a, b) => a.name.localeCompare(b.name)),
         [folders]
+    );
+
+    const selectedChildFolders = useMemo(
+        () => selectedFolderId === null
+            ? []
+            : folders
+                .filter(folder => (folder.parent_folder_id ?? null) === selectedFolderId)
+                .sort((a, b) => a.name.localeCompare(b.name)),
+        [folders, selectedFolderId]
     );
 
     const folderParentOptions = useMemo(
@@ -224,6 +243,18 @@ export function Documents() {
         });
     }
 
+    function openAddDocumentModal() {
+        setAddData(prev => ({
+            ...prev,
+            folder: selectedFolderId !== null ? String(selectedFolderId) : ''
+        }));
+        setAddOpen(true);
+    }
+
+    function openBulkUploadModal() {
+        setBulkOpen(true);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     const [addOpen, setAddOpen] = useState(false);
@@ -234,7 +265,6 @@ export function Documents() {
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
-    const [bulkFolderId, setBulkFolderId] = useState<string | null>(null);
     const [addError, setAddError] = useState<string>('');
     const [, setEditError] = useState<string>('');
 
@@ -249,7 +279,7 @@ export function Documents() {
             persona: persona !== 'Admin' ? [persona ?? ''] : [],
             content_type: '',
             status: '',
-            folder_id: null,
+            folder_id: selectedFolderId,
             date_modified: today,
             review_date: '',
             expiration_date: ''
@@ -647,8 +677,7 @@ export function Documents() {
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
         if (selectedFolderId !== null) {
-            const selectedFolderIds = [selectedFolderId, ...getDescendantFolderIds(selectedFolderId)];
-            result = result.filter(d => d.folder_id !== null && selectedFolderIds.includes(d.folder_id));
+            result = result.filter(d => d.folder_id === selectedFolderId);
         } else {
             // Main pool should only show files that are not inside any folder.
             result = result.filter(d => d.folder_id === null);
@@ -1161,13 +1190,13 @@ export function Documents() {
                     <Group gap="sm">
                         {persona !== null && (
                             <>
-                                <Button leftSection={<IconPlus size={16}/>} onClick={() => setAddOpen(true)}
+                                <Button leftSection={<IconPlus size={16}/>} onClick={openAddDocumentModal}
                                         className="invert-hover">
                                     {t('add_doc')}
                                 </Button>
 
                                 <Button variant="default" leftSection={<IconPlus size={16}/>}
-                                        onClick={() => setBulkOpen(true)} className="invert-hover">
+                                        onClick={openBulkUploadModal} className="invert-hover">
                                     {t('bulk_doc')}
                                 </Button>
 
@@ -1475,6 +1504,38 @@ export function Documents() {
                         )}
                         <Box>
                             <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
+                            {selectedFolderId !== null && selectedChildFolders.length > 0 && (
+                                <Stack gap={6} mb="sm">
+                                    <Text size="xs" c="dimmed">Nested folders</Text>
+                                    {selectedChildFolders.map(childFolder => (
+                                        <Box
+                                            key={`child-folder-${childFolder.id}`}
+                                            p="xs"
+                                            style={{
+                                                border: '1px solid #d7dee8',
+                                                borderRadius: 8,
+                                                background: '#f8fafc',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => setSelectedFolderId(childFolder.id)}
+                                        >
+                                            <Group gap={8} wrap="nowrap" align="center">
+                                                <ActionIcon variant="light" color="gray" size="sm">
+                                                    <IconFolder size={14}/>
+                                                </ActionIcon>
+                                                <div style={{minWidth: 0}}>
+                                                    <Text fw={600} size="xs" style={{color: 'var(--color-yale-blue)'}}>
+                                                        {childFolder.name}
+                                                    </Text>
+                                                    <Text size="10px" c="dimmed">
+                                                        {(folderDocCounts[childFolder.id] ?? 0)} document(s)
+                                                    </Text>
+                                                </div>
+                                            </Group>
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            )}
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
                                            onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(paginatedDocuments.map(d => d.id))}
@@ -2048,8 +2109,10 @@ export function Documents() {
                             onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
-                    <Select label="Folder" value={addData.folder} onChange={val => setAddData({...addData, folder: val ?? ''})} 
-                        data={folders.map(f => ({label: f.name, value: String(f.id)}))} clearable />
+                    <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
+                        <Text size="xs" c="dimmed">Upload destination</Text>
+                        <Text fw={600} size="sm">{selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root'}</Text>
+                    </Box>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
@@ -2083,7 +2146,6 @@ export function Documents() {
             <Modal opened={bulkOpen} onClose={() => {
                 setBulkOpen(false);
                 setStagedFiles([]);
-                setBulkFolderId(null);
                 setAddError('');
             }} title={t('bulk_doc')} size="1200px">
                 <Stack>
@@ -2094,37 +2156,13 @@ export function Documents() {
                             e.target.value = '';
                         }}/>
                     </Box>
+                    <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
+                        <Text size="xs" c="dimmed">Upload destination</Text>
+                        <Text fw={600} size="sm">{selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root'}</Text>
+                    </Box>
                     {stagedFiles.length > 0 && (
                         <Group align="end" grow>
-                            <Select
-                                label="Add to folder (all files)"
-                                placeholder="Choose folder"
-                                value={bulkFolderId}
-                                onChange={setBulkFolderId}
-                                data={folders.map(f => ({label: f.name, value: String(f.id)}))}
-                                searchable
-                                clearable
-                            />
-                            <Button
-                                className="invert-hover"
-                                onClick={() => {
-                                    if (!bulkFolderId) return;
-                                    const folderId = Number(bulkFolderId);
-                                    setStagedFiles(prev => prev.map(item => ({...item, folder_id: folderId})));
-                                }}
-                                disabled={!bulkFolderId}
-                            >
-                                Apply folder to all
-                            </Button>
-                            <Button
-                                className="invert-hover-outline"
-                                onClick={() => {
-                                    setBulkFolderId(null);
-                                    setStagedFiles(prev => prev.map(item => ({...item, folder_id: null})));
-                                }}
-                            >
-                                Clear folder for all
-                            </Button>
+                            <Text size="sm" c="dimmed">All staged files will upload to the current folder.</Text>
                         </Group>
                     )}
                     {stagedFiles.length > 0 && (
@@ -2200,7 +2238,6 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => {
                             setBulkOpen(false);
                             setAddError('');
-                            setBulkFolderId(null);
                             setStagedFiles([]);
                         }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
