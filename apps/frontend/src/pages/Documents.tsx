@@ -407,6 +407,17 @@ export function Documents() {
 
     }
 
+    async function duplicateFolder(folderId: number) {
+        try {
+            await api(`${DOMAIN}/folders/${folderId}`, {method: 'POST'});
+            setDuplicateFolderOpen(false);
+            setDuplicateFolderId(null);
+            await Promise.all([loadFolders(), loadDocuments()]);
+        } catch (err: any) {
+            alert(err?.message ?? 'Could not duplicate folder');
+        }
+    }
+
     // checkall
     useEffect(() => {
         const loadCheckoutStatus = async () => {
@@ -2047,6 +2058,24 @@ export function Documents() {
                 onCancel={() => {
                     setDeleteFolderOpen(false);
                     setDeleteFolderId(null);
+                }}
+            />
+
+            <ConfirmModal
+                opened={duplicateFolderOpen}
+                onClose={() => {
+                    setDuplicateFolderOpen(false);
+                    setDuplicateFolderId(null);
+                }}
+                title="Duplicate folder"
+                message={<>Create a copy of this folder and its documents?</>}
+                onConfirm={async () => {
+                    if (duplicateFolderId === null) return;
+                    await duplicateFolder(duplicateFolderId);
+                }}
+                onCancel={() => {
+                    setDuplicateFolderOpen(false);
+                    setDuplicateFolderId(null);
                 }}
             />
         </>

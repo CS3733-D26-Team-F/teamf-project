@@ -969,13 +969,10 @@ router.delete('/folders/:id/permanent', checkJWT, async (req, res) => {
 
 router.post('/folders/:id', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const {id, folderId} = req.body as { id?: number; folderId?: number | null };
+    const id = parseInt(req.params.id);
 
-    if (id === undefined || Number.isNaN(Number(id))) {
+    if (Number.isNaN(id)) {
         return res.status(400).json({error: 'Invalid folder id'});
-    }
-    if (folderId !== null && folderId !== undefined && Number.isNaN(Number(folderId))) {
-        return res.status(400).json({error: 'Invalid destination folder id'});
     }
 
     try {
@@ -986,38 +983,100 @@ router.post('/folders/:id', checkJWT, async (req, res) => {
         if (!employee) {
             return res.status(404).json({error: 'Employee not found'});
         }
+
         const folderToCopy = await prisma.folders.findUnique({
-            where: {id: Number(id)},
+            where: {id},
             include: {contentform: true}
         });
+
         if (!folderToCopy) {
             return res.status(404).json({error: 'Folder to copy not found'});
         }
 
-        //increment duplicated folder id and name until there is no conflict
-        let newFolderId = folderToCopy.id;
-        let newFolderName = folderToCopy.name;
-        let counter = 1;
-        while (await prisma.folders.findUnique({where: {id: newFolderId}})) {
-            newFolderId = folderToCopy.id + counter;
-            newFolderName = `${folderToCopy.name} (Copy ${counter})`;
-            counter++;
-        }   
+        if (folderToCopy.is_deleted) {
+            return res.status(409).json({error: 'Cannot duplicate a folder in trash'});
+        }
+
+        const hasPersonaAccess = !!employee.persona && folderToCopy.persona.includes(employee.persona);
+        const hasUserAccess = folderToCopy.allowed_users.includes(employee.username);
+
+        if (!isAdminPersona(employee.persona) && folderToCopy.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+            return res.status(403).json({error: 'Not allowed to duplicate this folder'});
+        }
+
+        const buildCopyFolderName = async () => {
+            const baseName = folderToCopy.name;
+            let counter = 1;
+            let candidate = `${baseName} (Copy)`;
+
+            while (await prisma.folders.findFirst({
+                where: {
+                    owner_empid: employee.empid,
+                    name: candidate
+                },
+                select: {id: true}
+            })) {
+                counter++;
+                candidate = `${baseName} (Copy ${counter})`;
+            }
+
+            return candidate;
+        };
+
+        const buildCopyContentName = async (baseName: string) => {
+            let counter = 1;
+            let candidate = `${baseName} (Copy)`;
+
+            while (await prisma.contentform.findUnique({where: {name: candidate}, select: {id: true}})) {
+                counter++;
+                candidate = `${baseName} (Copy ${counter})`;
+            }
+
+            return candidate;
+        };
+
+        const buildCopyUrl = async (sourceUrl: string) => {
+            let counter = 1;
+            let candidate = sourceUrl;
+
+            while (await prisma.contentform.findUnique({where: {url: candidate}, select: {id: true}})) {
+                try {
+                    const parsed = new URL(sourceUrl);
+                    parsed.searchParams.set('copy', String(counter));
+                    candidate = parsed.toString();
+                } catch {
+                    const separator = sourceUrl.includes('?') ? '&' : '?';
+                    candidate = `${sourceUrl}${separator}copy=${counter}`;
+                }
+                counter++;
+            }
+
+            return candidate;
+        };
+
+        const newFolderName = await buildCopyFolderName();
+
         const newFolder = await prisma.folders.create({
             data: {
-                id: newFolderId,
                 name: newFolderName,
                 owner_empid: employee.empid,
                 persona: folderToCopy.persona,
                 allowed_users: folderToCopy.allowed_users,
                 updated_at: new Date()
+            },
+            include: {
+                employee: {select: {username: true}}
             }
         });
+
         const copiedContentForms = await Promise.all(folderToCopy.contentform.map(async (content) => {
+            const copiedName = await buildCopyContentName(content.name);
+            const copiedUrl = await buildCopyUrl(content.url);
+
             const newContent = await prisma.contentform.create({
                 data: {
-                    name: content.name,
-                    url: content.url,
+                    name: copiedName,
+                    url: copiedUrl,
                     owner: content.owner,
                     persona: content.persona,
                     date_modified: content.date_modified,
@@ -1025,14 +1084,19 @@ router.post('/folders/:id', checkJWT, async (req, res) => {
                     content_type: content.content_type,
                     status: content.status,
                     review_date: content.review_date,
+                    empid: content.empid,
                     folder_id: newFolder.id
                 }
             });
             return newContent;
         }));
+
         return res.json({
             message: 'Folder copied successfully',
-            folder: formatFolder({...newFolder, contentform: copiedContentForms}),
+            folder: formatFolder({
+                ...newFolder,
+                contentform: copiedContentForms.map((content) => ({id: content.id}))
+            }),
             contentForms: copiedContentForms.map(formatContentFormWithFolder)
         });
     } catch (error) {
