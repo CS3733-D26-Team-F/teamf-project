@@ -21,6 +21,7 @@ export type ContentForm = {
 export type Folder = {
     id: number;
     name: string;
+    parent_folder_id: number | null;
     owner: string;
     persona: string[]; // Access control based on user roles, can be null or empty for public folders or specific access lists
     allowed_users: string[];

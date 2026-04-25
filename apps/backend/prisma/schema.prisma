@@ -37,6 +37,7 @@ model folders {
   id          Int           @id @default(autoincrement())
   name        String        @db.VarChar(100)
   owner_empid Int
+  parent_folder_id Int?
   persona     String[]      @db.VarChar
   allowed_users String[]    @default([]) @db.VarChar
   is_deleted  Boolean       @default(false)
@@ -45,10 +46,13 @@ model folders {
   updated_at  DateTime      @db.Timestamptz(6)
   url         String?       @db.VarChar(2083)
   contentform contentform[]
+  parent      folders?      @relation("FolderHierarchy", fields: [parent_folder_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  children    folders[]     @relation("FolderHierarchy")
   employee    employee      @relation(fields: [owner_empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([owner_empid, name], map: "uq_folders_owner_name")
   @@index([owner_empid], map: "idx_folders_owner_empid")
+  @@index([parent_folder_id], map: "idx_folders_parent_folder_id")
 }
 
 

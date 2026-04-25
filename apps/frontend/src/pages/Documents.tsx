@@ -1,16 +1,16 @@
 import '@mantine/core/styles.css';
-import {useEffect, useState, useRef, useMemo} from "react";
+import {useEffect, useState, useRef, useMemo, Fragment} from "react";
 import * as pdfjs from 'pdfjs-dist';
 import {Header} from "../components/Header";
 import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
-    Tooltip, SegmentedControl
+    Tooltip, SegmentedControl, Pagination
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
-    IconFilter, IconClock, IconFolder, IconDotsVertical
+    IconFilter, IconClock, IconFolder, IconDotsVertical, IconChevronDown, IconChevronRight
 } from '@tabler/icons-react';
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -72,6 +72,27 @@ export function Documents() {
         () => folders.reduce((acc, folder) => ({...acc, [folder.id]: folder}), {}),
         [folders]
     );
+
+    const selectedFolderPath = useMemo<Folder[]>(() => {
+        if (selectedFolderId === null) return [];
+
+        const path: Folder[] = [];
+        const visited = new Set<number>();
+        let cursor: number | null = selectedFolderId;
+
+        while (cursor !== null) {
+            if (visited.has(cursor)) break;
+            visited.add(cursor);
+
+            const currentFolder: Folder | undefined = folderMap[cursor];
+            if (!currentFolder) break;
+
+            path.unshift(currentFolder);
+            cursor = currentFolder.parent_folder_id ?? null;
+        }
+
+        return path;
+    }, [selectedFolderId, folderMap]);
     
 
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -91,12 +112,14 @@ export function Documents() {
     const [editFolderName, setEditFolderName] = useState('');
     const [editFolderPersona, setEditFolderPersona] = useState<string[]>([]);
     const [editFolderUsers, setEditFolderUsers] = useState<string[]>([]);
+    const [editFolderParentId, setEditFolderParentId] = useState<string | null>(null);
     const [editFolderError, setEditFolderError] = useState('');
     const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
     const [deleteFolderId, setDeleteFolderId] = useState<number | null>(null);
-    const [SelectedIdsFolder, setSelectedIdsFolder] = useState<number[]>([]);
+    const [, setSelectedIdsFolder] = useState<number[]>([]);
     const [duplicateFolderOpen, setDuplicateFolderOpen] = useState(false);
     const [duplicateFolderId, setDuplicateFolderId] = useState<number | null>(null);
+    const [expandedFolderIds, setExpandedFolderIds] = useState<number[]>([]);
 
     const [filterPersona, setFilterPersona] = useState<string[]>([]);
     const [filterStatus, setFilterStatus] = useState<string[]>([]);
@@ -108,10 +131,39 @@ export function Documents() {
 
     const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length + (selectedFolderId !== null ? 1 : 0);
 
+    const folderChildrenMap = useMemo<Record<number, Folder[]>>(() => {
+        const map: Record<number, Folder[]> = {};
+        for (const folder of folders) {
+            const parentId = folder.parent_folder_id ?? null;
+            if (parentId === null) continue;
+            if (!map[parentId]) map[parentId] = [];
+            map[parentId].push(folder);
+        }
+
+        for (const parentId of Object.keys(map)) {
+            map[Number(parentId)].sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        return map;
+    }, [folders]);
+
+    const rootFolders = useMemo(
+        () => folders.filter(folder => (folder.parent_folder_id ?? null) === null).sort((a, b) => a.name.localeCompare(b.name)),
+        [folders]
+    );
+
+    const folderParentOptions = useMemo(
+        () => [{label: 'Top level', value: 'root'}, ...folders.map(f => ({label: f.name, value: String(f.id)}))],
+        [folders]
+    );
+
     const [sortField, setSortField] = useState<keyof ContentForm | null>(null);
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
     const [favSortField, setFavSortField] = useState<keyof ContentForm | null>(null);
     const [favSortDir, setFavSortDir] = useState<'asc' | 'desc'>('asc');
+    const [rowsPerPage, setRowsPerPage] = useState<'25' | '50'>('25');
+    const [favoritesPage, setFavoritesPage] = useState(1);
+    const [documentsPage, setDocumentsPage] = useState(1);
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
@@ -302,11 +354,29 @@ export function Documents() {
         }));
     }, [persona, username]);
 
-    async function createFolder(name: string, personaList: string[], allowedUsers: string[] = []) {
+    function getDescendantFolderIds(folderId: number): number[] {
+        const collected: number[] = [];
+        const stack = [folderId];
+
+        while (stack.length > 0) {
+            const current = stack.pop()!;
+            const children = folderChildrenMap[current] ?? [];
+            for (const child of children) {
+                collected.push(child.id);
+                stack.push(child.id);
+            }
+        }
+
+        return collected;
+    }
+
+    async function createFolder(name: string, personaList: string[], allowedUsers: string[] = [], parentFolderId: number | null = null) {
         const trimmedName = name.trim();
         if (!trimmedName) return null;
 
-        const existing = folders.some(f => f.name.toLowerCase() === trimmedName.toLowerCase());
+        const existing = folders.some(
+            f => (f.parent_folder_id ?? null) === parentFolderId && f.name.toLowerCase() === trimmedName.toLowerCase()
+        );
         if (existing) {
             setFolderModalError('Folder name already exists.');
             return null;
@@ -316,7 +386,7 @@ export function Documents() {
             const createdFolder = await api(`${DOMAIN}/folders`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: trimmedName, persona: personaList, allowedUsers})
+                body: JSON.stringify({name: trimmedName, persona: personaList, allowedUsers, parentFolderId})
             }).then(res => res.json()) as Folder;
 
             setFolders(prev => [createdFolder, ...prev]);
@@ -333,18 +403,21 @@ export function Documents() {
         setEditFolderName(folder.name);
         setEditFolderPersona(folder.persona ?? []);
         setEditFolderUsers(folder.allowed_users ?? []);
+        setEditFolderParentId((folder.parent_folder_id ?? null) !== null ? String(folder.parent_folder_id) : 'root');
         setEditFolderError('');
         setEditFolderOpen(true);
     }
 
-    async function updateFolder(id: number, name: string, personaList: string[], allowedUsers: string[]) {
+    async function updateFolder(id: number, name: string, personaList: string[], allowedUsers: string[], parentFolderId: number | null) {
         const trimmedName = name.trim();
         if (!trimmedName) {
             setEditFolderError('Folder name is required.');
             return;
         }
 
-        const existing = folders.some(f => f.id !== id && f.name.toLowerCase() === trimmedName.toLowerCase());
+        const existing = folders.some(
+            f => f.id !== id && (f.parent_folder_id ?? null) === parentFolderId && f.name.toLowerCase() === trimmedName.toLowerCase()
+        );
         if (existing) {
             setEditFolderError('Folder name already exists.');
             return;
@@ -354,7 +427,7 @@ export function Documents() {
             const updatedFolder = await api(`${DOMAIN}/folders/${id}`, {
                 method: 'PATCH',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: trimmedName, persona: personaList, allowedUsers})
+                body: JSON.stringify({name: trimmedName, persona: personaList, allowedUsers, parentFolderId})
             }).then(res => res.json()) as Folder;
 
             setFolders(prev => prev.map(folder => folder.id === id ? updatedFolder : folder));
@@ -388,15 +461,16 @@ export function Documents() {
     async function deleteFolder(folderId: number) {
         // Show only documents that belong to the selected folder.
         // const folder = folders.find(f => f.id === folderId);
-        const containedDocs = documents.filter(d => d.folder_id === folderId);
-        const containedFolders = folders.filter(f => f.folder_id === folderId); // call for nested folders
+        const targetFolderIds = [folderId, ...getDescendantFolderIds(folderId)];
+        const containedDocs = documents.filter(d => d.folder_id !== null && targetFolderIds.includes(d.folder_id));
+        const containedFolders = folders.filter(f => f.parent_folder_id !== null && targetFolderIds.includes(f.parent_folder_id));
         try {
             await api(`${DOMAIN}/folders/${folderId}`, {method: 'DELETE'});
             setDeleteFolderOpen(false);
             setDeleteFolderId(null);
             setSelectedIdsFolder(prev => prev.filter(id => !containedFolders.some(doc => doc.id === id)));
             setSelectedFavIds(prev => prev.filter(id => !containedDocs.some(doc => doc.id === id)));
-            if (selectedFolderId === folderId) {
+            if (selectedFolderId !== null && targetFolderIds.includes(selectedFolderId)) {
                 setSelectedFolderId(null);
             }
             loadDocuments();
@@ -573,7 +647,8 @@ export function Documents() {
         });
         if (filterOwner.length > 0) result = result.filter(d => filterOwner.includes(d.owner));
         if (selectedFolderId !== null) {
-            result = result.filter(d => d.folder_id === selectedFolderId);
+            const selectedFolderIds = [selectedFolderId, ...getDescendantFolderIds(selectedFolderId)];
+            result = result.filter(d => d.folder_id !== null && selectedFolderIds.includes(d.folder_id));
         } else {
             // Main pool should only show files that are not inside any folder.
             result = result.filter(d => d.folder_id === null);
@@ -649,6 +724,26 @@ export function Documents() {
             return 0;
         });
 
+    const pageSize = Number(rowsPerPage);
+    const favoritesPageCount = Math.max(1, Math.ceil(sortedFavorites.length / pageSize));
+    const documentsPageCount = Math.max(1, Math.ceil(nonFavorites.length / pageSize));
+
+    const paginatedFavorites = sortedFavorites.slice((favoritesPage - 1) * pageSize, favoritesPage * pageSize);
+    const paginatedDocuments = nonFavorites.slice((documentsPage - 1) * pageSize, documentsPage * pageSize);
+
+    useEffect(() => {
+        setFavoritesPage(prev => Math.min(prev, favoritesPageCount));
+    }, [favoritesPageCount]);
+
+    useEffect(() => {
+        setDocumentsPage(prev => Math.min(prev, documentsPageCount));
+    }, [documentsPageCount]);
+
+    useEffect(() => {
+        setFavoritesPage(1);
+        setDocumentsPage(1);
+    }, [rowsPerPage, selectedFolderId, search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, filterTags, sortField, sortDir, favSortField, favSortDir]);
+
     const folderDocCounts = useMemo(() => {
         const counts: Record<number, number> = {};
         documents
@@ -660,8 +755,8 @@ export function Documents() {
         return counts;
     }, [documents]);
 
-    const allSelected = selectedIds.length === nonFavorites.length && nonFavorites.length > 0;
-    const allFavSelected = selectedFavIds.length === sortedFavorites.length && sortedFavorites.length > 0;
+    const allSelected = selectedIds.length === paginatedDocuments.length && paginatedDocuments.length > 0;
+    const allFavSelected = selectedFavIds.length === paginatedFavorites.length && paginatedFavorites.length > 0;
     const anySelected = selectedIds.length > 0 || selectedFavIds.length > 0;
     const selectedCount = selectedIds.length + selectedFavIds.length;
     const selectedHasFavorites = [...selectedIds, ...selectedFavIds].some(id => favoritedIds.has(id));
@@ -1148,6 +1243,26 @@ export function Documents() {
                     </Group>
                 )}
 
+                {selectedFolderId !== null && (
+                    <Group mb="sm" gap={4} wrap="wrap">
+                        <Button variant="subtle" size="compact-xs" onClick={() => setSelectedFolderId(null)}>
+                            Root
+                        </Button>
+                        {selectedFolderPath.map((folder) => (
+                            <Fragment key={`crumb-${folder.id}`}>
+                                <Text size="sm" c="dimmed">/</Text>
+                                <Button
+                                    variant="subtle"
+                                    size="compact-xs"
+                                    onClick={() => setSelectedFolderId(folder.id)}
+                                >
+                                    {folder.name}
+                                </Button>
+                            </Fragment>
+                        ))}
+                    </Group>
+                )}
+
                 {/* ── Recently Viewed ─────────────────────────────────────── */}
                 {recentDocs.length > 0 && (
                     <Box mb="lg">
@@ -1193,85 +1308,116 @@ export function Documents() {
                                 </Button>
                             )}
                         </Group>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                            gap: 12
-                        }}>
-                            {folders.map(folder => {
-                                const isActive = selectedFolderId === folder.id;
-                                const canEditFolder = (persona ?? '').toLowerCase() === 'admin' || folder.owner === (username ?? '');
-                                return (
-                                    <Box
-                                        key={folder.id}
-                                        p="sm"
-                                        onClick={() => setSelectedFolderId(prev => prev === folder.id ? null : folder.id)}
-                                        style={{
-                                            border: isActive ? '1px solid #3b82f6' : '1px solid #d7dee8',
-                                            borderRadius: 10,
-                                            background: isActive ? '#eff6ff' : '#f8fafc',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <Group gap={8} wrap="nowrap" align="center" justify="space-between">
-                                            {canEditFolder && (
-                                                <Menu shadow="md" width={170} withinPortal>
-                                                    <Menu.Target>
-                                                        <ActionIcon
-                                                            variant="subtle"
-                                                            color="gray"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            aria-label="Folder actions"
-                                                        >
-                                                            <IconDotsVertical size={14}/>
+                        <Stack gap={8}>
+                            {rootFolders.map((rootFolder) => {
+                                const renderFolderNode = (folder: Folder, depth: number) => {
+                                    const isActive = selectedFolderId === folder.id;
+                                    const canEditFolder = (persona ?? '').toLowerCase() === 'admin' || folder.owner === (username ?? '');
+                                    const childFolders = folderChildrenMap[folder.id] ?? [];
+                                    const isExpanded = expandedFolderIds.includes(folder.id);
+
+                                    return (
+                                        <Box key={folder.id}>
+                                            <Box
+                                                p="xs"
+                                                ml={depth * 12}
+                                                onClick={() => setSelectedFolderId(prev => prev === folder.id ? null : folder.id)}
+                                                style={{
+                                                    border: isActive ? '1px solid #3b82f6' : '1px solid #d7dee8',
+                                                    borderRadius: 8,
+                                                    background: isActive ? '#eff6ff' : '#f8fafc',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <Group gap={6} wrap="nowrap" align="center" justify="space-between">
+                                                    <Group gap={6} wrap="nowrap" align="center" style={{minWidth: 0}}>
+                                                        {childFolders.length > 0 ? (
+                                                            <ActionIcon
+                                                                variant="subtle"
+                                                                color="gray"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setExpandedFolderIds(prev => prev.includes(folder.id)
+                                                                        ? prev.filter(id => id !== folder.id)
+                                                                        : [...prev, folder.id]);
+                                                                }}
+                                                            >
+                                                                {isExpanded ? <IconChevronDown size={12}/> : <IconChevronRight size={12}/>}
+                                                            </ActionIcon>
+                                                        ) : (
+                                                            <Box w={22}/>
+                                                        )}
+                                                        <ActionIcon variant={isActive ? 'filled' : 'light'} color={isActive ? 'blue' : 'gray'} size="sm">
+                                                            <IconFolder size={14}/>
                                                         </ActionIcon>
-                                                    </Menu.Target>
-                                                    <Menu.Dropdown>
-                                                        <Menu.Item
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openEditFolder(folder);
-                                                            }}
-                                                        >
-                                                            Edit Folder
-                                                        </Menu.Item>
-                                                        <Menu.Item
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setDeleteFolderId(folder.id);
-                                                                setDeleteFolderOpen(true);
-                                                            }}
-                                                        >
-                                                            Delete Folder
-                                                        </Menu.Item>
-                                                        <Menu.Item
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setDuplicateFolderId(folder.id);
-                                                                setDuplicateFolderOpen(true);
-                                                            }}
-                                                        >
-                                                            Duplicate Folder
-                                                        </Menu.Item>
-                                                    </Menu.Dropdown>
-                                                </Menu>
+                                                        <div style={{minWidth: 0}}>
+                                                            <Text fw={700} size="xs" style={{color: 'var(--color-yale-blue)'}}>
+                                                                {folder.name}
+                                                            </Text>
+                                                            <Text size="10px" c="dimmed">
+                                                                {folderDocCounts[folder.id] ?? 0} document(s)
+                                                            </Text>
+                                                        </div>
+                                                    </Group>
+
+                                                    {canEditFolder && (
+                                                        <Menu shadow="md" width={170} withinPortal>
+                                                            <Menu.Target>
+                                                                <ActionIcon
+                                                                    variant="subtle"
+                                                                    color="gray"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    aria-label="Folder actions"
+                                                                    size="sm"
+                                                                >
+                                                                    <IconDotsVertical size={12}/>
+                                                                </ActionIcon>
+                                                            </Menu.Target>
+                                                            <Menu.Dropdown>
+                                                                <Menu.Item
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        openEditFolder(folder);
+                                                                    }}
+                                                                >
+                                                                    Edit Folder
+                                                                </Menu.Item>
+                                                                <Menu.Item
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDeleteFolderId(folder.id);
+                                                                        setDeleteFolderOpen(true);
+                                                                    }}
+                                                                >
+                                                                    Delete Folder
+                                                                </Menu.Item>
+                                                                <Menu.Item
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDuplicateFolderId(folder.id);
+                                                                        setDuplicateFolderOpen(true);
+                                                                    }}
+                                                                >
+                                                                    Duplicate Folder
+                                                                </Menu.Item>
+                                                            </Menu.Dropdown>
+                                                        </Menu>
+                                                    )}
+                                                </Group>
+                                            </Box>
+
+                                            {isExpanded && childFolders.length > 0 && (
+                                                <Stack gap={8} mt={8}>
+                                                    {childFolders.map((child) => renderFolderNode(child, depth + 1))}
+                                                </Stack>
                                             )}
-                                            <ActionIcon variant={isActive ? 'filled' : 'light'} color={isActive ? 'blue' : 'gray'}>
-                                                <IconFolder size={16}/>
-                                            </ActionIcon>
-                                            <div style={{minWidth: 0}}>
-                                                <Text fw={700} size="sm" style={{color: 'var(--color-yale-blue)'}}>
-                                                    {folder.name}
-                                                </Text>
-                                                <Text size="xs" c="dimmed">
-                                                    {folderDocCounts[folder.id] ?? 0} document(s)
-                                                </Text>
-                                            </div>
-                                        </Group>
-                                    </Box>
-                                );
+                                        </Box>
+                                    );
+                                };
+
+                                return renderFolderNode(rootFolder, 0);
                             })}
-                        </div>
+                        </Stack>
                     </Box>
                 )}
 
@@ -1283,48 +1429,75 @@ export function Documents() {
 
                 {viewMode === 'list' && (
                     <Stack gap="lg">
+                        <Group justify="space-between" align="center">
+                            <Text size="sm" c="dimmed">
+                                Showing {rowsPerPage} rows per page
+                            </Text>
+                            <Select
+                                value={rowsPerPage}
+                                onChange={(value) => setRowsPerPage((value as '25' | '50') ?? '25')}
+                                data={[
+                                    {label: '25 rows', value: '25'},
+                                    {label: '50 rows', value: '50'}
+                                ]}
+                                w={140}
+                                allowDeselect={false}
+                            />
+                        </Group>
                         {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
                             <Box>
                                 <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
                                 <Table highlightOnHover withTableBorder withColumnBorders>
                                     <TableHead onSort={toggleFavSort} currentField={favSortField}
                                                currentDir={favSortDir}
-                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(paginatedFavorites.map(d => d.id))}
                                                allChecked={allFavSelected}
                                                indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
                                     <Table.Tbody>
-                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                            isSelected={selectedFavIds.includes(doc.id)}
-                                                                            onSelect={toggleFavSelect}
-                                                                            currentUsername={localStorage.getItem('username') ?? ''}
-                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                            onCheckOut={checkOutHandle}
-                                                                            onCheckIn={checkInHandle}
-                                                                            {...rowCallbacks} />)}
+                                        {paginatedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                              isSelected={selectedFavIds.includes(doc.id)}
+                                                                              onSelect={toggleFavSelect}
+                                                                              currentUsername={localStorage.getItem('username') ?? ''}
+                                                                              isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                              checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                              onCheckOut={checkOutHandle}
+                                                                              onCheckIn={checkInHandle}
+                                                                              {...rowCallbacks} />)}
                                     </Table.Tbody>
                                 </Table>
+                                <Group justify="space-between" mt="sm">
+                                    <Text size="sm" c="dimmed">
+                                        Page {favoritesPage} of {favoritesPageCount}
+                                    </Text>
+                                    <Pagination value={favoritesPage} onChange={setFavoritesPage} total={favoritesPageCount}/>
+                                </Group>
                             </Box>
                         )}
                         <Box>
                             <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
-                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(paginatedDocuments.map(d => d.id))}
                                            allChecked={allSelected}
                                            indeterminate={selectedIds.length > 0 && !allSelected}/>
                                 <Table.Tbody>
-                                    {nonFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                     isSelected={selectedIds.includes(doc.id)}
-                                                                     onSelect={toggleSelect}
-                                                                     currentUsername={localStorage.getItem('username') ?? ''}
-                                                                     isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                     checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                     onCheckOut={checkOutHandle}
-                                                                     onCheckIn={checkInHandle}
-                                                                     {...rowCallbacks} />)}
+                                    {paginatedDocuments.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                           isSelected={selectedIds.includes(doc.id)}
+                                                                           onSelect={toggleSelect}
+                                                                           currentUsername={localStorage.getItem('username') ?? ''}
+                                                                           isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                           checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                           onCheckOut={checkOutHandle}
+                                                                           onCheckIn={checkInHandle}
+                                                                           {...rowCallbacks} />)}
                                 </Table.Tbody>
                             </Table>
+                            <Group justify="space-between" mt="sm">
+                                <Text size="sm" c="dimmed">
+                                    Page {documentsPage} of {documentsPageCount}
+                                </Text>
+                                <Pagination value={documentsPage} onChange={setDocumentsPage} total={documentsPageCount}/>
+                            </Group>
                         </Box>
                     </Stack>
                 )}
@@ -1512,7 +1685,7 @@ export function Documents() {
                     <Group justify="flex-end">
                         <Button className="invert-hover" onClick={async () => {
                             const personas = folderPersona.length > 0 ? folderPersona : [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(folderName, personas, folderUsers);
+                            const created = await createFolder(folderName, personas, folderUsers, selectedFolderId);
                             if (created) {
                                 setAddFolderOpen(false);
                                 setFolderName('');
@@ -1528,6 +1701,7 @@ export function Documents() {
             <Modal opened={editFolderOpen} onClose={() => {
                 setEditFolderOpen(false);
                 setEditFolderError('');
+                setEditFolderParentId(null);
             }} title="Edit Folder">
                 <Stack>
                     <TextInput
@@ -1535,6 +1709,15 @@ export function Documents() {
                         placeholder="Enter folder name"
                         value={editFolderName}
                         onChange={e => setEditFolderName(e.target.value)}
+                    />
+                    <Select
+                        label="Parent Folder"
+                        placeholder="Top level"
+                        value={editFolderParentId}
+                        onChange={setEditFolderParentId}
+                        data={folderParentOptions.filter(option => option.value !== String(editFolderId))}
+                        searchable
+                        clearable
                     />
                     <MultiSelect
                         label="Persona"
@@ -1560,7 +1743,10 @@ export function Documents() {
                             className="invert-hover"
                             onClick={async () => {
                                 if (!editFolderId) return;
-                                await updateFolder(editFolderId, editFolderName, editFolderPersona, editFolderUsers);
+                                const selectedParentFolderId = editFolderParentId && editFolderParentId !== 'root'
+                                    ? Number(editFolderParentId)
+                                    : null;
+                                await updateFolder(editFolderId, editFolderName, editFolderPersona, editFolderUsers, selectedParentFolderId);
                             }}
                         >
                             Save Changes
@@ -1589,7 +1775,7 @@ export function Documents() {
                         />
                         <Button mt={24} className="invert-hover-outline" onClick={async () => {
                             const personas = [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(quickFolderName, personas);
+                            const created = await createFolder(quickFolderName, personas, [], null);
                             if (created) {
                                 setMoveTargetFolderId(String(created.id));
                                 setQuickFolderName('');

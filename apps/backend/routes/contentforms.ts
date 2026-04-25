@@ -14,9 +14,20 @@ function isAdminPersona(persona: string | null | undefined) {
     return (persona ?? '').toLowerCase() === 'admin';
 }
 
+function hasFolderAccess(
+    employee: { empid: number; persona: string | null; username: string },
+    folder: { owner_empid: number; persona: string[]; allowed_users: string[] }
+) {
+    const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+    const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+    return isAdminPersona(employee.persona) || folder.owner_empid === employee.empid || hasPersonaAccess || hasUserAccess;
+}
+
 function formatFolder(folders: {
     id: number;
     name: string;
+    parent_folder_id?: number | null;
     persona: string[];
     allowed_users: string[];
     url: string | null;
@@ -27,6 +38,7 @@ function formatFolder(folders: {
     return {
         id: folders.id,
         name: folders.name,
+        parent_folder_id: folders.parent_folder_id ?? null,
         owner: folders.employee.username,
         persona: folders.persona,
         allowed_users: folders.allowed_users,
@@ -662,7 +674,12 @@ router.get('/folders', checkJWT, async (req, res) => {
 
 router.post('/folders', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const {name, persona, allowedUsers} = req.body as { name?: string; persona?: string[]; allowedUsers?: string[] };
+    const {name, persona, allowedUsers, parentFolderId} = req.body as {
+        name?: string;
+        persona?: string[];
+        allowedUsers?: string[];
+        parentFolderId?: number | null;
+    };
 
     if (!name || !name.trim()) {
         return res.status(400).json({error: 'Folder name is required'});
@@ -678,10 +695,44 @@ router.post('/folders', checkJWT, async (req, res) => {
             return res.status(404).json({error: 'Employee not found'});
         }
 
+        const normalizedParentFolderId = parentFolderId === null || parentFolderId === undefined
+            ? null
+            : Number(parentFolderId);
+
+        if (normalizedParentFolderId !== null && Number.isNaN(normalizedParentFolderId)) {
+            return res.status(400).json({error: 'Invalid parent folder id'});
+        }
+
+        if (normalizedParentFolderId !== null) {
+            const parentFolder = await prisma.folders.findUnique({
+                where: {id: normalizedParentFolderId},
+                select: {
+                    id: true,
+                    owner_empid: true,
+                    persona: true,
+                    allowed_users: true,
+                    is_deleted: true
+                }
+            });
+
+            if (!parentFolder) {
+                return res.status(404).json({error: 'Parent folder not found'});
+            }
+
+            if (parentFolder.is_deleted) {
+                return res.status(409).json({error: 'Parent folder is in trash'});
+            }
+
+            if (!hasFolderAccess(employee, parentFolder)) {
+                return res.status(403).json({error: 'Not allowed to create inside this parent folder'});
+            }
+        }
+
         const folder = await prisma.folders.create({
             data: {
                 name: name.trim(),
                 owner_empid: employee.empid,
+                parent_folder_id: normalizedParentFolderId,
                 persona: Array.isArray(persona) && persona.length > 0
                     ? persona
                     : [employee.persona ?? ''].filter(Boolean),
@@ -712,7 +763,12 @@ router.post('/folders', checkJWT, async (req, res) => {
 router.patch('/folders/:id', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
-    const {name, persona, allowedUsers} = req.body as { name?: string; persona?: string[]; allowedUsers?: string[] };
+    const {name, persona, allowedUsers, parentFolderId} = req.body as {
+        name?: string;
+        persona?: string[];
+        allowedUsers?: string[];
+        parentFolderId?: number | null;
+    };
 
     if (Number.isNaN(id)) {
         return res.status(400).json({error: 'Invalid folder id'});
@@ -721,7 +777,7 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
     try {
         const employee = await prisma.employee.findUnique({
             where: {auth0Id},
-            select: {empid: true, persona: true}
+            select: {empid: true, persona: true, username: true}
         });
 
         if (!employee) {
@@ -730,7 +786,7 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
 
         const existingFolder = await prisma.folders.findUnique({
             where: {id},
-            select: {owner_empid: true}
+            select: {owner_empid: true, parent_folder_id: true}
         });
 
         if (!existingFolder) {
@@ -745,6 +801,7 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
             name?: string;
             persona?: string[];
             allowed_users?: string[];
+            parent_folder_id?: number | null;
         } = {};
 
         if (name !== undefined) {
@@ -761,6 +818,59 @@ router.patch('/folders/:id', checkJWT, async (req, res) => {
 
         if (Array.isArray(allowedUsers)) {
             updateData.allowed_users = Array.from(new Set(allowedUsers.filter(Boolean)));
+        }
+
+        if (parentFolderId !== undefined) {
+            const normalizedParentFolderId = parentFolderId === null ? null : Number(parentFolderId);
+
+            if (normalizedParentFolderId !== null && Number.isNaN(normalizedParentFolderId)) {
+                return res.status(400).json({error: 'Invalid parent folder id'});
+            }
+
+            if (normalizedParentFolderId === id) {
+                return res.status(400).json({error: 'Folder cannot be its own parent'});
+            }
+
+            if (normalizedParentFolderId !== null) {
+                const parentFolder = await prisma.folders.findUnique({
+                    where: {id: normalizedParentFolderId},
+                    select: {
+                        id: true,
+                        parent_folder_id: true,
+                        owner_empid: true,
+                        persona: true,
+                        allowed_users: true,
+                        is_deleted: true
+                    }
+                });
+
+                if (!parentFolder) {
+                    return res.status(404).json({error: 'Parent folder not found'});
+                }
+
+                if (parentFolder.is_deleted) {
+                    return res.status(409).json({error: 'Parent folder is in trash'});
+                }
+
+                if (!hasFolderAccess(employee, parentFolder)) {
+                    return res.status(403).json({error: 'Not allowed to move folder into this parent'});
+                }
+
+                let cursor: number | null = parentFolder.id;
+                while (cursor !== null) {
+                    if (cursor === id) {
+                        return res.status(400).json({error: 'Cannot move folder into its own descendant'});
+                    }
+
+                    const nextFolder: any = await prisma.folders.findUnique({
+                        where: {id: cursor}
+                    });
+
+                    cursor = (nextFolder as any)?.parent_folder_id ?? null;
+                }
+            }
+
+            updateData.parent_folder_id = normalizedParentFolderId;
         }
 
         if (Object.keys(updateData).length === 0) {
@@ -1060,6 +1170,7 @@ router.post('/folders/:id', checkJWT, async (req, res) => {
             data: {
                 name: newFolderName,
                 owner_empid: employee.empid,
+                parent_folder_id: (folderToCopy as any).parent_folder_id ?? null,
                 persona: folderToCopy.persona,
                 allowed_users: folderToCopy.allowed_users,
                 updated_at: new Date()
