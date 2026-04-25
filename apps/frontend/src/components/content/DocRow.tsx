@@ -58,6 +58,7 @@ export function DocRow({
     return (
         <Table.Tr style={{
             cursor: 'pointer',
+            opacity: isSomeoneCheckout ? 0.7 : 1,
             backgroundColor: isLockedForUser ? 'var(--mantine-color-gray-1)' : undefined,
         }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
             <Table.Td onClick={e => e.stopPropagation()}>
