@@ -16,9 +16,14 @@ export function Credit() {
             <PageTitle title="Credits"/>
             <Stack m={20} gap={40}>
                 <Text size={"xl"}>
-                    We utilized the PERN stack for this project.
+                    We utilized the PERN stack for this project. We used Prisma and the PostgreSQL Editor in Supabase, Express, React, and Node.js to build and run our program.
                 </Text>
-                <br/>
+                <ul>
+                    <li>Prisma 7.6.0</li>
+                    <li>Express 5.2.1</li>
+                    <li>React 19.2.4</li>
+                    <li>Node 10.9.2</li>
+                </ul>
                 <Text size={"xl"}>
                     Our Tools Used:
                 </Text>
@@ -39,19 +44,19 @@ export function Credit() {
                             </CreditCard>
                             <CreditCard
                                 tool="Tailwind"
-                                description="Tailwind version 3.4.1"
+                                description="Tailwind version 4.2.2"
                                 url="https://tailwindcss.com/docs/installation/using-vite"
                                 logo="https://static.vecteezy.com/system/resources/previews/067/565/433/non_2x/tailwind-css-logo-rounded-free-png.png">
                             </CreditCard>
                             <CreditCard
                                 tool="Auth0"
-                                description="Auth0"
+                                description="Auth0 version 2.16.1"
                                 url="https://manage.auth0.com/"
                                 logo="https://images.ctfassets.net/2ntc334xpx65/7xwGomgGQpkGyi4G0Mbtyv/f995abfa6a94aba745b002e5196646cf/Silver_Auth0.jpg">
                             </CreditCard>
                             <CreditCard
                                 tool="Mantine"
-                                description="Mantine version 8.1.0"
+                                description="Mantine version 9.1.0"
                                 url="https://mantine.dev/"
                                 logo="https://tse2.mm.bing.net/th/id/OIP.Vmg11uIcQhV8gb6ryeHyIAHaDt?rs=1&pid=ImgDetMain&o=7&rm=3">
                             </CreditCard>
@@ -71,7 +76,7 @@ export function Credit() {
                             </CreditCard>
                             <CreditCard
                                 tool="Supabase"
-                                description="Supabase"
+                                description="Supabase 2.102.1"
                                 url="https://supabase.com/docs"
                                 logo="https://chaechae.life/images/blog/thumbnails/supabase-logo.webp">
                             </CreditCard>
