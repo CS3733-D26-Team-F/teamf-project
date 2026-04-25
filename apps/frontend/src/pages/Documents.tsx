@@ -1096,7 +1096,7 @@ export function Documents() {
                         :
                             <>
                                 <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
-                                {contentTable(nonFavorites)}
+                                {contentTable(filtered)}
                             </>
                         }
                     </Stack>
