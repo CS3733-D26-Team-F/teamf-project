@@ -6,7 +6,7 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
-    Tooltip, SegmentedControl, Pagination
+    Tooltip, SegmentedControl, Pagination, Accordion
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
@@ -1187,6 +1187,86 @@ export function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
+    function contentTable (documentsToDisplay: ContentForm[]) {
+        return (
+            <Box>
+                <Table highlightOnHover withTableBorder withColumnBorders>
+                    <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                               onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                               allChecked={allSelected}
+                               indeterminate={selectedIds.length > 0 && !allSelected}/>
+                    <Table.Tbody>
+                        {documentsToDisplay.map(doc => <DocRow key={doc.id} doc={doc}
+                                                              isSelected={selectedIds.includes(doc.id)}
+                                                              onSelect={toggleSelect}
+                                                              currentUsername={localStorage.getItem('username') ?? ''}
+                                                              isCheckedOut={!!checkedOutMap[doc.id]}
+                                                              checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                              onCheckOut={checkOutHandle}
+                                                              onCheckIn={checkInHandle}
+                                                              {...rowCallbacks} />)}
+                    </Table.Tbody>
+                </Table>
+            </Box>
+        )
+    }
+
+    function personaAccordion(givenPersona: string) {
+        const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
+        if (existingDocuments.length == 0) {
+            return (
+                <>
+                </>
+            );
+        }
+        return (
+            <>
+                <Accordion.Item value={givenPersona} key={givenPersona}>
+                    <Accordion.Control aria-label={givenPersona}>
+                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        {contentTable(existingDocuments)}
+                    </Accordion.Panel>
+                </Accordion.Item>
+            </>
+        );
+    }
+
+    const favoriteAccordion = (
+            <>
+                {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
+                    <Accordion.Item value={"favorites"} key={"favorites"}>
+                        <Accordion.Control aria-label={"favorites"}>
+                            <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                            <Box>
+                                <Table highlightOnHover withTableBorder withColumnBorders>
+                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
+                                               currentDir={favSortDir}
+                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                               allChecked={allFavSelected}
+                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
+                                    <Table.Tbody>
+                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                            isSelected={selectedFavIds.includes(doc.id)}
+                                                                            onSelect={toggleFavSelect}
+                                                                            currentUsername={localStorage.getItem('username') ?? ''}
+                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                            onCheckOut={checkOutHandle}
+                                                                            onCheckIn={checkInHandle}
+                                                                            {...rowCallbacks} />)}
+                                    </Table.Tbody>
+                                </Table>
+                            </Box>
+                        </Accordion.Panel>
+                    </Accordion.Item>
+                )}
+            </>
+    )
+
     return (
         <>
             <title>
@@ -2257,7 +2337,7 @@ export function Documents() {
                         }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('files')}
                         </Button>
                     </Group>
                 </Stack>
