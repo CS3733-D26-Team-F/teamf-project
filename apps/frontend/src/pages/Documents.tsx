@@ -2400,3 +2400,4 @@ export function Documents() {
     );
 }
 
+export default Documents;
