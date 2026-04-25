@@ -24,6 +24,16 @@ function hasFolderAccess(
     return isAdminPersona(employee.persona) || folder.owner_empid === employee.empid || hasPersonaAccess || hasUserAccess;
 }
 
+function canSeeFolder(
+    employee: { empid: number; persona: string | null; username: string },
+    folder: { owner_empid: number; persona: string[]; allowed_users: string[] }
+) {
+    const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+    const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+    return folder.owner_empid === employee.empid || hasPersonaAccess || hasUserAccess;
+}
+
 function formatFolder(folders: {
     id: number;
     name: string;
@@ -479,7 +489,7 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
 
         res.json({
             documents: trashedDocuments,
-            folders: trashedFolders.map(folder => ({
+            folders: trashedFolders.filter(folder => canSeeFolder(employee, folder)).map(folder => ({
                 ...formatFolder(folder),
                 is_deleted: folder.is_deleted,
                 deleted_at: folder.deleted_at,
@@ -665,7 +675,7 @@ router.get('/folders', checkJWT, async (req, res) => {
             orderBy: {updated_at: 'desc'}
         });
 
-        return res.json(folders.map(formatFolder));
+        return res.json(folders.filter(folder => canSeeFolder(employee, folder)).map(formatFolder));
     } catch (error) {
         console.error('folders fetch error:', error);
         return res.status(500).json({error: 'Could not fetch folders'});

@@ -97,22 +97,31 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
 export function Archive() {
     const {t} = useTranslation();
     const persona = localStorage.getItem('persona');
+    const username = localStorage.getItem('username');
     const [expired, setExpired] = useState<ContentForm[]>([]);
     const [archived, setArchived] = useState<ContentForm[]>([]);
     const api = useApi();
+
+    function canSeeDocument(doc: ContentForm) {
+        if (doc.persona.length === 0) {
+            return doc.owner === (username ?? '');
+        }
+
+        return persona === 'Admin' || doc.owner === (username ?? '') || doc.persona.includes(persona ?? '');
+    }
 
     // Load documents whose expiration date has passed.
     function loadExpired() {
         api(`${DOMAIN}/contentforms/expired`)
             .then(res => res.json())
-            .then(data => setExpired(data));
+            .then(data => setExpired((Array.isArray(data) ? data : []).filter(canSeeDocument)));
     }
 
     // Load documents that were archived manually.
     function loadArchived() {
         api(`${DOMAIN}/contentforms/archived`)
             .then(res => res.json())
-            .then(data => setArchived(data));
+            .then(data => setArchived((Array.isArray(data) ? data : []).filter(canSeeDocument)));
     }
 
     useEffect(() => {

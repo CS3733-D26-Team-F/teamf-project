@@ -141,6 +141,20 @@ export function Documents() {
 
     const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length + (selectedFolderId !== null ? 1 : 0);
 
+    function canSeeDocument(doc: ContentForm) {
+        const personas = Array.isArray(doc.persona) ? doc.persona : [];
+        if (personas.length === 0) {
+            return doc.owner === (username ?? '');
+        }
+
+        return persona === 'Admin' || doc.owner === (username ?? '') || personas.includes(persona ?? '');
+    }
+
+    const visibleDocuments = useMemo(
+        () => documents.filter(canSeeDocument),
+        [documents, persona, username]
+    );
+
     const folderChildrenMap = useMemo<Record<number, Folder[]>>(() => {
         const map: Record<number, Folder[]> = {};
         for (const folder of folders) {
@@ -326,6 +340,7 @@ export function Documents() {
     const [expandedTrashFolderIds, setExpandedTrashFolderIds] = useState<number[]>([]);
 
     const filteredTrash = trashDocs.filter(doc => {
+        if (!canSeeDocument(doc)) return false;
         const belongsToTrashedFolder = doc.folder_id !== null && trashFolders.some(folder => folder.id === doc.folder_id);
         if (belongsToTrashedFolder) return false;
         const matchSearch = !trashSearch || doc.name.toLowerCase().includes(trashSearch.toLowerCase()) || doc.owner.toLowerCase().includes(trashSearch.toLowerCase());
@@ -659,12 +674,12 @@ export function Documents() {
     }
 
     const fileTypeOptions = useMemo(
-        () => [...new Set(documents.map(d => getFileType(d.url)))].sort(),
-        [documents]
+        () => [...new Set(visibleDocuments.map(d => getFileType(d.url)))].sort(),
+        [visibleDocuments]
     );
 
     const filtered = useMemo(() => {
-        let result = documents.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
+        let result = visibleDocuments.filter(d => d.status !== 'Expired' && d.status !== 'Archived');
         if (search) result = result.filter(d =>
             d.name.toLowerCase().includes(search.toLowerCase()) ||
             d.owner.toLowerCase().includes(search.toLowerCase()) ||
@@ -724,7 +739,7 @@ export function Documents() {
         }
 
         return result;
-    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, documents, sortField, sortDir, persona, filterTags, checkedOutMap, selectedFolderId]);
+    }, [search, filterPersona, filterStatus, filterType, filterOwner, filterCheckout, visibleDocuments, sortField, sortDir, persona, filterTags, checkedOutMap, selectedFolderId]);
 
     const sortedFavorites = (() => {
         const favs = filtered.filter(d => favoritedIds.has(d.id));
@@ -775,14 +790,14 @@ export function Documents() {
 
     const folderDocCounts = useMemo(() => {
         const counts: Record<number, number> = {};
-        documents
+        visibleDocuments
             .filter(doc => doc.status !== 'Expired' && doc.status !== 'Archived')
             .forEach(doc => {
             if (doc.folder_id === null) return;
             counts[doc.folder_id] = (counts[doc.folder_id] ?? 0) + 1;
             });
         return counts;
-    }, [documents]);
+    }, [visibleDocuments]);
 
     const allSelected = selectedIds.length === paginatedDocuments.length && paginatedDocuments.length > 0;
     const allFavSelected = selectedFavIds.length === paginatedFavorites.length && paginatedFavorites.length > 0;
@@ -1157,7 +1172,7 @@ export function Documents() {
     };
 
     const recentDocs = recentIds
-        .map(id => documents.find(d => d.id === id))
+        .map(id => visibleDocuments.find(d => d.id === id))
         .filter(Boolean) as ContentForm[];
 
     const titleProp = persona === 'Admin' ? t('all_content') :
