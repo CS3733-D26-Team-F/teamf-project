@@ -28,52 +28,76 @@ export function Credit() {
                             <CreditCard
                                 tool="Github"
                                 description="Github version 3.5.5"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                url="https://github.com/"
+                                logo="https://www.pngall.com/wp-content/uploads/13/Github-Logo-Transparent.png">
                             </CreditCard>
                             <CreditCard
                                 tool="Webstorm"
                                 description="Webstorm version 25.5.3"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                url="https://www.jetbrains.com/webstorm/download/?section=windows"
+                                logo="https://cdn.hackr.io/uploads/posts/attachments/webstorm.png">
                             </CreditCard>
                             <CreditCard
                                 tool="Tailwind"
-                                description="Olsen"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                description="Tailwind version 3.4.1"
+                                url="https://tailwindcss.com/docs/installation/using-vite"
+                                logo="https://static.vecteezy.com/system/resources/previews/067/565/433/non_2x/tailwind-css-logo-rounded-free-png.png">
                             </CreditCard>
                             <CreditCard
-                                tool="Postman"
-                                description="Olsen"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                tool="Auth0"
+                                description="Auth0"
+                                url="https://manage.auth0.com/"
+                                logo="https://images.ctfassets.net/2ntc334xpx65/7xwGomgGQpkGyi4G0Mbtyv/f995abfa6a94aba745b002e5196646cf/Silver_Auth0.jpg">
                             </CreditCard>
                             <CreditCard
-                                tool="Postman"
-                                description="Olsen"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                tool="Mantine"
+                                description="Mantine version 8.1.0"
+                                url="https://mantine.dev/"
+                                logo="https://tse2.mm.bing.net/th/id/OIP.Vmg11uIcQhV8gb6ryeHyIAHaDt?rs=1&pid=ImgDetMain&o=7&rm=3">
                             </CreditCard>
                             <CreditCard
-                                tool="Postman"
-                                description="Olsen"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                tool="Jetbrains AI Assistant"
+                                description="Jetbrains AI Assistant"
+                                url="https://www.jetbrains.com/ai-ides/"
+                                logo="https://www.jetbrains.com/guide/assets/light-5688bcc9.png">
                             </CreditCard>
                         </Group>
                         <Group gap={imageGap}>
                             <CreditCard
                                 tool="Postman"
-                                description="Olsen"
+                                description="Postman 12.7.6"
                                 url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                logo="https://tse4.mm.bing.net/th/id/OIP.eUrLjP_6-w6sEA3CFbiejgHaD3?rs=1&pid=ImgDetMain&o=7&rm=3">
                             </CreditCard>
                             <CreditCard
-                                tool="Postman"
-                                description="Olsen"
-                                url="https://www.postman.com/login"
-                                logo="https://www.postman.com/img/logo-white.svg">
+                                tool="Supabase"
+                                description="Supabase"
+                                url="https://supabase.com/docs"
+                                logo="https://chaechae.life/images/blog/thumbnails/supabase-logo.webp">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Mistral AI"
+                                description="Mistral-large-latest"
+                                url="https://mistral.ai/"
+                                logo="https://www.ia-espana.es/wp-content/uploads/2024/11/mistral-ai-1.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Docker"
+                                description="Docker 29.2.1"
+                                url="https://www.docker.com/"
+                                logo="https://storage.googleapis.com/static.ianlewis.org/prod/img/docker/large_v-trans.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Vultr"
+                                description="Debian 11"
+                                url="https://www.vultr.com/"
+                                logo="https://lowendbox.com/wp-content/uploads/2023/05/vultr2000.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Nginx"
+                                description="Nginx version 1.18"
+                                url="https://nginx.org/en/"
+                                logo="https://tse2.mm.bing.net/th/id/OIP.uy7Ux1lb3iZm7O2IuAR64AHaEK?rs=1&pid=ImgDetMain&o=7&rm=3">
                             </CreditCard>
                         </Group>
                     </Stack>

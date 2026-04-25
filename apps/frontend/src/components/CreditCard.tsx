@@ -21,6 +21,7 @@ export function CreditCard({ tool, description, url, logo }: CreditsBadgesProps)
                     <Image
                         src={logo}
                         h={160}
+                        w={220}
                         alt="Image Unavailable"
                     />
                 </Card.Section>
