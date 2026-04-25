@@ -267,7 +267,7 @@ export function EmployeeListView() {
                         }}
                     >
                         <Group mb="sm">
-                            <Text fw={700} size="xl" c="var(--color-yale-blue)">{persona}s</Text>
+                            <Text fw={700} size="xl" c="var(--color-yale-blue)">{persona}</Text>
                             <Button
                                 size="sm"
                                 leftSection={<IconPlus size={14} />}
