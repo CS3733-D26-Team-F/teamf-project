@@ -47,7 +47,6 @@ export function TableHead({ onSort, currentField, currentDir, onSelectAll, allCh
                 <SortTh field="status" label={t('status')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="jointagscontent" label={t('doc_tag')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="date_modified" label={t('date_modified')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
-                <SortTh field="review_date" label={t('review_date')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <SortTh field="expiration_date" label={t('expiration')} icon={<IconArrowsSort stroke={1} size={16}/>} onToggle={onSort} currentField={currentField} currentDir={currentDir} />
                 <Table.Th>{t('actions')} </Table.Th>
             </Table.Tr>
