@@ -605,7 +605,7 @@ export function Documents() {
         try {
             if (editFile) {
                 const formPayload = new FormData();
-                formPayload.append('filename', editData.name);
+                formPayload.append('name', editData.name);
                 formPayload.append('ownerUsername', editData.owner);
                 formPayload.append('persona', JSON.stringify(editData.persona));
                 formPayload.append('date_modified', editData.date_modified);

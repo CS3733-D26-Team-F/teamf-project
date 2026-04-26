@@ -493,7 +493,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
         if (!status) return res.status(400).json({error: 'status is required'});
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {status}
+            data: {status, expiration_date: new Date()}
         });
         res.json(updated);
     } catch (error) {
