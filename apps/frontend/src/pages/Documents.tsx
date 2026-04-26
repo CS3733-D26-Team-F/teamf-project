@@ -27,10 +27,11 @@ import type {
     RowCallbacks
     , StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
-import {DocCard} from "../components/content/DocCard.tsx";
-import {TableHead} from "../components/content/TableHead.tsx";
-import {DocRow} from "../components/content/DocRow.tsx";
+import { getExt, getFileType, normalizeUrl, pickRenderer } from "../components/content/Functions.tsx";
+import { DocCard } from "../components/content/DocCard.tsx";
+import { TableHead } from "../components/content/TableHead.tsx";
+import { DocRow } from "../components/content/DocRow.tsx";
+import { FilledButton } from '../components/Buttons/FilledButton.tsx';
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
@@ -614,7 +615,7 @@ export function Documents() {
         try {
             if (editFile) {
                 const formPayload = new FormData();
-                formPayload.append('filename', editData.name);
+                formPayload.append('name', editData.name);
                 formPayload.append('ownerUsername', editData.owner);
                 formPayload.append('persona', JSON.stringify(editData.persona));
                 formPayload.append('date_modified', editData.date_modified);
@@ -1025,22 +1026,21 @@ export function Documents() {
                     <Group gap="sm">
                         {persona !== null && (
                             <>
-                                <Button leftSection={<IconPlus size={16}/>} onClick={() => setAddOpen(true)}
-                                        className="invert-hover">
+                                <FilledButton leftSection="plus" onClick={() => setAddOpen(true)}>
                                     {t('add_doc')}
-                                </Button>
-                                <Button variant="default" leftSection={<IconPlus size={16}/>}
-                                        onClick={() => setBulkOpen(true)} className="invert-hover">
+                                </FilledButton>
+                                <FilledButton leftSection="plus" onClick={() => setBulkOpen(true)}>
                                     {t('bulk_doc')}
-                                </Button>
+                                </FilledButton>
                             </>
                         )}
-                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'}
-                                color={activeFilterCount > 0 ? 'blue' : undefined}
-                                leftSection={<IconFilter size={16}/>}
-                                onClick={() => setFilterOpen(true)} className="invert-hover">
+                        <FilledButton 
+                            variant={activeFilterCount > 0 ? 'filled' : 'outline'}
+                            leftSection={<IconFilter size={16} />} 
+                            onClick={() => setFilterOpen(true)}
+                        >
                             {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-                        </Button>
+                        </FilledButton>
                         {persona === 'Admin' && (
                             <Button leftSection={<IconTrash size={16}/>} className="invert-hover-red"
                                     variant="outline"
@@ -1722,4 +1722,4 @@ export function Documents() {
     );
 }
 
-export default Documents
+export default Documents;
