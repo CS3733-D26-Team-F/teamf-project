@@ -80,7 +80,7 @@ export function DocRow({
     const canEdit = canModify && (isSelfCheckout || (isAdmin && !isCheckedOut));
 
     return (
-        <React.Fragment key={doc.id}>
+        <>
             <Table.Tr style={{
                 cursor: 'pointer',
                 opacity: isSomeoneCheckout ? 0.7 : 1,
@@ -216,10 +216,6 @@ export function DocRow({
                             {['png', 'jpg', 'jpeg'].includes(getFileType(doc.url).toLowerCase()) && (
                                 <img src={doc.url} alt={doc.name} style={{maxWidth: '100%'}}/>
                             )}
-                            {getFileType(doc.url) === 'Link' && (
-                                <text>Links cant be previewed inline. <a href={doc.url} target="_blank"
-                                                                         rel="noreferrer">Open in new tab</a></text>
-                            )}
                             {getFileType(doc.url).toLowerCase() === 'txt' && (
                                 <TxtDropdown url={doc.url}/>
                             )}
@@ -255,10 +251,18 @@ export function DocRow({
                                         style={{border: 'none'}}/>
                                 </Box>
                             )}
+                            {getFileType(doc.url) === 'Link' && (
+                                <Box>
+                                    {(() => {
+                                        window.open(doc.url, '_blank');
+                                        return null;
+                                    })()}
+                                </Box>
+                            )}
                         </Box>
                     </Table.Td>
                 </Table.Tr>
             )}
-        </React.Fragment>
+        </>
     )
 }
