@@ -4,10 +4,11 @@ import {
     TextInput, PasswordInput, Image, Center, FileInput, Select, Button, Modal,
     Group, Text, Badge, Stack, Box
 } from '@mantine/core';
-import { IconSearch, IconEdit, IconTrash, IconPlus, IconUser } from '@tabler/icons-react';
+import { IconSearch, IconEdit, IconTrash, IconUser } from '@tabler/icons-react';
 import { DOMAIN } from '../../const';
 //import {useAuth0} from "@auth0/auth0-react";
 import { useApi } from "../api.ts";
+import { FilledButton } from '../Buttons/FilledButton.tsx';
 import {allPersonas} from "./personas.tsx";
 
 type Employee = {
@@ -268,14 +269,13 @@ export function EmployeeListView() {
                     >
                         <Group mb="sm">
                             <Text fw={700} size="xl" c="var(--color-yale-blue)">{persona}</Text>
-                            <Button
+                            <FilledButton
                                 size="sm"
-                                leftSection={<IconPlus size={14} />}
+                                leftSection="plus"
                                 onClick={() => openAdd(persona)}
-                                className="invert-hover"
                             >
                                 Add Employee
-                            </Button>
+                            </FilledButton>
                         </Group>
 
                         <Stack gap="xs">
@@ -283,12 +283,13 @@ export function EmployeeListView() {
                                 <Text c="dimmed" size="sm">No employees found.</Text>
                             )}
                             {group.map(emp => (
-                                <Group key={emp.empid} justify="space-between"
-                                       style={{
-                                           background: '#f8f9fa',
-                                           borderRadius: 6,
-                                           padding: '8px 12px'
-                                       }}
+                                <Group 
+                                    key={emp.empid} justify="space-between"
+                                    style={{
+                                        background: '#f8f9fa',
+                                        borderRadius: 6,
+                                        padding: '8px 12px'
+                                    }}
                                 >
                                     <Group>
                                         {/* Clickable initials badge opens the employee detail modal. */}
@@ -309,14 +310,13 @@ export function EmployeeListView() {
                                     </Group>
                                     <Group gap="xs">
                                         {/* Edit and delete actions are grouped together for quick admin workflows. */}
-                                        <Button
+                                        <FilledButton
                                             size="xs"
                                             leftSection={<IconEdit size={14} />}
                                             onClick={() => openEdit(emp)}
-                                            className="invert-hover"
                                         >
                                             Edit
-                                        </Button>
+                                        </FilledButton>
                                         <Button
                                             size="xs"
                                             className="invert-hover-red"
@@ -395,14 +395,14 @@ export function EmployeeListView() {
                     />
                     <Group justify="flex-end" mt="md">
                         <Button variant="default" onClick={() => setAddOpen(false)} className="invert-hover-outline">Cancel</Button>
-                        <Button
+                        <FilledButton
                             onClick={handleAdd}
-                            className="invert-hover"
+                            leftSection="plus"
                             loading={addSaving}
                             disabled={addSaving}
                         >
-                            + Save Account
-                        </Button>
+                            Save Account
+                        </FilledButton>
                     </Group>
                 </Stack>
             </Modal>
@@ -467,14 +467,14 @@ export function EmployeeListView() {
                         </Box>
                         <Group justify="flex-end" mt="md">
                             <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline" disabled={editSaving}>Cancel</Button>
-                            <Button
+                            <FilledButton
                                 onClick={handleEdit}
-                                className="invert-hover"
+                                leftSection="plus"
                                 loading={editSaving}
                                 disabled={editSaving}
                             >
-                                + Save Account
-                            </Button>
+                                Save Account
+                            </FilledButton>
                         </Group>
                     </Stack>
                 )}
