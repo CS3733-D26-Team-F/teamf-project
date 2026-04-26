@@ -134,4 +134,3 @@ model notifications {
   joinednotice joinednotice[]
   employee     employee?      @relation(fields: [sender], references: [empid], onDelete: Cascade, onUpdate: NoAction)
 }
-

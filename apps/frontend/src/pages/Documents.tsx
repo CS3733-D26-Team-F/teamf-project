@@ -126,7 +126,7 @@ export function Documents() {
     const [editFolderError, setEditFolderError] = useState('');
     const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
     const [deleteFolderId, setDeleteFolderId] = useState<number | null>(null);
-    const [, setSelectedIdsFolder] = useState<number[]>([]);
+    const [SelectedIdsFolder, setSelectedIdsFolder] = useState<number[]>([]);
     const [duplicateFolderOpen, setDuplicateFolderOpen] = useState(false);
     const [duplicateFolderId, setDuplicateFolderId] = useState<number | null>(null);
     const [expandedFolderIds, setExpandedFolderIds] = useState<number[]>([]);
@@ -356,7 +356,7 @@ export function Documents() {
 
     const [favoritedIds, setFavoritedIds] = useState<Set<number>>(new Set());
 
-    const [, setAdvancedTagsOpen] = useState(false);
+    const [AdvancedTagsOpen, setAdvancedTagsOpen] = useState(false);
 
     // Fetch Auth0 Persona
     useEffect(() => {
@@ -886,8 +886,13 @@ export function Documents() {
     }
 
     async function handleBulkAdd() {
-        for (const sf of stagedFiles) {
-            try {
+        try {
+            for (const sf of stagedFiles) {
+                if (!sf.name || !sf.owner || sf.persona.length === 0 || !sf.content_type || !sf.status || !sf.expiration_date || !sf.review_date) {
+                    setAddError('Please fill all required fields for each file.');
+                    return;
+                }
+
                 const formPayload = new FormData();
                 formPayload.append('filename', sf.name);
                 formPayload.append('ownerUsername', sf.owner);
@@ -901,23 +906,24 @@ export function Documents() {
                     formPayload.append('folder_id', String(sf.folder_id));
                 }
                 formPayload.append('file', sf.file);
+
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-                setBulkOpen(false);
-                setStagedFiles([]);
-                loadDocuments();
-            } catch (err: any) {
-                if (err.status === 409 || err.status === 400 || err.status === 406) {
-                    setAddError(err.message)
-                } else {
-                    throw err;
-                }
+            }
+
+            setBulkOpen(false);
+            setStagedFiles([]);
+            setAddError('');
+            loadDocuments();
+        } catch (err: any) {
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setAddError(err.message);
                 return;
             }
+            throw err;
         }
-        setBulkOpen(false);
-        setStagedFiles([]);
-        loadDocuments();
     }
+
+
     function openEdit(doc: ContentForm) {
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
             method: 'POST',
@@ -1499,14 +1505,14 @@ export function Documents() {
                                                indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
                                     <Table.Tbody>
                                         {paginatedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                              isSelected={selectedFavIds.includes(doc.id)}
-                                                                              onSelect={toggleFavSelect}
-                                                                              currentUsername={localStorage.getItem('username') ?? ''}
-                                                                              isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                              checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                              onCheckOut={checkOutHandle}
-                                                                              onCheckIn={checkInHandle}
-                                                                              {...rowCallbacks} />)}
+                                                                            isSelected={selectedFavIds.includes(doc.id)}
+                                                                            onSelect={toggleFavSelect}
+                                                                            currentUsername={localStorage.getItem('username') ?? ''}
+                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                            onCheckOut={checkOutHandle}
+                                                                            onCheckIn={checkInHandle}
+                                                                            {...rowCallbacks} />)}
                                     </Table.Tbody>
                                 </Table>
                                 <Group justify="space-between" mt="sm">
@@ -1558,14 +1564,14 @@ export function Documents() {
                                            indeterminate={selectedIds.length > 0 && !allSelected}/>
                                 <Table.Tbody>
                                     {paginatedDocuments.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                           isSelected={selectedIds.includes(doc.id)}
-                                                                           onSelect={toggleSelect}
-                                                                           currentUsername={localStorage.getItem('username') ?? ''}
-                                                                           isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                           checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                           onCheckOut={checkOutHandle}
-                                                                           onCheckIn={checkInHandle}
-                                                                           {...rowCallbacks} />)}
+                                                                     isSelected={selectedIds.includes(doc.id)}
+                                                                     onSelect={toggleSelect}
+                                                                     currentUsername={localStorage.getItem('username') ?? ''}
+                                                                     isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                     checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                     onCheckOut={checkOutHandle}
+                                                                     onCheckIn={checkInHandle}
+                                                                     {...rowCallbacks} />)}
                                 </Table.Tbody>
                             </Table>
                             <Group justify="space-between" mt="sm">
@@ -2257,7 +2263,7 @@ export function Documents() {
                         }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('files')}
                         </Button>
                     </Group>
                 </Stack>
@@ -2319,4 +2325,4 @@ export function Documents() {
         </>
     );
 }
-
+export default Documents;
