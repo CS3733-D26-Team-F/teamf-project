@@ -1363,23 +1363,39 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
     const id = parseInt(req.params.id);
     const {username} = req.body;
     console.log('checkout hit', {id, username});
+
     if (!username) {
         return res.status(400).send('Requires username');
     }
 
     try {
+        const user = await prisma.employee.findUnique({
+            where: { username },
+            select: { persona: true }
+        });
+        const isAdmin = user?.persona === 'Admin';
+        const userPersona = user?.persona || '';
+
         const current = await prisma.contentform.findUnique({
             where: {id},
-            select: {checkout_username: true, checkout_date: true}
+            select: {checkout_username: true, checkout_date: true, persona: true}
         });
 
-        if (current && current.checkout_username) {
-            const {checkout_username: takenBy, checkout_date} = current;
-            if (takenBy !== username) {
+        if (!current) {
+            return res.status(404).send('Document not found');
+        }
+
+        if (!isAdmin && !current.persona.includes(userPersona)) {
+            return res.status(403).json({ error: "Your role does not have permission to checkout or modify this document." });
+        }
+
+        if (current.checkout_username && current.checkout_username !== username) {
+            if (!isAdmin) {
                 return res.status(423).json({
-                    error: `Document is checked out by ${takenBy} since ${checkout_date}`
+                    error: `Document is already checked out by ${current.checkout_username} since ${current.checkout_date}`
                 });
             }
+            console.log(`[ADMIN OVERRIDE] ${username} is force-checking out document ${id} from ${current.checkout_username}`);
         }
 
         try {
@@ -1387,15 +1403,15 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {id},
                 data: {checkout_username: username, checkout_date: new Date()}
             });
-            return res.status(200).json({message: 'Document checked out'});
+            return res.status(200).json({message: 'Document checked out successfully'});
         } catch (error) {
-            res.status(500).json({error: 'Something went wrong 1'});
+            res.status(500).json({error: 'Something went wrong writing the checkout to the database'});
         }
 
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong 2'});
+        console.error("Checkout route error:", error);
+        res.status(500).json({error: 'Something went wrong processing the checkout'});
     }
-
 });
 
 router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
@@ -1404,18 +1420,33 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
     const {username} = req.body;
 
     try {
+        const user = await prisma.employee.findUnique({
+            where: { username },
+            select: { persona: true }
+        });
+        const isAdmin = user?.persona === 'Admin';
+        const userPersona = user?.persona || '';
+
         const current = await prisma.contentform.findUnique({
             where: {id},
-            select: {checkout_username: true, checkout_date: true}
+            select: {checkout_username: true, checkout_date: true, persona: true}
         });
 
         if (!current) {
-            return res.status(400).send('Document isnt checked out')
+            return res.status(404).send('Document not found');
         }
 
-        const {checkout_username: takenBy, checkout_date} = current;
+        if (!isAdmin && !current.persona.includes(userPersona)) {
+            return res.status(403).json({ error: "Your role does not have permission to modify this document." });
+        }
 
-        if (takenBy !== username) {
+        const {checkout_username: takenBy} = current;
+
+        if (!takenBy) {
+            return res.status(400).send('Document is not currently checked out');
+        }
+
+        if (takenBy !== username && !isAdmin) {
             return res.status(401).json({error: "You can only check in documents that you have checked out"});
         }
 
@@ -1425,12 +1456,13 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                 data: {checkout_username: null, checkout_date: null}
             });
 
-            return res.status(200).json({message: 'Document checked in'});
+            return res.status(200).json({message: 'Document checked in successfully'});
         } catch (error) {
-            res.status(500).json({error: 'Something went wrong checking in doc'});
+            res.status(500).json({error: 'Something went wrong writing the checkin to the database'});
         }
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        console.error("Checkin route error:", error);
+        res.status(500).json({error: 'Something went wrong processing the checkin'});
     }
 });
 

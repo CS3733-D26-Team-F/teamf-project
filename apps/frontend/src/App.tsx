@@ -8,6 +8,7 @@ import Documents from "./pages/Documents";
 import { Archive } from './pages/Archive';
 import { About} from "./pages/About.tsx";
 import {Footer} from "./components/Footer.tsx";
+import { Credit } from './pages/Credit.tsx';
 
 // Top-level application shell:
 // - configures Auth0 once for the whole app
@@ -42,6 +43,7 @@ export default function App() {
                     <Route path="/archive" element={<Archive />}/>
                     <Route path="/profilePage" element={<ProfilePage />}/>
                     <Route path="/about" element={<About />}/>
+                    <Route path="/credit" element={<Credit />}/>
                 </Routes>
                 <Footer />
             </BrowserRouter>

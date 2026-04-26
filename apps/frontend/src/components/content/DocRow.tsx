@@ -45,19 +45,31 @@ export function DocRow({
                            onCheckOut,
                            onCheckIn
                        }: DocRowProps) {
-    const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
+
+    const isAdmin = persona === 'Admin';
+    const canModify = isAdmin || doc.persona.includes(persona ?? '');
     const isUrl = getFileType(doc.url) === 'Link';
+
     const isSelfCheckout = isCheckedOut && checkedOutBy === currentUsername;
     const isSomeoneCheckout = isCheckedOut && checkedOutBy !== currentUsername;
-    const canEdit = canModify && isSelfCheckout;
+
+    const isLockedForUser = isSomeoneCheckout && !isAdmin;
+
+    const canEdit = canModify && (isSelfCheckout || (isAdmin && !isCheckedOut));
+
     return (
         <Table.Tr style={{
             cursor: 'pointer',
             opacity: isSomeoneCheckout ? 0.7 : 1,
-            backgroundColor: isSomeoneCheckout ? 'var(--mantine-color-gray-1)' : undefined,
+            backgroundColor: isLockedForUser ? 'var(--mantine-color-gray-1)' : undefined,
         }} onClick={() => onView(doc.url, doc.name, doc.id, isUrl)}>
-            <Table.Td onClick={e => e.stopPropagation()}><Checkbox checked={isSelected}
-                                                                   onChange={() => onSelect(doc.id)}/></Table.Td>
+            <Table.Td onClick={e => e.stopPropagation()}>
+                <Checkbox
+                    checked={isSelected}
+                    onChange={() => onSelect(doc.id)}
+                    disabled={isLockedForUser}
+                />
+            </Table.Td>
             <Table.Td fw={500}>{doc.name}</Table.Td>
             <Table.Td>{getFileType(doc.url)}</Table.Td>
             <Table.Td>
@@ -87,12 +99,12 @@ export function DocRow({
             <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
             <Table.Td onClick={e => e.stopPropagation()}>
                 <Group gap="xs">
-                    {isSomeoneCheckout ? (
+                    {isLockedForUser ? (
                         <Tooltip label={`This document is checked out by ${checkedOutBy}`}>
                             <ActionIcon
                                 variant="subtle"
                                 color="gray"
-                                style={{ cursor: 'default', pointerEvents: 'all' }}
+                                style={{ cursor: 'default' }}
                                 onClick={e => e.stopPropagation()}
                             >
                                 <IconLock size={16}/>
@@ -105,6 +117,7 @@ export function DocRow({
                                     {isFavorited(doc.id) ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
                                 </ActionIcon>
                             </Tooltip>
+
                             <Tooltip label={isUrl ? "Open URL" : "Download"}>
                                 {isUrl ? (
                                     <ActionIcon
@@ -137,7 +150,7 @@ export function DocRow({
                                 </Tooltip>
                             )}
                             {canModify && (
-                                <Tooltip label={canEdit ? "Edit" : "Check out to edit"}>
+                                <Tooltip label={canEdit ? "Edit" : (isAdmin && isSomeoneCheckout ? "Force check-in first to edit" : "Check out to edit")}>
                                     <ActionIcon
                                         variant="subtle"
                                         onClick={() => canEdit && onEdit(doc)}
@@ -148,16 +161,25 @@ export function DocRow({
                                     </ActionIcon>
                                 </Tooltip>
                             )}
+
                             {canModify && (
-                                <Tooltip label={isSelfCheckout ? 'Click to checkin' : 'Checkout'}>
-                                    <ActionIcon variant="subtle" color="blue"
-                                                onClick={() => isSelfCheckout ? onCheckIn(doc.id) : onCheckOut(doc.id)}>
-                                        {isSelfCheckout ? < IconLockOpen size={16}/> : <IconLock size={16}/>}
+                                <Tooltip label={
+                                    isSelfCheckout ? 'Click to checkin' :
+                                        (isSomeoneCheckout && isAdmin) ? `Force check-in (Checked out by ${checkedOutBy})` :
+                                            'Checkout'
+                                }>
+                                    <ActionIcon
+                                        variant="subtle"
+                                        color={isSomeoneCheckout && isAdmin ? "red" : "blue"}
+                                        onClick={() => (isSelfCheckout || (isSomeoneCheckout && isAdmin)) ? onCheckIn(doc.id) : onCheckOut(doc.id)}
+                                    >
+                                        {isSelfCheckout ? <IconLockOpen size={16}/> : <IconLock size={16}/>}
                                     </ActionIcon>
                                 </Tooltip>
                             )}
+
                             {canModify && (
-                                <Tooltip label={canEdit ? "Delete" : "Check out to delete"}>
+                                <Tooltip label={canEdit ? "Delete" : (isAdmin && isSomeoneCheckout ? "Force check-in first to delete" : "Check out to delete")}>
                                     <ActionIcon
                                         variant="subtle"
                                         color={canEdit ? "var(--color-neutral-red)" : "gray"}
