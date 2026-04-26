@@ -993,33 +993,34 @@ export function Documents() {
             <Box p="md">
                 <Group justify="space-between" align="center" w="100%">
                     <PageTitle title={titleProp}/>
-                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
-                    <SegmentedControl
-                        value={dropdownViewMode}
-                        onChange={val => setDropdownViewMode(val as 'dropdown' | 'popup')}
-                        data={[
-                            {
-                                label: (
-                                    <Group gap={4} wrap="nowrap" justify="center">
-                                        <IconWindowMaximize size={16}/>
-                                        <span>Dropdown</span>
-                                    </Group>
-                                ),
-                                value: 'dropdown'
-                            },
-                            {
-                                label: (
-                                    <Group gap={4} wrap="nowrap" justify="center">
-                                        <IconLayoutBottombar size={16}/>
-                                        <span>Popup</span>
-                                    </Group>
-                                ),
-                                value: 'popup',
-                            },
-                        ]}
-                    />
+                    <Group gap="s">
+                        <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
+                        <SegmentedControl
+                            value={dropdownViewMode}
+                            onChange={val => setDropdownViewMode(val as 'dropdown' | 'popup')}
+                            data={[
+                                {
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center">
+                                            <IconWindowMaximize size={16}/>
+                                            <span>Dropdown</span>
+                                        </Group>
+                                    ),
+                                    value: 'dropdown'
+                                },
+                                {
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center">
+                                            <IconLayoutBottombar size={16}/>
+                                            <span>Popup</span>
+                                        </Group>
+                                    ),
+                                    value: 'popup',
+                                },
+                            ]}
+                        />
+                    </Group>
                 </Group>
-
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
                         {persona !== null && (
