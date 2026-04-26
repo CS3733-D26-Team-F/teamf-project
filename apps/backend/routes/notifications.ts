@@ -10,7 +10,7 @@ export async function checkExpiringDocuments(senderEmpId: number) {
 
     const expiringDocs = await prisma.contentform.findMany({
         where: {
-            expiration_date: { lte: fortyEightHoursFromNow },
+            expiration_date: { lte: fortyEightHoursFromNow, gte: now },
             is_deleted: false,
             owner: { not: null },
             OR: [
@@ -179,7 +179,7 @@ router.get('/notifications/check-expiring', checkJWT, async (req, res) => {
 
         const expiringDocs = await prisma.contentform.findMany({
             where: {
-                expiration_date: { lte: fortyEightHoursFromNow },
+                expiration_date: { lte: fortyEightHoursFromNow, gte: now },
                 is_deleted: false,
                 owner: { not: null },
                 OR: [
