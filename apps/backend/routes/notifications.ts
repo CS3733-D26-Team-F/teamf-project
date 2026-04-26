@@ -4,6 +4,39 @@ import {checkJWT} from '../setup/auth0.js';
 
 const router = Router();
 
+export async function sendNotificationToUsers(title: string, message: string, recipientEmpids: number[], senderEmpId: number) {
+    console.log('[sendNotificationToUsers] Starting...');
+    console.log('[sendNotificationToUsers] title:', title);
+    console.log('[sendNotificationToUsers] message:', message);
+    console.log('[sendNotificationToUsers] recipients:', recipientEmpids);
+    console.log('[sendNotificationToUsers] sender:', senderEmpId);
+    
+    if (!recipientEmpids || recipientEmpids.length === 0) {
+        console.log('[sendNotificationToUsers] No recipients, returning early');
+        return;
+    }
+
+    const notification = await prisma.notifications.create({
+        data: {
+            title,
+            message,
+            send_date: new Date(),
+            importance: 1,
+            sender: senderEmpId,
+        }
+    });
+    console.log('[sendNotificationToUsers] Created notification:', notification.notid);
+
+    await prisma.joinednotice.createMany({
+        data: recipientEmpids.map(empid => ({
+            empid,
+            notid: notification.notid,
+            read: false,
+        })),
+    });
+    console.log('[sendNotificationToUsers] Done');
+}
+
 export async function checkExpiringDocuments(senderEmpId: number) {
     const now = new Date();
     const fortyEightHoursFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);

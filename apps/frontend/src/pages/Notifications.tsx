@@ -1,7 +1,7 @@
-import { Box, Button, Group, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Box, Button, Group, Stack, Text, TextInput } from "@mantine/core";
 import { Header } from "../components/Header";
 import { PageTitle } from '../components/Title.tsx';
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { IconSearch } from "@tabler/icons-react";
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -201,41 +201,10 @@ export function Notifications() {
         }
     };
 
-    const handleSendTestNotification = async () => {
-        const empid = localStorage.getItem('empid');
-        if (!empid) {
-            console.error('User not logged in');
-            return;
-        }
-
-        try {
-            const response = await api(`${DOMAIN}/notifications`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: 'Test Notification',
-                    message: `This is a test notification sent at ${new Date().toLocaleString()}`,
-                    importance: 1,
-                    recipientEmpids: [parseInt(empid)],
-                }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setNotifications(prev => [data.notification, ...prev]);
-            }
-        } catch (error) {
-            console.error('Failed to send test notification:', error);
-        }
-    };
-
     return (
         <>
             <Header />
             <PageTitle title="Notifications" />
-            <FilledButton onClick={handleSendTestNotification}>
-                Send Notification
-            </FilledButton>
             <Box p="md">
                 <TextInput 
                     placeholder="Search for notification..." 

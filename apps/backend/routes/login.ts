@@ -3,7 +3,7 @@ import { ManagementClient } from 'auth0';
 import { auth } from "express-oauth2-jwt-bearer";
 import pkg from "@prisma/client";
 import {PrismaPg} from "@prisma/adapter-pg";
-import {checkExpiringDocuments} from './notifications.js';
+import { checkExpiringDocuments } from './notifications.js';
 
 // Create a Prisma adapter that points at the main database connection.
 const adapter = new PrismaPg({

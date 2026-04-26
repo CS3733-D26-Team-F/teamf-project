@@ -3,6 +3,7 @@ import {prisma} from '../setup/prisma.js';
 import {supabase} from '../setup/supabase.js';
 import {upload} from '../setup/upload.js';
 import {checkJWT} from '../setup/auth0.js';
+import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
@@ -89,6 +90,29 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             where: {name: name},
             data: updateData
         });
+
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+
+        if (sender && contentForm.persona && contentForm.persona.length > 0) {
+            const recipients = await prisma.employee.findMany({
+                where: {
+                    persona: { hasSome: contentForm.persona }
+                },
+                select: { empid: true }
+            });
+            const recipientEmpids = recipients.map(e => e.empid);
+            console.log('[updateContentForm] Recipients found:', recipientEmpids);
+            
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Updated',
+                    `Document "${contentForm.name}" has been updated.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         return res.status(200).json({
             message: 'Content form updated successfully',
             data: contentForm
@@ -386,6 +410,35 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
         });
+
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+        if (sender && updated.persona && updated.persona.length > 0) {
+            const allRecipients = [];
+            for (const p of updated.persona) {
+                const recipients = await prisma.employee.findMany({
+                    where: { persona: p },
+                    select: { empid: true }
+                });
+                allRecipients.push(...recipients);
+            }
+
+            const admins = await prisma.admin.findMany({
+                select: { adid: true }
+            });
+            const adminEmpids = admins.map(a => a.adid);
+
+            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+            
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Deleted',
+                    `Document "${updated.name}" has been deleted.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -730,6 +783,34 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             data: updateData
         });
 
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+        if (sender && updated.persona && updated.persona.length > 0) {
+            const allRecipients = [];
+            for (const p of updated.persona) {
+                const recipients = await prisma.employee.findMany({
+                    where: { persona: p },
+                    select: { empid: true }
+                });
+                allRecipients.push(...recipients);
+            }
+
+            const admins = await prisma.admin.findMany({
+                select: { adid: true }
+            });
+            const adminEmpids = admins.map(a => a.adid);
+
+            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+            
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Updated',
+                    `Document "${updated.name}" has been updated.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         console.error('Error updating document:', error);
@@ -766,7 +847,6 @@ router.post('/newtag', checkJWT, async(req, res) => {
             },
         });
 
-
         return res.status(200).json({
             message: 'new tag added',
             data: newTag
@@ -798,7 +878,6 @@ router.post('/assigntag', checkJWT, async(req, res) => {
     }
 
     try {
-
         const assignTag = await prisma.jointagscontent.create({
             data: {
                 id: form.id,
