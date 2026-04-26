@@ -150,7 +150,7 @@
   "trash": "移至回收站",
   "trash_message": "已超过过期日期的文档。恢复它们可将其重新投入使用，或将其移至回收站。",
   "archive_message": "已手动归档的文档。恢复它们可将其重新投入使用。",
-  "theme": "红绿色盲主题",
+  "blind_theme": "红绿色盲主题",
   "clear_all": "清除全部",
   "trash_delete": "回收站 - 已删除的文档",
   "trash_search": "按名称或所有者搜索...",
@@ -158,5 +158,6 @@
   "trash_delete_doc": "没有已删除的文档",
   "all_content": "所有内容",
   "grid": "网格视图",
-  "list": "列表视图"
+  "list": "列表视图",
+  "dark_mode": "深色模式"
 }
