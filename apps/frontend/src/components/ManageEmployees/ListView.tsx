@@ -268,7 +268,7 @@ export function EmployeeListView() {
                         }}
                     >
                         <Group mb="sm">
-                            <Text fw={700} size="xl" c="var(--color-yale-blue)">{persona}s</Text>
+                            <Text fw={700} size="xl" c="var(--color-yale-blue)">{persona}</Text>
                             <FilledButton
                                 size="sm"
                                 leftSection="plus"
