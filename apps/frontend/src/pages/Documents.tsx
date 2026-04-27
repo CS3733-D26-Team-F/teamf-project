@@ -6,12 +6,13 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon,
-    Tooltip, SegmentedControl
+    Tooltip, SegmentedControl, Accordion
 } from '@mantine/core';
 import {
     IconSearch, IconPlus, IconTrash,
-    IconFilter, IconClock
+    IconFilter, IconClock, IconWindowMaximize
 } from '@tabler/icons-react';
+import {IconLayoutBottombar} from "@tabler/icons-react"
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
 import {DOMAIN} from '../const.ts';
@@ -26,10 +27,11 @@ import type {
     RowCallbacks
     , StagedFile, ContentForm, Employee, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
-import {DocCard} from "../components/content/DocCard.tsx";
-import {TableHead} from "../components/content/TableHead.tsx";
-import {DocRow} from "../components/content/DocRow.tsx";
+import { getExt, getFileType, normalizeUrl, pickRenderer } from "../components/content/Functions.tsx";
+import { DocCard } from "../components/content/DocCard.tsx";
+import { TableHead } from "../components/content/TableHead.tsx";
+import { DocRow } from "../components/content/DocRow.tsx";
+import { FilledButton } from '../components/Buttons/FilledButton.tsx';
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
@@ -75,6 +77,14 @@ export function Documents() {
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
+    const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
+    const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
+
+    const toggleDropdown = (id: number) => {
+        console.log('toggleExpand called:', id);
+        setInlineDropdownId(prev => prev === id ? null : id);
+    };
+
 
     // translator
     const {t} = useTranslation();
@@ -545,6 +555,33 @@ export function Documents() {
         }
     }
 
+    async function handleBulkAdd() {
+        for (const sf of stagedFiles) {
+            try {
+                const formPayload = new FormData();
+                formPayload.append('filename', sf.name);
+                formPayload.append('ownerUsername', sf.owner);
+                formPayload.append('persona', JSON.stringify(sf.persona));
+                formPayload.append('date_modified', sf.date_modified);
+                formPayload.append('expiration_date', sf.expiration_date);
+                formPayload.append('review_date', sf.review_date);
+                formPayload.append('content_type', sf.content_type);
+                formPayload.append('status', sf.status);
+                formPayload.append('file', sf.file);
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                setBulkOpen(false);
+                setStagedFiles([]);
+                loadDocuments();
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message)
+                } else {
+                    throw err;
+                }
+                return;
+            }
+        }
+    }
 
     function openEdit(doc: ContentForm) {
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
@@ -736,8 +773,8 @@ export function Documents() {
         const isFav = favoritedIds.has(doc.id);
         await api(`${DOMAIN}/${isFav ? 'removeFavorite' : 'addFavorite'}`, {
             method: isFav ? 'DELETE' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, formname: doc.name })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, formname: doc.name})
         });
         setFavoritedIds(prev => {
             const next = new Set(prev);
@@ -861,6 +898,94 @@ export function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
+    function contentTable(documentsToDisplay: ContentForm[]) {
+        return (
+            <Box>
+                <Table highlightOnHover withTableBorder withColumnBorders>
+                    <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
+                               onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
+                               allChecked={allSelected}
+                               indeterminate={selectedIds.length > 0 && !allSelected}/>
+                    <Table.Tbody>
+                        {documentsToDisplay.map(doc => <DocRow key={doc.id} doc={doc}
+                                                               isSelected={selectedIds.includes(doc.id)}
+                                                               onSelect={toggleSelect}
+                                                               currentUsername={localStorage.getItem('username') ?? ''}
+                                                               isCheckedOut={!!checkedOutMap[doc.id]}
+                                                               checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                               onCheckOut={checkOutHandle}
+                                                               onCheckIn={checkInHandle}
+                                                               isDropped={inlineDropdownId === doc.id}
+                                                               onDrop={() => toggleDropdown(doc.id)}
+                                                               dropdownViewMode={dropdownViewMode}
+
+
+                                                               {...rowCallbacks} />)}
+                    </Table.Tbody>
+                </Table>
+            </Box>
+        )
+    }
+
+    function personaAccordion(givenPersona: string) {
+        const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
+        if (existingDocuments.length == 0) {
+            return (
+                <>
+                </>
+            );
+        }
+        return (
+            <>
+                <Accordion.Item value={givenPersona} key={givenPersona}>
+                    <Accordion.Control aria-label={givenPersona}>
+                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        {contentTable(existingDocuments)}
+                    </Accordion.Panel>
+                </Accordion.Item>
+            </>
+        );
+    }
+
+    const favoriteAccordion = (
+        <>
+            {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
+                <Accordion.Item value={"favorites"} key={"favorites"}>
+                    <Accordion.Control aria-label={"favorites"}>
+                        <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        <Box>
+                            <Table highlightOnHover withTableBorder withColumnBorders>
+                                <TableHead onSort={toggleFavSort} currentField={favSortField}
+                                           currentDir={favSortDir}
+                                           onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                           allChecked={allFavSelected}
+                                           indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
+                                <Table.Tbody>
+                                    {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                        isSelected={selectedFavIds.includes(doc.id)}
+                                                                        onSelect={toggleFavSelect}
+                                                                        currentUsername={localStorage.getItem('username') ?? ''}
+                                                                        isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                        checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                        onCheckOut={checkOutHandle}
+                                                                        onCheckIn={checkInHandle}
+                                                                        isDropped={inlineDropdownId === doc.id}
+                                                                        onDrop={() => toggleDropdown(doc.id)}
+                                                                        dropdownViewMode={dropdownViewMode}
+                                                                        {...rowCallbacks} />)}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    </Accordion.Panel>
+                </Accordion.Item>
+            )}
+        </>
+    )
+
     return (
         <>
             <title>
@@ -872,29 +997,53 @@ export function Documents() {
             <Box p="md">
                 <Group justify="space-between" align="center" w="100%">
                     <PageTitle title={titleProp}/>
-                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
+                    <Group gap="s">
+                        <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
+                        <SegmentedControl
+                            value={dropdownViewMode}
+                            onChange={val => setDropdownViewMode(val as 'dropdown' | 'popup')}
+                            data={[
+                                {
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center">
+                                            <IconWindowMaximize size={16}/>
+                                            <span>Dropdown</span>
+                                        </Group>
+                                    ),
+                                    value: 'dropdown'
+                                },
+                                {
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center">
+                                            <IconLayoutBottombar size={16}/>
+                                            <span>Popup</span>
+                                        </Group>
+                                    ),
+                                    value: 'popup',
+                                },
+                            ]}
+                        />
+                    </Group>
                 </Group>
-
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
                         {persona !== null && (
                             <>
-                                <Button leftSection={<IconPlus size={16}/>} onClick={() => setAddOpen(true)}
-                                        className="invert-hover">
+                                <FilledButton leftSection="plus" onClick={() => setAddOpen(true)}>
                                     {t('add_doc')}
-                                </Button>
-                                <Button variant="default" leftSection={<IconPlus size={16}/>}
-                                        onClick={() => setBulkOpen(true)} className="invert-hover">
+                                </FilledButton>
+                                <FilledButton leftSection="plus" onClick={() => setBulkOpen(true)}>
                                     {t('bulk_doc')}
-                                </Button>
+                                </FilledButton>
                             </>
                         )}
-                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'}
-                                color={activeFilterCount > 0 ? 'blue' : undefined}
-                                leftSection={<IconFilter size={16}/>}
-                                onClick={() => setFilterOpen(true)} className="invert-hover">
+                        <FilledButton 
+                            variant={activeFilterCount > 0 ? 'filled' : 'outline'}
+                            leftSection={<IconFilter size={16} />} 
+                            onClick={() => setFilterOpen(true)}
+                        >
                             {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-                        </Button>
+                        </FilledButton>
                         {persona === 'Admin' && (
                             <Button leftSection={<IconTrash size={16}/>} className="invert-hover-red"
                                     variant="outline"
@@ -984,49 +1133,17 @@ export function Documents() {
                 {/* list view */}
                 {viewMode === 'list' && (
                     <Stack gap="lg">
-                        {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
-                            <Box>
-                                <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
-                                <Table highlightOnHover withTableBorder withColumnBorders>
-                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
-                                               currentDir={favSortDir}
-                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
-                                               allChecked={allFavSelected}
-                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
-                                    <Table.Tbody>
-                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                            isSelected={selectedFavIds.includes(doc.id)}
-                                                                            onSelect={toggleFavSelect}
-                                                                            currentUsername={localStorage.getItem('username') ?? ''}
-                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                            onCheckOut={checkOutHandle}
-                                                                            onCheckIn={checkInHandle}
-                                                                            {...rowCallbacks} />)}
-                                    </Table.Tbody>
-                                </Table>
-                            </Box>
-                        )}
-                        <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
-                            <Table highlightOnHover withTableBorder withColumnBorders>
-                                <TableHead onSort={toggleSort} currentField={sortField} currentDir={sortDir}
-                                           onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
-                                           allChecked={allSelected}
-                                           indeterminate={selectedIds.length > 0 && !allSelected}/>
-                                <Table.Tbody>
-                                    {nonFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                     isSelected={selectedIds.includes(doc.id)}
-                                                                     onSelect={toggleSelect}
-                                                                     currentUsername={localStorage.getItem('username') ?? ''}
-                                                                     isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                     checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                     onCheckOut={checkOutHandle}
-                                                                     onCheckIn={checkInHandle}
-                                                                     {...rowCallbacks} />)}
-                                </Table.Tbody>
-                            </Table>
-                        </Box>
+                        {!search ?
+                            <Accordion multiple defaultValue={["favorites", persona]}>
+                                {favoriteAccordion}
+                                {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
+                            </Accordion>
+                            :
+                            <>
+                                <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                {contentTable(filtered)}
+                            </>
+                        }
                     </Stack>
                 )}
 
@@ -1354,11 +1471,11 @@ export function Documents() {
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
-                    <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
-                                 onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
-                                 data={getArrayTags()}/>
-                    <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
-                            onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                        <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
+                                     data={getArrayTags()}/>
+                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                                onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
                     </Group>
                     <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Group grow>
@@ -1555,7 +1672,8 @@ export function Documents() {
                                                         onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
                                                     : <TextInput value={staged.owner} readOnly/>}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin') } value={staged.persona}
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')}
+                                                                   value={staged.persona}
                                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                                    disabled={persona !== 'Admin'}/></Table.Td>
                                             <Table.Td><Select data={[t('reference'), t('workflow')]}
@@ -1596,9 +1714,9 @@ export function Documents() {
                             setAddError('');
                             setStagedFiles([]);
                         }}>✕ {t('cancel')}</Button>
-                        <Button onClick={handleSaveClick} className="invert-hover"
+                        <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
-                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('last_modified')}
+                            + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('files')}
                         </Button>
                     </Group>
                 </Stack>
@@ -1606,3 +1724,5 @@ export function Documents() {
         </>
     );
 }
+
+export default Documents;

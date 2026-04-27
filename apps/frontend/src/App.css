@@ -192,8 +192,8 @@ main {
             position: absolute;
             inset: 0;
             background: linear-gradient(
-                    #00355F80,
-                    #00558090
+                #00355F80,
+                #00558090
             );
             pointer-events: none;
         }
@@ -216,9 +216,7 @@ main {
     }
 }
 
-section.links {
-    padding: 8rem;
-}
+section.links { padding: 8rem; }
 
 div.text-yale-blue {
     font-family: Roboto, sans-serif;

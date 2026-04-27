@@ -3,12 +3,12 @@ import morgan from 'morgan';
 import cors from 'cors';
 import path from 'path';
 
-
 // Keep feature routes separate so each domain owns its own endpoints.
 import employeeRoutes from './routes/employees.js';
 import contentRoutes from './routes/contentforms.js';
 import loginRoutes from './routes/login.js';
 import chatRoutes from './routes/chat.js';
+import notificationRoutes from './routes/notifications.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -37,14 +37,23 @@ app.use(morgan('dev'));
 // Each router handles its own route definitions internally.
 app.use('/', employeeRoutes);
 app.use('/', chatRoutes);
+app.use('/', notificationRoutes);
+app.use('/', loginRoutes);  // loginRoutes before contentRoutes!
 app.use('/', contentRoutes);
-app.use('/', loginRoutes);
 
 app.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
 });
 
 // Start the server on the configured port.
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err.name === 'UnauthorizedError') {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
