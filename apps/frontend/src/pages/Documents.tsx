@@ -192,7 +192,7 @@ export function Documents() {
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
     const [favSortField, setFavSortField] = useState<keyof ContentForm | null>(null);
     const [favSortDir, setFavSortDir] = useState<'asc' | 'desc'>('asc');
-    const [rowsPerPage, setRowsPerPage] = useState<'25' | '50'>('25');
+    const [rowsPerPage, setRowsPerPage] = useState<'10'|'25' | '50'>('10');
     const [favoritesPage, setFavoritesPage] = useState(1);
     const [documentsPage, setDocumentsPage] = useState(1);
 
@@ -1218,6 +1218,7 @@ export function Documents() {
 
     function personaAccordion(givenPersona: string) {
         const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
+        const paginatedExistingDocs= existingDocuments.slice((documentsPage - 1) * pageSize, documentsPage * pageSize);
         if (existingDocuments.length == 0) {
             return null;
         }
@@ -1227,7 +1228,7 @@ export function Documents() {
                     <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
-                    {contentTable(existingDocuments)}
+                    {contentTable(paginatedExistingDocs)}
                 </Accordion.Panel>
             </Accordion.Item>
         );
@@ -1570,8 +1571,9 @@ export function Documents() {
                             </Text>
                             <Select
                                 value={rowsPerPage}
-                                onChange={(value) => setRowsPerPage((value as '25' | '50') ?? '25')}
+                                onChange={(value) => setRowsPerPage((value as '10'|'25' | '50') ?? '25')}
                                 data={[
+                                    {label: '10 rows', value: '10'},
                                     {label: '25 rows', value: '25'},
                                     {label: '50 rows', value: '50'}
                                 ]}
