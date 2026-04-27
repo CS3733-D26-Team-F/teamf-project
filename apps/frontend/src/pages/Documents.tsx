@@ -8,10 +8,8 @@ import {
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
     Tooltip, SegmentedControl, Pagination, Accordion
 } from '@mantine/core';
-import {
-    IconSearch, IconPlus, IconTrash,
-    IconFilter, IconClock, IconFolder, IconDotsVertical, IconChevronDown, IconChevronRight
-} from '@tabler/icons-react';
+import {IconPlus, IconFolder, IconDotsVertical, IconChevronDown, IconChevronRight, IconSearch, IconTrash, IconFilter, IconClock, IconWindowMaximize} from '@tabler/icons-react';
+import {IconLayoutBottombar} from "@tabler/icons-react"
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
 import {DOMAIN} from '../const.ts';
@@ -27,10 +25,11 @@ import type {
     , StagedFile, ContentForm, Employee,
     Folder, Metatag
 } from "../components/interfaces/DocumentsInterfaces.tsx"
-import {getExt, getFileType, normalizeUrl, pickRenderer} from "../components/content/Functions.tsx";
-import {DocCard} from "../components/content/DocCard.tsx";
-import {TableHead} from "../components/content/TableHead.tsx";
-import {DocRow} from "../components/content/DocRow.tsx";
+import { getExt, getFileType, normalizeUrl, pickRenderer } from "../components/content/Functions.tsx";
+import { DocCard } from "../components/content/DocCard.tsx";
+import { TableHead } from "../components/content/TableHead.tsx";
+import { DocRow } from "../components/content/DocRow.tsx"; 
+import { FilledButton } from '../components/Buttons/FilledButton.tsx';
 import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {useTranslation} from "react-i18next";
@@ -44,7 +43,6 @@ type DocumentFormData = {
     persona: string[];
     date_modified: string;
     expiration_date: string;
-    review_date: string;
     content_type: string;
     status: string;
     folder: string;
@@ -200,6 +198,14 @@ export function Documents() {
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
+    const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
+    const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
+
+    const toggleDropdown = (id: number) => {
+        console.log('toggleExpand called:', id);
+        setInlineDropdownId(prev => prev === id ? null : id);
+    };
+
 
     // translator
     const {t} = useTranslation();
@@ -275,7 +281,13 @@ export function Documents() {
     const [addData, setAddData] = useState<DocumentFormData>({
         name: '', owner: persona === 'Admin' ? '' : username ?? '',
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', folder: '', jointagscontent: [] as string[]
+        date_modified: today, 
+        expiration_date: '', 
+        content_type: '', 
+        status: '', 
+        folder: '', 
+        jointagscontent: [] as string[]
+        
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -295,7 +307,6 @@ export function Documents() {
             status: '',
             folder_id: selectedFolderId,
             date_modified: today,
-            review_date: '',
             expiration_date: ''
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
@@ -320,12 +331,19 @@ export function Documents() {
     const [, setEditOpen] = useState(false);
     const [editId, setEditId] = useState<number | null>(null);
     const [editData, setEditData] = useState<DocumentFormData>({
-        name: '', owner: '', persona: [] as string[],
-        date_modified: today, expiration_date: '', review_date: '', content_type: '', status: '', folder: '', jointagscontent: []
+        name: '',
+        owner: '',
+        persona: [] as string[],
+        date_modified: today,
+        expiration_date: '',
+        content_type: '',
+        status: '',
+        folder: '',
+        jointagscontent: [] as string[]
     });
-    const [, setEditFile] = useState<File | null>(null);
-    const [, setEditUrl] = useState<string>('');
-    const [, setEditUploadMode] = useState<'file' | 'url'>('file');
+    const [editFile, setEditFile] = useState<File | null>(null);
+    const [editUrl, setEditUrl] = useState<string>('');
+    const [editUploadMode, setEditUploadMode] = useState<'file' | 'url'>('file');
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -813,7 +831,6 @@ export function Documents() {
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
-        formPayload.append('review_date', addData.review_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
         if (addData.folder) {
@@ -864,7 +881,6 @@ export function Documents() {
                 owner: persona === 'Admin' ? '' : username ?? '',
                 persona: persona !== 'Admin' ? [persona ?? ''] : [],
                 date_modified: today,
-                review_date: '',
                 expiration_date: '',
                 content_type: '',
                 status: '',
@@ -888,7 +904,7 @@ export function Documents() {
     async function handleBulkAdd() {
         try {
             for (const sf of stagedFiles) {
-                if (!sf.name || !sf.owner || sf.persona.length === 0 || !sf.content_type || !sf.status || !sf.expiration_date || !sf.review_date) {
+                if (!sf.name || !sf.owner || sf.persona.length === 0 || !sf.content_type || !sf.status || !sf.expiration_date || !sf.folder_id || !sf.file) {
                     setAddError('Please fill all required fields for each file.');
                     return;
                 }
@@ -899,8 +915,9 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(sf.persona));
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
-                formPayload.append('review_date', sf.review_date);
                 formPayload.append('content_type', sf.content_type);
+                formPayload.append('url', ''); // URL is required by backend but will be empty for file uploads
+                formPayload.append('folder_id', sf.folder_id ? String(sf.folder_id) : '');
                 formPayload.append('status', sf.status);
                 if (sf.folder_id !== null) {
                     formPayload.append('folder_id', String(sf.folder_id));
@@ -942,7 +959,6 @@ export function Documents() {
                     persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],
                     date_modified: today,
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
-                    review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
                     folder: doc.folder_id !== null ? String(doc.folder_id) : '',
@@ -950,6 +966,42 @@ export function Documents() {
                 });
                 setEditOpen(true);
             });
+    }
+
+    async function handleSaveClick() {
+        if (!editId) return;
+        setEditError('');
+        try {
+            if (editFile) {
+                const formPayload = new FormData();
+                formPayload.append('name', editData.name);
+                formPayload.append('ownerUsername', editData.owner);
+                formPayload.append('persona', JSON.stringify(editData.persona));
+                formPayload.append('date_modified', editData.date_modified);
+                formPayload.append('expiration_date', editData.expiration_date);
+                formPayload.append('content_type', editData.content_type);
+                formPayload.append('status', editData.status);
+                formPayload.append('file', editFile);
+                await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+            } else if (editUploadMode === 'url' && editUrl) {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
+                });
+            } else {
+                await api(`${DOMAIN}/contentforms/${editId}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(editData)
+                });
+            }
+            setConfirmSaveOpen(true);
+        } catch (err: any) {
+            if (err.status === 409 || err.status === 400 || err.status === 406) {
+                setEditError(err.message);
+            } else {
+                throw err;
+            }
+        }
     }
 
     async function handleEdit() {
@@ -1064,8 +1116,8 @@ export function Documents() {
         const isFav = favoritedIds.has(doc.id);
         await api(`${DOMAIN}/${isFav ? 'removeFavorite' : 'addFavorite'}`, {
             method: isFav ? 'DELETE' : 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, formname: doc.name })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, formname: doc.name})
         });
         setFavoritedIds(prev => {
             const next = new Set(prev);
@@ -1193,7 +1245,7 @@ export function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
-    function contentTable (documentsToDisplay: ContentForm[]) {
+    function contentTable(documentsToDisplay: ContentForm[]) {
         return (
             <Box>
                 <Table highlightOnHover withTableBorder withColumnBorders>
@@ -1203,14 +1255,19 @@ export function Documents() {
                                indeterminate={selectedIds.length > 0 && !allSelected}/>
                     <Table.Tbody>
                         {documentsToDisplay.map(doc => <DocRow key={doc.id} doc={doc}
-                                                              isSelected={selectedIds.includes(doc.id)}
-                                                              onSelect={toggleSelect}
-                                                              currentUsername={localStorage.getItem('username') ?? ''}
-                                                              isCheckedOut={!!checkedOutMap[doc.id]}
-                                                              checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                              onCheckOut={checkOutHandle}
-                                                              onCheckIn={checkInHandle}
-                                                              {...rowCallbacks} />)}
+                                                               isSelected={selectedIds.includes(doc.id)}
+                                                               onSelect={toggleSelect}
+                                                               currentUsername={localStorage.getItem('username') ?? ''}
+                                                               isCheckedOut={!!checkedOutMap[doc.id]}
+                                                               checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                               onCheckOut={checkOutHandle}
+                                                               onCheckIn={checkInHandle}
+                                                               isDropped={inlineDropdownId === doc.id}
+                                                               onDrop={() => toggleDropdown(doc.id)}
+                                                               dropdownViewMode={dropdownViewMode}
+
+
+                                                               {...rowCallbacks} />)}
                     </Table.Tbody>
                 </Table>
             </Box>
@@ -1240,37 +1297,40 @@ export function Documents() {
     }
 
     const favoriteAccordion = (
-            <>
-                {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
-                    <Accordion.Item value={"favorites"} key={"favorites"}>
-                        <Accordion.Control aria-label={"favorites"}>
-                            <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
-                        </Accordion.Control>
-                        <Accordion.Panel>
-                            <Box>
-                                <Table highlightOnHover withTableBorder withColumnBorders>
-                                    <TableHead onSort={toggleFavSort} currentField={favSortField}
-                                               currentDir={favSortDir}
-                                               onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
-                                               allChecked={allFavSelected}
-                                               indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
-                                    <Table.Tbody>
-                                        {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
-                                                                            isSelected={selectedFavIds.includes(doc.id)}
-                                                                            onSelect={toggleFavSelect}
-                                                                            currentUsername={localStorage.getItem('username') ?? ''}
-                                                                            isCheckedOut={!!checkedOutMap[doc.id]}
-                                                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                                            onCheckOut={checkOutHandle}
-                                                                            onCheckIn={checkInHandle}
-                                                                            {...rowCallbacks} />)}
-                                    </Table.Tbody>
-                                </Table>
-                            </Box>
-                        </Accordion.Panel>
-                    </Accordion.Item>
-                )}
-            </>
+        <>
+            {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
+                <Accordion.Item value={"favorites"} key={"favorites"}>
+                    <Accordion.Control aria-label={"favorites"}>
+                        <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
+                    </Accordion.Control>
+                    <Accordion.Panel>
+                        <Box>
+                            <Table highlightOnHover withTableBorder withColumnBorders>
+                                <TableHead onSort={toggleFavSort} currentField={favSortField}
+                                           currentDir={favSortDir}
+                                           onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(sortedFavorites.map(d => d.id))}
+                                           allChecked={allFavSelected}
+                                           indeterminate={selectedFavIds.length > 0 && !allFavSelected}/>
+                                <Table.Tbody>
+                                    {sortedFavorites.map(doc => <DocRow key={doc.id} doc={doc}
+                                                                        isSelected={selectedFavIds.includes(doc.id)}
+                                                                        onSelect={toggleFavSelect}
+                                                                        currentUsername={localStorage.getItem('username') ?? ''}
+                                                                        isCheckedOut={!!checkedOutMap[doc.id]}
+                                                                        checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                                                        onCheckOut={checkOutHandle}
+                                                                        onCheckIn={checkInHandle}
+                                                                        isDropped={inlineDropdownId === doc.id}
+                                                                        onDrop={() => toggleDropdown(doc.id)}
+                                                                        dropdownViewMode={dropdownViewMode}
+                                                                        {...rowCallbacks} />)}
+                                </Table.Tbody>
+                            </Table>
+                        </Box>
+                    </Accordion.Panel>
+                </Accordion.Item>
+            )}
+        </>
     )
 
     return (
@@ -1284,33 +1344,61 @@ export function Documents() {
             <Box p="md">
                 <Group justify="space-between" align="center" w="100%">
                     <PageTitle title={titleProp}/>
-                    <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
+                    <Group gap="s">
+                        <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
+                        <SegmentedControl
+                            value={dropdownViewMode}
+                            onChange={val => setDropdownViewMode(val as 'dropdown' | 'popup')}
+                            data={[
+                                {
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center">
+                                            <IconWindowMaximize size={16}/>
+                                            <span>Dropdown</span>
+                                        </Group>
+                                    ),
+                                    value: 'dropdown'
+                                },
+                                {
+                                    label: (
+                                        <Group gap={4} wrap="nowrap" justify="center">
+                                            <IconLayoutBottombar size={16}/>
+                                            <span>Popup</span>
+                                        </Group>
+                                    ),
+                                    value: 'popup',
+                                },
+                            ]}
+                        />
+                    </Group>
                 </Group>
-
                 <Group justify="space-between" mb="md" wrap="wrap" gap="sm">
                     <Group gap="sm">
                         {persona !== null && (
                             <>
-                                <Button leftSection={<IconPlus size={16}/>} onClick={openAddDocumentModal}
-                                        className="invert-hover">
+                                <FilledButton leftSection="plus" onClick={openAddDocumentModal}>
                                     {t('add_doc')}
-                                </Button>
+                                </FilledButton>
 
-                                <Button variant="default" leftSection={<IconPlus size={16}/>}
-                                        onClick={openBulkUploadModal} className="invert-hover">
+                                <FilledButton leftSection="plus"onClick={openBulkUploadModal}> {t('bulk_upload')}
+                                </FilledButton>
+
+                                <FilledButton leftSection="plus" onClick={() => setBulkOpen(true)}>
                                     {t('bulk_doc')}
-                                </Button>
+                                </FilledButton>
 
-                                <Button variant="default" leftSection={<IconPlus size={16}/>} onClick={() => setAddFolderOpen(true)} className="invert-hover"> Create Folder </Button>
+                                <FilledButton leftSection="plus" onClick={() => setAddFolderOpen(true)} className="invert-hover">{t('create_folder')}</FilledButton>
+                                
                                 
                             </>
                         )}
-                        <Button variant={activeFilterCount > 0 ? 'filled' : 'outline'}
-                                color={activeFilterCount > 0 ? 'blue' : undefined}
-                                leftSection={<IconFilter size={16}/>}
-                                onClick={() => setFilterOpen(true)} className="invert-hover">
+                        <FilledButton 
+                            variant={activeFilterCount > 0 ? 'filled' : 'outline'}
+                            leftSection={<IconFilter size={16} />} 
+                            onClick={() => setFilterOpen(true)}
+                        >
                             {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-                        </Button>
+                        </FilledButton>
                         {persona === 'Admin' && (
                             <Button leftSection={<IconTrash size={16}/>} className="invert-hover-red"
                                     variant="outline"
@@ -1661,6 +1749,17 @@ export function Documents() {
                                 <Pagination value={documentsPage} onChange={setDocumentsPage} total={documentsPageCount}/>
                             </Group>
                         </Box>
+                        {!search ?
+                            <Accordion multiple defaultValue={["favorites", persona]}>
+                                {favoriteAccordion}
+                                {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
+                            </Accordion>
+                            :
+                            <>
+                                <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                {contentTable(filtered)}
+                            </>
+                        }
                     </Stack>
                 )}
 
@@ -1963,7 +2062,7 @@ export function Documents() {
                                  onChange={setFilterPersona} data={roles} clearable/>
                     <MultiSelect label={t('status')} placeholder={t('all_status')} value={filterStatus}
                                  onChange={setFilterStatus}
-                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
+                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}
                                  clearable/>
                     <MultiSelect label={t('file_type')} placeholder={t('all_type')} value={filterType}
                                  onChange={setFilterType}
@@ -2203,11 +2302,11 @@ export function Documents() {
                                  data={roles.filter((role) => role !== 'Admin')}
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
-                    <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
-                                 onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
-                                 data={getArrayTags()}/>
-                    <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
-                            onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                        <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
+                                     data={getArrayTags()}/>
+                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                                onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
@@ -2220,15 +2319,13 @@ export function Documents() {
                                 data={[t('reference'), t('workflow')]}/>
                         <Select label={t('document_status')} value={addData.status}
                                 onChange={val => setAddData({...addData, status: val ?? ''})}
-                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}/>
+                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
                         <TextInput label={t('last_modified')} type="date" value={addData.date_modified}
                                    onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
-                        <TextInput label={t('review_date')} type="date" value={addData.review_date}
-                                   onChange={e => setAddData({...addData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {addError && (
@@ -2242,6 +2339,128 @@ export function Documents() {
                     </Group>
                 </Stack>
             </Modal>
+
+            {/* edit modal */}
+            <Modal opened={editOpen} onClose={closeEdit} title={t('edit_doc')} size="lg">
+                <Stack>
+                    <Text fw={600}>{t('document_details')}</Text>
+                    <TextInput label="Name of Document" value={editData.name}
+                               onChange={e => setEditData({...editData, name: e.target.value})}/>
+                    <Box>
+                        <SegmentedControl
+                            value={editUploadMode}
+                            onChange={(val) => {
+                                setEditUploadMode(val as 'file' | 'url');
+                                setEditFile(null);
+                                setEditUrl('');
+                            }}
+                            data={[{label: t('upload_file'), value: 'file'}, {label: t('enter_url'), value: 'url'}]}
+                            mb="sm"
+                        />
+                        {editUploadMode === 'file'
+                            ? <Box>
+                                <input type="file" style={{display: 'block', marginTop: '8px'}}
+                                       onChange={e => setEditFile(e.target.files?.[0] ?? null)}/>
+                                <Text size="xs" c="dimmed" mt={2}> {t('edit_message')}</Text>
+                            </Box>
+                            : <TextInput label="URL" placeholder="https://example.com" value={editUrl}
+                                         onChange={e => setEditUrl(e.target.value)}/>
+                        }
+                    </Box>
+                    {persona === 'Admin'
+                        ? <Select
+                            label={t('content_owner')}
+                            value={editData.owner}
+                            onChange={val => setEditData({...editData, owner: val ?? ''})}
+                            data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
+                        />
+                        : <TextInput
+                            label={t('content_owner')}
+                            value={editData.owner}
+                            readOnly
+                        />
+                    }
+                    <MultiSelect
+                        label={t('job_position')}
+                        value={editData.persona.filter(p => p !== 'Admin')}
+                        onChange={val => setEditData({...editData, persona: val})}
+                        data={roles.filter(r => r !== 'Admin')}
+                        disabled={persona !== 'Admin'}
+                    />
+                    <Group preventGrowOverflow={false}>
+                        <MultiSelect
+                            w="75%"
+                            label="Tags"
+                            value={editData.jointagscontent}
+                            onChange={val => setEditData({...editData, jointagscontent: (val ?? [])})}
+                            data={getArrayTags()}
+                        />
+                        <Button
+                            className="invert-hover"
+                            style={{width: '20%', padding: '0 0px'}}
+                            onClick={() => setAdvancedTagsOpen(true)}
+                        >
+                            Advanced Tags
+                        </Button>
+                    </Group>
+                    <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
+                    <Group grow>
+                        <Select label={t('content_type')} value={editData.content_type}
+                                onChange={val => setEditData({...editData, content_type: val ?? ''})}
+                                data={[t('reference'), t('workflow')]}/>
+                        <Select label={t('document_status')} value={editData.status}
+                                onChange={val => setEditData({...editData, status: val ?? ''})}
+                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}/>
+                    </Group>
+                    <Group grow>
+                        <TextInput label={t('last_modified')} type="date" value={editData.date_modified}
+                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
+                        <TextInput label={t('expiration_date')} type="date" value={editData.expiration_date}
+                                   onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
+                    </Group>
+                    <Group justify="flex-end" mt="md">
+                        {editError && (
+                            <ErrorMessage message={editError}/>
+                        )}
+                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
+                        <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            {/* Advanced tag management (create and delete) tags modal */}
+            <Modal opened={advancedTagsOpen} onClose={() => setAdvancedTagsOpen(false)}
+                   title="Advanced Tag Management"
+                   size="lg">
+                <Stack>
+                    <ManageTags allTags={getArrayTags()}/>
+                    <Group justify="flex-end" mt="md">
+                        <Button className="invert-hover-outline" onClick={() => {
+                            setAdvancedTagsOpen(false);
+                            loadTags();
+                        }}> Done </Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+
+            <ConfirmModal
+                opened={confirmSaveOpen}
+                onClose={() => setConfirmSaveOpen(false)}
+                title={t('confirm_changes')}
+                message={<>{t('change_message')}</>}
+                onConfirm={handleEdit}
+                onCancel={() => setConfirmSaveOpen(false)}
+            />
+
+            <ConfirmModal
+                opened={deleteOpen}
+                onClose={() => setDeleteOpen(false)}
+                title={t('delete_form')}
+                message={<>{t('delete_message')}</>}
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteOpen(false)}
+            />
 
             {/* bulk upload modal */}
             <Modal opened={bulkOpen} onClose={() => {
@@ -2294,14 +2513,15 @@ export function Documents() {
                                                         onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
                                                     : <TextInput value={staged.owner} readOnly/>}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin') } value={staged.persona}
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')}
+                                                                   value={staged.persona}
                                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
                                                                    disabled={persona !== 'Admin'}/></Table.Td>
                                             <Table.Td><Select data={[t('reference'), t('workflow')]}
                                                               value={staged.content_type}
                                                               onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
                                             <Table.Td><Select
-                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
+                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('checked_out')]}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
                                             <Table.Td><Select
@@ -2318,10 +2538,7 @@ export function Documents() {
                                                     <TextInput type="date" label={t('expires')} size="xs"
                                                                value={staged.expiration_date}
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                    <TextInput type="date" label={t('review_by')} size="xs"
-                                                               value={staged.review_date}
-                                                               onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
-                                                </Stack>
+                                                    </Stack>
                                             </Table.Td>
                                             <Table.Td><ActionIcon color="var(--color-neutral-red)"
                                                                   onClick={() => removeStagedFile(staged.id)}><IconTrash
@@ -2405,4 +2622,6 @@ export function Documents() {
         </>
     );
 }
+export default Documents;
+
 export default Documents;

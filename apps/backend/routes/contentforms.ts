@@ -2,11 +2,8 @@ import { Router } from 'express';
 import {prisma} from '../setup/prisma.js';
 import {supabase} from '../setup/supabase.js';
 import {upload} from '../setup/upload.js';
-import {checkJWT, management, getManagementToken} from '../setup/auth0.js';
-import path from 'path';
-import app from "../app.js";
-
-const distPath = path.resolve("../frontend/dist");
+import {checkJWT} from '../setup/auth0.js';
+import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
@@ -114,7 +111,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         return res.status(400).send({error: "Name of content is required"});
     }
 
-    if (!newName || !owner || !persona || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+    if (!newName || !owner || !persona || !date_modified || !expiration_date || !content_type || !status) {
         return res.status(406).send({error: "Make sure all fields are filled in"});
     }
 
@@ -157,6 +154,29 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             where: {name: name},
             data: updateData
         });
+
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+
+        if (sender && contentForm.persona && contentForm.persona.length > 0) {
+            const recipients = await prisma.employee.findMany({
+                where: {
+                    persona: { hasSome: contentForm.persona }
+                },
+                select: { empid: true }
+            });
+            const recipientEmpids = recipients.map(e => e.empid);
+            console.log('[updateContentForm] Recipients found:', recipientEmpids);
+            
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Updated',
+                    `Document "${contentForm.name}" has been updated.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         return res.status(200).json({
             message: 'Content form updated successfully',
             data: contentForm
@@ -241,7 +261,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(400).json({error: 'File or URL is required'});
         }
 
-        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).send({error: "Make sure all fields are filled in"});
         }
 
@@ -252,7 +272,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
         }
 
         const expiration = new Date(expiration_date);
-        const review = new Date(review_date);
+        //Date can be invalid
+        //const review = new Date(review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -260,9 +281,10 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(409).json({ error: 'Document is expired' });
         }
 
-        if (review < today) {
-            return res.status(409).json({ error: 'Review date should be in the future' });
-        }
+        //No longer done since expiration=review
+        //if (review < today) {
+        //    return res.status(409).json({ error: 'Review date should be in the future' });
+        //}
 
         const employee = await prisma.employee.findUnique({
             where: {username: ownerUsername}
@@ -510,6 +532,35 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
         });
+
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+        if (sender && updated.persona && updated.persona.length > 0) {
+            const allRecipients = [];
+            for (const p of updated.persona) {
+                const recipients = await prisma.employee.findMany({
+                    where: { persona: p },
+                    select: { empid: true }
+                });
+                allRecipients.push(...recipients);
+            }
+
+            const admins = await prisma.admin.findMany({
+                select: { adid: true }
+            });
+            const adminEmpids = admins.map(a => a.adid);
+
+            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+            
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Deleted',
+                    `Document "${updated.name}" has been deleted.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -1325,12 +1376,7 @@ router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
 
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {folder_id: normalizedFolderId},
-            include: {
-                folder: {
-                    select: {name: true}
-                }
-            }
+            data: {status}
         });
 
         return res.json(formatContentFormWithFolder(updated));
@@ -1536,7 +1582,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
-        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).json({ error: 'Make sure all fields are filled in' });
         }
 
@@ -1545,7 +1591,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         }
 
         const expiration = new Date(expiration_date);
-        const review = new Date(review_date);
+        //const review = new Date(review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -1553,9 +1599,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             return res.status(409).json({ error: 'Document is expired' });
         }
 
-        if (review < today) {
-            return res.status(409).json({ error: 'Review date should be in the future' });
-        }
+        //no longer done since expiration = review
+        //if (review < today) {
+        //    return res.status(409).json({ error: 'Review date should be in the future' });
+        //}
 
         const updateData: any = {
             name,
@@ -1566,7 +1613,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             content_type,
             status,
             employee: {connect: {username: resolvedOwner}},
-            review_date: review_date ? new Date(review_date) : null
+            //Safe check for if review_date exists
+            //But Date can still be invalid so just null
+            //review_date: review_date ? new Date(review_date) : null
+            review_date : null
         };
 
         if (req.file) {
@@ -1611,6 +1661,34 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             data: updateData
         });
 
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+        if (sender && updated.persona && updated.persona.length > 0) {
+            const allRecipients = [];
+            for (const p of updated.persona) {
+                const recipients = await prisma.employee.findMany({
+                    where: { persona: p },
+                    select: { empid: true }
+                });
+                allRecipients.push(...recipients);
+            }
+
+            const admins = await prisma.admin.findMany({
+                select: { adid: true }
+            });
+            const adminEmpids = admins.map(a => a.adid);
+
+            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+            
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Updated',
+                    `Document "${updated.name}" has been updated.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         console.error('Error updating document:', error);
@@ -1647,7 +1725,6 @@ router.post('/newtag', checkJWT, async(req, res) => {
             },
         });
 
-
         return res.status(200).json({
             message: 'new tag added',
             data: newTag
@@ -1679,7 +1756,6 @@ router.post('/assigntag', checkJWT, async(req, res) => {
     }
 
     try {
-
         const assignTag = await prisma.jointagscontent.create({
             data: {
                 id: form.id,
@@ -1895,9 +1971,5 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
         return res.status(500).json({error: 'Could not remove document from favorites'});
     }
 })
-
-router.use((req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-});
 
 export default router;
