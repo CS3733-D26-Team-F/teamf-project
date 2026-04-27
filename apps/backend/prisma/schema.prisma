@@ -33,6 +33,7 @@ model contentform {
   review_date       DateTime?         @db.Date
   folder_id         Int?
   warning           Boolean?
+  changes           changes[]
   employee          employee?         @relation(fields: [empid], references: [empid])
   folders           folders?          @relation(fields: [folder_id], references: [id], onUpdate: NoAction)
   joinedfavorites   joinedfavorites[]
@@ -56,6 +57,7 @@ model employee {
   pfp_URL         String?           @unique @db.VarChar
   widgets         String[]
   admin           admin?
+  changes         changes[]
   contentform     contentform[]
   folders         folders[]
   joinedfavorites joinedfavorites[]
@@ -134,4 +136,16 @@ model notifications {
   sender       Int?
   joinednotice joinednotice[]
   employee     employee?      @relation(fields: [sender], references: [empid], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model changes {
+  chad        Int          @id @default(autoincrement())
+  name        String?      @db.VarChar(50)
+  username    String?      @db.VarChar(50)
+  change      String?      @db.VarChar(50)
+  date        DateTime?    @db.Date
+  contentform contentform? @relation(fields: [name], references: [name], onDelete: NoAction, onUpdate: NoAction)
+  employee    employee?    @relation(fields: [username], references: [username], onDelete: NoAction, onUpdate: NoAction)
 }
