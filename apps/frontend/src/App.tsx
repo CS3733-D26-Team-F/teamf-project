@@ -4,7 +4,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
-import {Documents} from "./pages/Documents";
+import Documents from "./pages/Documents";
 import { Archive } from './pages/Archive';
 import { Dashboard } from './pages/Dashboard';
 
@@ -41,7 +41,11 @@ export default function App() {
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
                     <Route path="/profilePage" element={<ProfilePage />}/>
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/about" element={<About />}/>
+                    <Route path="/credit" element={<Credit />}/>
                 </Routes>
+                <Footer />
             </BrowserRouter>
         </Auth0Provider>
     );
