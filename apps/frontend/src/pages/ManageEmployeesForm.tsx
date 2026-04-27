@@ -4,8 +4,16 @@ import { EmployeeListView } from "../components/ManageEmployees/ListView.tsx"
 import { PageTitle } from "../components/Title.tsx";
 import { usePersona } from "../hooks/usePersona";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Button, Group } from "@mantine/core";
+import { HelpModal } from "../components/helpModal.tsx";
+import { Text } from "@mantine/core";
+import { IconHelp } from "@tabler/icons-react";
+import { useState } from "react";
 
 export function ManageEmployeesForm() {
+
+    const [ openHelpModal, setOpenHelpModal ] = useState(false);
+
     // Persona from the auth/session layer determines whether the user is an Admin.
     const persona = usePersona();
     // Auth0 loading state is used so we can show a brief access-check message
@@ -36,7 +44,28 @@ export function ManageEmployeesForm() {
                     Employees - Hanover Insurance
                 </title>
                 <Header />
-                <PageTitle title="Employees"/>
+                <Group>
+                    <PageTitle title="Employees"/>
+                    <Button
+                        variant="default"
+                        onClick={() => setOpenHelpModal(true)}
+                    >
+                        <IconHelp />
+                    </Button>
+                </Group>
+
+                <HelpModal
+                    title="Employeee Page"
+                    opened={openHelpModal}
+                    onClose={() => setOpenHelpModal(false)}
+                    popupContent={
+                        <div>
+                            <Text size="sm" mb="md">This is the employee page. Here you can view and edit your profile information, including your profile picture and personal details.</Text>
+                            <Text size="sm" mb="md">To update your profile picture, click on the current picture and follow the prompts to upload a new image.</Text>
+                            <Text size="sm" mb="md">Make sure to save any changes you make to your profile before navigating away from the page.</Text>
+                        </div>
+                    }
+                />
                 <EmployeeListView />
             </>
         );

@@ -146,6 +146,6 @@ model changes {
   username    String?      @db.VarChar(50)
   change      String?      @db.VarChar(50)
   date        DateTime?    @db.Date
-  contentform contentform? @relation(fields: [name], references: [name], onDelete: Cascade, onUpdate: Cascade)
-  employee    employee?    @relation(fields: [username], references: [username], onDelete: Cascade, onUpdate: Cascade)
+  contentform contentform? @relation(fields: [name], references: [name], onDelete: Cascade)
+  employee    employee?    @relation(fields: [username], references: [username], onDelete: Cascade)
 }
