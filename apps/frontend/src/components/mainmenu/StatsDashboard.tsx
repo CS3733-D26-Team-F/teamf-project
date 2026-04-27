@@ -36,7 +36,6 @@ export function StatsDashboard() {
     const[filesByStatus, setFilesByStatus] = useState({});
 
     const {t} = useTranslation();
-
     const api = useApi();
 
     useEffect(() => {
@@ -188,7 +187,7 @@ export function StatsDashboard() {
                     <div>
                         <Text className={classes.value}>{stat.value}</Text>
                         <Text fz="sm" c="dimmed">
-                            files
+                            {t('files')}
                         </Text>
                     </div>
 
@@ -230,7 +229,7 @@ export function StatsDashboard() {
                                         }}
                                     />
                                     <Text size="sm">
-                                        {section.persona} — {section.count} files
+                                        {section.persona} — {section.count} {t('files')}
                                     </Text>
                                 </Group>
                             ))}
@@ -261,7 +260,7 @@ export function StatsDashboard() {
                                         }}
                                     />
                                     <Text size="sm">
-                                        {section.type} — {section.count} files
+                                        {section.type} — {section.count} {t('files')}
                                     </Text>
                                 </Group>
                             ))}
@@ -290,7 +289,7 @@ export function StatsDashboard() {
                                         }}
                                     />
                                     <Text size="sm">
-                                        {section.status} — {section.count} files
+                                        {section.status} — {section.count} {t('files')}
                                     </Text>
                                 </Group>
                             ))}

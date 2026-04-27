@@ -70,13 +70,13 @@ export function AreaChart() {
         >
                 <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
                     <Text fw={700} size="lg" mb="md">
-                        Updated in the Past Week
+                        {t('chart_update')}
                     </Text>
                         <MantineAreaChart
                             h={400}
                             data={chartData}
                             dataKey="date"
-                            series={[{ name: 'Updated', color: 'blue.6', label: 'Files Updated' }]}
+                            series={[{ name: 'Updated', color: 'blue.6', label: t('file_update') }]}
                             curveType="monotone"
                             tickLine="y"
                             gridAxis="xy"
