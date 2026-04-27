@@ -12,6 +12,13 @@ model admin {
   employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model admin {
+  adid     Int      @id
+  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
+}
+
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model admin {
   adid     Int      @id
@@ -175,6 +182,6 @@ model changes {
   username    String?      @db.VarChar(50)
   change      String?      @db.VarChar(50)
   date        DateTime?    @db.Date
-  contentform contentform? @relation(fields: [name], references: [name], onDelete: NoAction, onUpdate: NoAction)
-  employee    employee?    @relation(fields: [username], references: [username], onDelete: NoAction, onUpdate: NoAction)
+  contentform contentform? @relation(fields: [name], references: [name], onDelete: Cascade, onUpdate: Cascade)
+  employee    employee?    @relation(fields: [username], references: [username], onDelete: Cascade, onUpdate: Cascade)
 }

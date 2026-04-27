@@ -336,7 +336,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                review_date: new Date(review_date),
+                review_date: new Date(),
                 ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
             },
             include: {
@@ -680,7 +680,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
         if (!status) return res.status(400).json({error: 'status is required'});
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {status},
+            data: {status, expiration_date: new Date()},
             include: {
                 folder: {
                     select: {name: true}
