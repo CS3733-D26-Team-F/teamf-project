@@ -102,7 +102,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             });
             const recipientEmpids = recipients.map(e => e.empid);
             console.log('[updateContentForm] Recipients found:', recipientEmpids);
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Updated',
@@ -431,7 +431,7 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             const adminEmpids = admins.map(a => a.adid);
 
             const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Deleted',
@@ -743,6 +743,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
+
         if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).json({ error: 'Make sure all fields are filled in' });
         }
@@ -839,7 +840,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             const adminEmpids = admins.map(a => a.adid);
 
             const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Updated',

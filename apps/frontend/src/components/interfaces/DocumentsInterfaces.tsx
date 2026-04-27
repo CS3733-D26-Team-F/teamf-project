@@ -18,7 +18,8 @@ export type ContentForm = {
 
 export type StagedFile = {
     id: string;
-    file: File;
+    file: File | null;
+    url: string;
     name: string;
     owner: string;
     persona: string[];
@@ -27,6 +28,8 @@ export type StagedFile = {
     date_modified: string;
     expiration_date: string;
     review_date: string | null;
+    uploadType: 'file' | 'url';
+    jointagscontent: string[];
 };
 
 export type Employee = {
