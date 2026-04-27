@@ -179,6 +179,21 @@ export function Documents() {
         setStagedFiles(prev => [...prev, ...newStaged]);
     }
 
+    function autoFillFromFirst() {
+        if (stagedFiles.length === 0) return;
+        const first = stagedFiles[0];
+        setStagedFiles(prev => prev.map((sf, i) => i === 0 ? sf : {
+            ...sf,
+            owner: first.owner,
+            persona: first.persona,
+            content_type: first.content_type,
+            status: first.status,
+            date_modified: first.date_modified,
+            expiration_date: first.expiration_date,
+            jointagscontent: first.jointagscontent,
+        }));
+    }
+
     function updateStagedFile<K extends keyof StagedFile>(id: string, field: K, value: StagedFile[K]) {
         setStagedFiles(prev => prev.map(item =>
             item.id === id ? {...item, [field]: value} : item
@@ -203,6 +218,7 @@ export function Documents() {
             status: '',
             date_modified: today,
             expiration_date: '',
+            review_date: '',
             jointagscontent: []
         }]);
     }
@@ -1708,7 +1724,7 @@ export function Documents() {
                             />
                             <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ Add Files</Button>
                             <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
-                            <Button variant="filled" size="xs" onClick={() => {}}> AutoFill From First</Button>
+                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> AutoFill From First</Button>
                         </Group>
                     </Box>
                     {stagedFiles.length > 0 && (
