@@ -41,7 +41,8 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         expiration_date,
         content_type,
         status,
-        review_date
+        review_date,
+        username
     } = req.body;
 
     const expiration = new Date(req.body.expiration_date);
@@ -99,6 +100,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         const transaction = await prisma.changes.create({
             data: {
                 name: contentForm.name,
+                username: username,
                 change: "Updated Document",
                 date: new Date()
             }
@@ -175,7 +177,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             expiration_date,
             review_date,
             content_type,
-            status
+            status,
+            username
         } = req.body;
         const file = req.file;
         const rawUrl = req.body.url;
@@ -264,6 +267,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
         const transaction = await prisma.changes.create({
             data: {
                 name: content.name,
+                username: username,
                 change: "Added Document",
                 date: new Date(date_modified)
             }
@@ -405,6 +409,9 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
 // Soft delete - sets is_deleted flag instead of removing from DB
 router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
+    const  {
+        username
+    } = req.body;
     try {
         const id = parseInt(req.params.id);
         const updated = await prisma.contentform.update({
@@ -414,6 +421,7 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
         const transaction = await prisma.changes.create({
             data: {
                 name: updated.name,
+                username: username,
                 change: "Deleted Document",
                 date: new Date()
             }
@@ -680,7 +688,8 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             expiration_date,
             review_date,
             content_type,
-            status
+            status,
+            username
         } = req.body;
         const resolvedOwner = ownerUsername ?? owner;
         console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
@@ -765,6 +774,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const transaction = await prisma.changes.create({
             data: {
                 name: updated.name,
+                username: username,
                 change: "Updated Document",
                 date: new Date()
             }
@@ -1065,6 +1075,19 @@ router.post('/transactionDates', checkJWT, async(req, res) => {
 
     return(transactions);
 })
+
+router.get('/changes', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {username} = req.body;
+    try {
+        const changes = await prisma.changes.findMany({
+            where: {username: username}
+        });
+        res.json(changes);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
 
 router.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));

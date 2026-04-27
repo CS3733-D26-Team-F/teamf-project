@@ -528,7 +528,8 @@ export function Documents() {
                 expiration_date: '',
                 content_type: '',
                 status: '',
-                jointagscontent: []
+                jointagscontent: [],
+                username: localStorage.getItem(username)
             });
             loadDocuments();
         } catch (err: any) {
@@ -566,7 +567,8 @@ export function Documents() {
                     review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
-                    jointagscontent: doc.jointagscontent
+                    jointagscontent: doc.jointagscontent,
+                    username: localStorage.getItem('username')
                 });
                 setEditOpen(true);
             });
@@ -578,7 +580,7 @@ export function Documents() {
         try {
             if (editFile) {
                 const formPayload = new FormData();
-                formPayload.append('filename', editData.name);
+                formPayload.append('name', editData.name);
                 formPayload.append('ownerUsername', editData.owner);
                 formPayload.append('persona', JSON.stringify(editData.persona));
                 formPayload.append('date_modified', editData.date_modified);
@@ -681,7 +683,7 @@ export function Documents() {
 
         //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
+            method: 'POST', headers: {'Content-Type': 'application/json'}, )
         });
         setEditFile(null);
         setConfirmSaveOpen(false);
@@ -721,8 +723,9 @@ export function Documents() {
     }
 
     async function handleDelete() {
+        console.log(localStorage.getItem('username'));
         if (!deleteId) return;
-        await api(`${DOMAIN}/contentforms/${deleteId}/softdelete`, {method: 'PATCH'});
+        await api(`${DOMAIN}/contentforms/${deleteId}/softdelete`, {method: 'PATCH', body: localStorage.getItem('username')});
         setDeleteOpen(false);
         setSelectedIds(prev => prev.filter(id => id !== deleteId));
         setSelectedFavIds(prev => prev.filter(id => id !== deleteId));
