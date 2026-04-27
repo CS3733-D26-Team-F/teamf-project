@@ -1198,8 +1198,11 @@ router.get('/changes', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
     try {
-        const changes = await prisma.changes.findMany({
+        const emp1 = await prisma.employee.findUnique({
             where: {username: username}
+        })
+        const changes = await prisma.changes.findMany({
+            where: {username: emp1.username}
         });
         res.json(changes);
     } catch (error) {

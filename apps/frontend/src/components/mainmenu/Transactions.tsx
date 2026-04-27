@@ -18,12 +18,16 @@ export function Transactions() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const res = await api(`${DOMAIN}/changes`);
+            const res = await api(`${DOMAIN}/changes`, {
+                method: "GET",
+                headers: {'content-type': 'application/json'},
+                body: localStorage.getItem('username'),
+            });
             const data: Change [] = await res.json();
             setChanges(data);
         };
         void fetchData()
-    }, [])
+    }, [api])
 
     const today = dayjs().startOf("day");
     const todaysChanges = changes.filter(c =>
