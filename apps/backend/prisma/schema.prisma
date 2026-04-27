@@ -138,32 +138,14 @@ model notifications {
   employee     employee?      @relation(fields: [sender], references: [empid], onDelete: Cascade, onUpdate: NoAction)
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model folders {
-  id            Int           @id @default(autoincrement())
-  name          String        @db.VarChar(100)
-  owner_empid   Int
-  persona       String[]      @db.VarChar
-  created_at    DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime      @db.Timestamptz(6)
-  url           String?       @db.VarChar(2083)
-  allowed_users String[]      @default([]) @db.VarChar
-  contentform   contentform[]
-  employee      employee      @relation(fields: [owner_empid], references: [empid], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([owner_empid, name], map: "uq_folders_owner_name")
-  @@index([owner_empid], map: "idx_folders_owner_empid")
-}
-
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model changes {
   chad        Int          @id @default(autoincrement())
-  change      String?      @db.VarChar(50)
-  date        DateTime?    @db.Date
   name        String?      @db.VarChar(50)
   username    String?      @db.VarChar(50)
-  contentform contentform? @relation(fields: [name], references: [name], onDelete: NoAction, onUpdate: NoAction)
-  employee    employee?    @relation(fields: [username], references: [username], onDelete: NoAction, onUpdate: NoAction)
+  change      String?      @db.VarChar(50)
+  date        DateTime?    @db.Date
+  contentform contentform? @relation(fields: [name], references: [name], onDelete: NoAction, onUpdate: Cascade)
+  employee    employee?    @relation(fields: [username], references: [username], onDelete: NoAction, onUpdate: Cascade)
 }

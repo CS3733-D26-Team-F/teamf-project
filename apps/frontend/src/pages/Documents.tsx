@@ -154,7 +154,8 @@ export function Documents() {
         review_date: '',
         content_type: '',
         status: '',
-        jointagscontent: [] as string[]
+        jointagscontent: [] as string[],
+        username: ''
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -204,7 +205,8 @@ export function Documents() {
         review_date: '',
         content_type: '',
         status: '',
-        jointagscontent: [] as string[]
+        jointagscontent: [] as string[],
+        username: ''
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -488,6 +490,7 @@ export function Documents() {
         formPayload.append('review_date', addData.review_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
+        formPayload.append('username', addData.username);
 
         if (addFile) {
             formPayload.append('file', addFile);
@@ -539,7 +542,7 @@ export function Documents() {
                 content_type: '',
                 status: '',
                 jointagscontent: [],
-                username: localStorage.getItem(username)
+                username: localStorage.getItem('username')
             });
             loadDocuments();
         } catch (err: any) {
@@ -626,6 +629,7 @@ export function Documents() {
                 formPayload.append('content_type', editData.content_type);
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
+                formPayload.append('username', editData.username);
                 await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
             } else if (editUploadMode === 'url' && editUrl) {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
@@ -720,7 +724,7 @@ export function Documents() {
 
         //Check file back in
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, )
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username}),
         });
         setEditFile(null);
         setConfirmSaveOpen(false);
@@ -762,7 +766,7 @@ export function Documents() {
     async function handleDelete() {
         console.log(localStorage.getItem('username'));
         if (!deleteId) return;
-        await api(`${DOMAIN}/contentforms/${deleteId}/softdelete`, {method: 'PATCH', body: localStorage.getItem('username')});
+        await api(`${DOMAIN}/contentforms/${deleteId}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'});
         setDeleteOpen(false);
         setSelectedIds(prev => prev.filter(id => id !== deleteId));
         setSelectedFavIds(prev => prev.filter(id => id !== deleteId));
@@ -1240,7 +1244,7 @@ export function Documents() {
                             <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/softdelete`, {method: 'PATCH'})));
+                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'})));
                                 setSelectedIds([]);
                                 setSelectedFavIds([]);
                                 loadDocuments();

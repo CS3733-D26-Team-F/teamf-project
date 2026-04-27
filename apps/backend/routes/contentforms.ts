@@ -114,11 +114,14 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             }
         }
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        })
 
         const transaction = await prisma.changes.create({
             data: {
                 name: contentForm.name,
-                username: username,
+                username: employee1.username,
                 change: "Updated Document",
                 date: new Date()
             }
@@ -282,10 +285,14 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             }
         });
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        })
+
         const transaction = await prisma.changes.create({
             data: {
                 name: content.name,
-                username: username,
+                username: employee1.username,
                 change: "Added Document",
                 date: new Date(date_modified)
             }
@@ -425,11 +432,9 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
 });
 
 // Soft delete - sets is_deleted flag instead of removing from DB
-router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
+router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const  {
-        username
-    } = req.body;
+    console.log(req.params.username);
     try {
         const id = parseInt(req.params.id);
         const updated = await prisma.contentform.update({
@@ -465,10 +470,14 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             }
         }
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: req.params.username}
+        })
+
         const transaction = await prisma.changes.create({
             data: {
                 name: updated.name,
-                username: username,
+                username: employee1.username,
                 change: "Deleted Document",
                 date: new Date()
             }
@@ -878,10 +887,14 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             }
         }
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        })
+
         const transaction = await prisma.changes.create({
             data: {
                 name: updated.name,
-                username: username,
+                username: employee1.username,
                 change: "Updated Document",
                 date: new Date()
             }
@@ -1194,8 +1207,5 @@ router.get('/changes', checkJWT, async (req, res) => {
     }
 });
 
-router.use((req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-});
 
 export default router;
