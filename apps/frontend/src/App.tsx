@@ -10,6 +10,7 @@ import { Notifications } from './pages/Notifications';
 import { About} from "./pages/About.tsx";
 import {Footer} from "./components/Footer.tsx";
 import { Credit } from './pages/Credit.tsx';
+import { CommandPalette } from './components/CommandPalette'
 
 // Top-level application shell:
 // - configures Auth0 once for the whole app
@@ -35,6 +36,7 @@ export default function App() {
             cacheLocation = "localstorage"
         >
             <BrowserRouter>
+                <CommandPalette />
                 {/* Define the app's main navigation routes. */}
                 <Routes>
                     <Route path="/" element={<MainMenu />}/>
