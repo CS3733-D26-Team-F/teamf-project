@@ -29,6 +29,7 @@ export type StagedFile = {
     expiration_date: string;
     review_date: string | null;
     uploadType: 'file' | 'url';
+    jointagscontent: string[];
 };
 
 export type Employee = {

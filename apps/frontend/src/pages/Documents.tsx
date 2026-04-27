@@ -154,7 +154,7 @@ export function Documents() {
         expiration_date: '',
         content_type: '',
         status: '',
-        jointagscontent: [] as string
+        jointagscontent: []
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -173,7 +173,8 @@ export function Documents() {
             content_type: '',
             status: '',
             date_modified: today,
-            expiration_date: ''
+            expiration_date: '',
+            jointagscontent: []
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
     }
@@ -201,7 +202,8 @@ export function Documents() {
             content_type: 'URL',
             status: '',
             date_modified: today,
-            expiration_date: ''
+            expiration_date: '',
+            jointagscontent: []
         }]);
     }
 
@@ -598,7 +600,28 @@ export function Documents() {
                     formPayload.append('url', normalizeUrl(sf.url));
                 }
 
-                await api(`${DOMAIN}/contentforms`, { method: 'POST', body: formPayload });
+                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                if (sf.jointagscontent.length > 0) {
+                    const flat = await api(`${DOMAIN}/contentforms`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                                [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                            return newFlat;
+                        });
+                    const docID = flat.find(d => d.name === sf.name)?.id ?? 0;
+                    for (const tagToAdd of sf.jointagscontent) {
+                        const tagID = createdTags.find(t => t.tag_name === tagToAdd)?.metid ?? 0;
+                        if (tagID) {
+                            await api(`${DOMAIN}/assigntag`, {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({id: docID, metid: tagID})
+                            });
+                        }
+                    }
+                }
+
             } catch (err: any) {
                 if (err.status === 409 || err.status === 400 || err.status === 406) {
                     setAddError(err.message);
@@ -1685,6 +1708,7 @@ export function Documents() {
                             />
                             <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ Add Files</Button>
                             <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
+                            <Button variant="filled" size="xs" onClick={() => {}}> AutoFill From First</Button>
                         </Group>
                     </Box>
                     {stagedFiles.length > 0 && (
@@ -1697,6 +1721,7 @@ export function Documents() {
                                         <Table.Th w={150}>Persona</Table.Th>
                                         <Table.Th w={150}>Content Type</Table.Th>
                                         <Table.Th w={150}>Status</Table.Th>
+                                        <Table.Th w={150}>Tags</Table.Th>
                                         <Table.Th w={150}>Dates</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
@@ -1726,6 +1751,13 @@ export function Documents() {
                                             </Table.Td>
                                             <Table.Td>
                                                 <Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <MultiSelect
+                                                    data={getArrayTags()}
+                                                    value={staged.jointagscontent}
+                                                    onChange={val => updateStagedFile(staged.id, 'jointagscontent', val)}
+                                                />
                                             </Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
