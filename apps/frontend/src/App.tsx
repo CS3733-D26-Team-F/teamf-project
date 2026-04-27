@@ -4,13 +4,9 @@ import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
-import Documents from "./pages/Documents";
+import {Documents} from "./pages/Documents";
 import { Archive } from './pages/Archive';
-import { Notifications } from './pages/Notifications';
-import { About} from "./pages/About.tsx";
-import {Footer} from "./components/Footer.tsx";
-import { Credit } from './pages/Credit.tsx';
-import { CommandPalette } from './components/CommandPalette'
+import { Dashboard } from './pages/Dashboard';
 
 // Top-level application shell:
 // - configures Auth0 once for the whole app
@@ -36,20 +32,16 @@ export default function App() {
             cacheLocation = "localstorage"
         >
             <BrowserRouter>
-                <CommandPalette />
                 {/* Define the app's main navigation routes. */}
                 <Routes>
                     <Route path="/" element={<MainMenu />}/>
+                    <Route path="/dashboard" element={<Dashboard />}/>
                     <Route path="/menu" element={<MainMenu />} />
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
                     <Route path="/profilePage" element={<ProfilePage />}/>
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/about" element={<About />}/>
-                    <Route path="/credit" element={<Credit />}/>
                 </Routes>
-                <Footer />
             </BrowserRouter>
         </Auth0Provider>
     );
