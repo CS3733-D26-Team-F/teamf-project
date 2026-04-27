@@ -112,9 +112,6 @@ export function ContentCurrencyWidget() {
             radius="md"
             p="md"
             style={{
-                width: "50%",
-                marginLeft: "auto",
-                marginRight: 20,
                 marginTop: 20
             }}
         >
@@ -133,7 +130,7 @@ export function ContentCurrencyWidget() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {paginated.length === 0 ? (
-                    <Text>No documents modified within the past 48 hours</Text>
+                    <Text c="dimmed">No documents modified within the past 48 hours</Text>
                 ) : (
                 paginated.map(doc => (
                     <Paper

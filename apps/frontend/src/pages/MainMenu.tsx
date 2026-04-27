@@ -6,6 +6,7 @@ import {useTranslation} from "react-i18next";
 import { Calendar } from "../components/mainmenu/Calendar.tsx";
 import { ExpirationWidget } from "../components/ExpirationWidget.tsx";
 import { ContentCurrencyWidget } from "../components/ContentCurrencyWidget.tsx"
+import {Group} from "@mantine/core";
 
 export function MainMenu() {
     const {t} = useTranslation();
@@ -20,8 +21,10 @@ export function MainMenu() {
                 <Calendar />
                 <StatsDashboard />
                 <ChartGrid />
-                <ExpirationWidget />
-                <ContentCurrencyWidget />
+                <Group align='flex-start' grow>
+                    <ExpirationWidget />
+                    <ContentCurrencyWidget />
+                </Group>
             </>
         )
 }
