@@ -1323,11 +1323,11 @@ export function Documents() {
                                 </FilledButton>
 
                                 <FilledButton leftSection="plus" onClick={openBulkUploadModal}>
-                                    {t('bulk_upload')}
+                                    {t('bulk_doc')}
                                 </FilledButton>
 
                                 <FilledButton leftSection="plus" onClick={() => setAddFolderOpen(true)} className="invert-hover">
-                                    {t('create_folder')}
+                                    {t('add_folder')}
                                 </FilledButton>
                             </>
                         )}
@@ -1788,14 +1788,14 @@ export function Documents() {
                                 }
                             }}>{t('checkin_selected')}</Button>
                             {selectedHasNonFavorites &&
-                                <Button className="invert-hover" onClick={favoriteSelected}>★ Favorite All</Button>}
+                                <Button className="invert-hover" onClick={favoriteSelected}>{t('favorite_all')}</Button>}
                             {selectedHasFavorites &&
-                                <Button className="invert-hover" onClick={unfavoriteSelected}>☆ Unfavorite All</Button>}
+                                <Button className="invert-hover" onClick={unfavoriteSelected}>{t('unfavorite_all')}</Button>}
                             <Button className="invert-hover" onClick={() => {
                                 setMoveTargetFolderId(null);
                                 setQuickFolderName('');
                                 setMoveFolderOpen(true);
-                            }}>Move to Folder</Button>
+                            }}>{t('move_to_folder')}</Button>
                             <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
@@ -1803,7 +1803,7 @@ export function Documents() {
                                 setSelectedIds([]);
                                 setSelectedFavIds([]);
                                 loadDocuments();
-                            }}>Delete Selected</Button>
+                            }}>{t('delete_selected')}</Button>
                         </Group>
                     </Box>
                 )}

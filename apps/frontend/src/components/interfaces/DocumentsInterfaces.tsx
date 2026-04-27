@@ -44,7 +44,6 @@ export type StagedFile = {
     folder_id: number | null;
     date_modified: string;
     expiration_date: string;
-    review_date: string | null;
 };
 
 export type Employee = {

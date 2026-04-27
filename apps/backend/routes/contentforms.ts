@@ -244,7 +244,6 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             ownerUsername,
             date_modified,
             expiration_date,
-            review_date,
             content_type,
             status
         } = req.body;

@@ -102,6 +102,8 @@
   "my_updated_files": "Мои обновлённые файлы",
   "doc_title": "Документы - Hanover Insurance",
   "add_doc": "Добавить документ",
+  "add_folder": "Добавить папку",
+  "move_to_folder": "Переместить в папку",
   "bulk_doc": "Массовая загрузка",
   "filter_doc": "Фильтровать по",
   "filter_documents": "Фильтр документов",
