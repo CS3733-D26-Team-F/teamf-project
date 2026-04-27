@@ -3,6 +3,7 @@ import { ManagementClient } from 'auth0';
 import { auth } from "express-oauth2-jwt-bearer";
 import pkg from "@prisma/client";
 import {PrismaPg} from "@prisma/adapter-pg";
+import { checkExpiringDocuments } from './notifications.js';
 
 // Create a Prisma adapter that points at the main database connection.
 const adapter = new PrismaPg({
@@ -25,9 +26,6 @@ const checkJWT = auth({
 // If the employee already exists, refresh login state and username details.
 router.post('/api/auth/login', checkJWT, async (req, res) => {
     try {
-        console.log("Body =", req.body);
-        console.log("Payload =", req.auth!.payload);
-        console.log("=================================================Here1");
 
         // Auth0 subject is the stable unique identifier for this user.
         const auth0Id = req.auth!.payload.sub as string;
@@ -80,7 +78,8 @@ router.post('/api/auth/login', checkJWT, async (req, res) => {
         }
 
         res.json({ employee });
-        console.log("=================================================Here2");
+        
+        await checkExpiringDocuments(employee.empid);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Login sync failed' });
