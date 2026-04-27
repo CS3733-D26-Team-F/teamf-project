@@ -196,6 +196,8 @@ export function Documents() {
     const [favoritesPage, setFavoritesPage] = useState(1);
     const [documentsPage, setDocumentsPage] = useState(1);
 
+    const [currentPage, setCurrentPage] = useState({"Underwriter": 1, "Business Analyst": 1, "Actuarial Analyst": 1, "EXL Operations": 1, "All": 1});
+
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
     const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
@@ -1180,39 +1182,63 @@ export function Documents() {
     const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
     if (!allowedAccess) return <AccessDenied/>;
 
-    function contentTable(documentsToDisplay: ContentForm[]) {
+
+    function contentTable(persona: any, documentsToDisplay: ContentForm[]) {
+        const currentPageCount = Math.max(1, Math.ceil(documentsToDisplay.length / pageSize));
+        const paginatedDocumentsToDisplay= documentsToDisplay.slice((currentPage[persona] - 1) * pageSize, currentPage[persona] * pageSize);
+
+        console.log(persona, currentPage)
+
         return (
-            <Box>
-                <Table highlightOnHover withTableBorder withColumnBorders>
-                    <TableHead
-                        onSort={toggleSort}
-                        currentField={sortField}
-                        currentDir={sortDir}
-                        onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(nonFavorites.map(d => d.id))}
-                        allChecked={allSelected}
-                        indeterminate={selectedIds.length > 0 && !allSelected}
-                    />
-                    <Table.Tbody>
-                        {documentsToDisplay.map(doc => (
-                            <DocRow
-                                key={doc.id}
-                                doc={doc}
-                                isSelected={selectedIds.includes(doc.id)}
-                                onSelect={toggleSelect}
-                                currentUsername={localStorage.getItem('username') ?? ''}
-                                isCheckedOut={!!checkedOutMap[doc.id]}
-                                checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                onCheckOut={checkOutHandle}
-                                onCheckIn={checkInHandle}
-                                isDropped={inlineDropdownId === doc.id}
-                                onDrop={() => toggleDropdown(doc.id)}
-                                dropdownViewMode={dropdownViewMode}
-                                {...rowCallbacks}
-                            />
-                        ))}
-                    </Table.Tbody>
-                </Table>
-            </Box>
+            <>
+                <Box>
+                    <Table highlightOnHover withTableBorder withColumnBorders>
+                        <TableHead
+                            onSort={toggleSort}
+                            currentField={sortField}
+                            currentDir={sortDir}
+                            onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(paginatedDocumentsToDisplay.map(d => d.id))}
+                            allChecked={allSelected}
+                            indeterminate={selectedIds.length > 0 && !allSelected}
+                        />
+                        <Table.Tbody>
+                            {paginatedDocumentsToDisplay.map(doc => (
+                                <DocRow
+                                    key={doc.id}
+                                    doc={doc}
+                                    isSelected={selectedIds.includes(doc.id)}
+                                    onSelect={toggleSelect}
+                                    currentUsername={localStorage.getItem('username') ?? ''}
+                                    isCheckedOut={!!checkedOutMap[doc.id]}
+                                    checkedOutBy={checkedOutMap[doc.id] ?? null}
+                                    onCheckOut={checkOutHandle}
+                                    onCheckIn={checkInHandle}
+                                    isDropped={inlineDropdownId === doc.id}
+                                    onDrop={() => toggleDropdown(doc.id)}
+                                    dropdownViewMode={dropdownViewMode}
+                                    {...rowCallbacks}
+                                />
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                </Box>
+                <Group justify="space-between" mt="sm">
+                    <Text size="sm" c="dimmed">
+                        Page {currentPage[persona]} of {currentPageCount}
+                    </Text>
+                    <Pagination
+                        value={currentPage[persona]}
+                        onChange={ value => {
+                            const tmpDict = {}
+                            for (const key in currentPage) {
+                                tmpDict[key] = currentPage[key]
+                            }
+                            tmpDict[persona] = value;
+                            setCurrentPage(tmpDict)
+                        }}
+                        total={currentPageCount}/>
+                </Group>
+            </>
         );
     }
 
@@ -1228,7 +1254,7 @@ export function Documents() {
                     <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
-                    {contentTable(paginatedExistingDocs)}
+                    {contentTable(givenPersona, existingDocuments)}
                 </Accordion.Panel>
             </Accordion.Item>
         );
@@ -1699,7 +1725,7 @@ export function Documents() {
                             :
                             <>
                                 <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
-                                {contentTable(filtered)}
+                                {contentTable("All", filtered)}
                             </>
                         }
                     </Stack>
