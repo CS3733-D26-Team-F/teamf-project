@@ -19,14 +19,16 @@ export function Transactions() {
     useEffect(() => {
         const fetchData = async () => {
             const res = await api(`${DOMAIN}/changes`, {
-                method: "GET",
+                method: "POST",
                 headers: {'content-type': 'application/json'},
-                body: localStorage.getItem('username'),
+                body: JSON.stringify({
+                    username: localStorage.getItem('username')
+                })
             });
             const data: Change [] = await res.json();
             setChanges(data);
         };
-        void fetchData()
+        void fetchData() // This line breaks something, API call is fine
     }, [api])
 
     const today = dayjs().startOf("day");
@@ -34,7 +36,7 @@ export function Transactions() {
     dayjs(c.date).isAfter(today)
     );
 
-    //const accessedToday = todaysChanges.filter(c => c.change === "access").length;
+    const accessedToday = todaysChanges.filter(c => c.change === "access").length;
     const addedToday = todaysChanges.filter(c => c.change === "Added Document").length;
     const editedToday = todaysChanges.filter(c => c.change === "Updated Document").length;
     const deletedToday = todaysChanges.filter(c => c.change === "Deleted Document").length;

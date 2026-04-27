@@ -1194,7 +1194,7 @@ router.post('/transactionDates', checkJWT, async(req, res) => {
     return(transactions);
 })
 
-router.get('/changes', checkJWT, async (req, res) => {
+router.post('/changes', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
     try {
