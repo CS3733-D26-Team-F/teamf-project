@@ -12,19 +12,6 @@ model admin {
   employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model admin {
-  adid     Int      @id
-  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model admin {
-  adid     Int      @id
-  employee employee @relation(fields: [adid], references: [empid], onDelete: Cascade, onUpdate: NoAction, map: "Admin_employeeId_fkey")
-}
-
 model contentform {
   id                Int               @id @default(autoincrement())
   name              String            @unique @db.VarChar(100)
