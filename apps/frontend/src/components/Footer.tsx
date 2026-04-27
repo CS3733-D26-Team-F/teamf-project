@@ -3,6 +3,7 @@ import { ActionIcon, Container, Group, Text } from '@mantine/core';
 import hanoverLogo from '../../public/main_icons/hanoverlogo.png';
 import classes from '../FooterLinks.module.css';
 import {useTranslation} from "react-i18next";
+import {Link} from "react-router-dom";
 
 
 
@@ -69,7 +70,14 @@ import {useTranslation} from "react-i18next";
                             Worcester, MA 01653
                         </Text>
                     </div>
-                    <div className={classes.groups}>{groups}</div>
+                    <div className={classes.groups}>
+                        {groups}
+                        <div className={classes.footerGroup}>
+                            <Text className={classes.title}>CS 3733 Credentials</Text>
+                            <Link to="/about" className={classes.link}>About</Link>
+                            <Link to="/credit" className={classes.link}>Credits</Link>
+                        </div>
+                    </div>
                 </Container>
                 <Container className={classes.afterFooter}>
 

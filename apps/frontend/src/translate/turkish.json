@@ -148,7 +148,7 @@
   "trash": "Çöp kutusuna taşı",
   "trash_message": "Süre dolmuş belgeler. Tekrar aktif kullanıma almak için geri yükleyin veya çöp kutusuna taşıyın.",
   "archive_message": "Elle arşivlenmiş belgeler. Tekrar aktif kullanıma almak için geri yükleyin.",
-  "theme": "Kırmızı-Yeşil Renk Körlüğü Teması",
+  "blind_theme": "Kırmızı-Yeşil Renk Körlüğü Teması",
   "clear_all": 	"Tümünü Temizle",
   "trash_delete": "Çöp Kutusu - Silinen Belgeler",
   "trash_search": "Ada veya sahibine göre ara...",
@@ -156,6 +156,7 @@
   "trash_delete_doc": "Silinen belge yok",
   "all_content": "Tüm içerik",
   "grid": "Izgara",
-  "list": "Liste"
+  "list": "Liste",
+  "dark_mode": "Karanlık Mod"
 
 }

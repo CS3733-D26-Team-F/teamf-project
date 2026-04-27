@@ -2,15 +2,10 @@ import { Router } from 'express';
 import {prisma} from '../setup/prisma.js';
 import {supabase} from '../setup/supabase.js';
 import {upload} from '../setup/upload.js';
-import {checkJWT, management, getManagementToken} from '../setup/auth0.js';
-import path from 'path';
-import app from "../app.js";
-
-const distPath = path.resolve("../frontend/dist");
+import {checkJWT} from '../setup/auth0.js';
+import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
-
-
 
 router.get('/api/auth/me', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
@@ -52,7 +47,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         return res.status(400).send({error: "Name of content is required"});
     }
 
-    if (!newName || !owner || !persona || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+    if (!newName || !owner || !persona || !date_modified || !expiration_date || !content_type || !status) {
         return res.status(406).send({error: "Make sure all fields are filled in"});
     }
 
@@ -95,6 +90,29 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             where: {name: name},
             data: updateData
         });
+
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+
+        if (sender && contentForm.persona && contentForm.persona.length > 0) {
+            const recipients = await prisma.employee.findMany({
+                where: {
+                    persona: { hasSome: contentForm.persona }
+                },
+                select: { empid: true }
+            });
+            const recipientEmpids = recipients.map(e => e.empid);
+            console.log('[updateContentForm] Recipients found:', recipientEmpids);
+
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Updated',
+                    `Document "${contentForm.name}" has been updated.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         return res.status(200).json({
             message: 'Content form updated successfully',
             data: contentForm
@@ -173,7 +191,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(400).json({error: 'File or URL is required'});
         }
 
-        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).send({error: "Make sure all fields are filled in"});
         }
 
@@ -184,7 +202,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
         }
 
         const expiration = new Date(expiration_date);
-        const review = new Date(review_date);
+        //Date can be invalid
+        //const review = new Date(review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -192,9 +211,10 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(409).json({ error: 'Document is expired' });
         }
 
-        if (review < today) {
-            return res.status(409).json({ error: 'Review date should be in the future' });
-        }
+        //No longer done since expiration=review
+        //if (review < today) {
+        //    return res.status(409).json({ error: 'Review date should be in the future' });
+        //}
 
         const employee = await prisma.employee.findUnique({
             where: {username: ownerUsername}
@@ -246,7 +266,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                review_date: new Date(review_date)
+                //Date can be invalid so just date instead of review_date
+                review_date: new Date()
             }
         });
 
@@ -392,6 +413,35 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
         });
+
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+        if (sender && updated.persona && updated.persona.length > 0) {
+            const allRecipients = [];
+            for (const p of updated.persona) {
+                const recipients = await prisma.employee.findMany({
+                    where: { persona: p },
+                    select: { empid: true }
+                });
+                allRecipients.push(...recipients);
+            }
+
+            const admins = await prisma.admin.findMany({
+                select: { adid: true }
+            });
+            const adminEmpids = admins.map(a => a.adid);
+
+            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Deleted',
+                    `Document "${updated.name}" has been deleted.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -493,7 +543,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
         if (!status) return res.status(400).json({error: 'status is required'});
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {status}
+            data: {status, expiration_date: new Date()}
         });
         res.json(updated);
     } catch (error) {
@@ -520,23 +570,39 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
     const id = parseInt(req.params.id);
     const {username} = req.body;
     console.log('checkout hit', {id, username});
+
     if (!username) {
         return res.status(400).send('Requires username');
     }
 
     try {
+        const user = await prisma.employee.findUnique({
+            where: { username },
+            select: { persona: true }
+        });
+        const isAdmin = user?.persona === 'Admin';
+        const userPersona = user?.persona || '';
+
         const current = await prisma.contentform.findUnique({
             where: {id},
-            select: {checkout_username: true, checkout_date: true}
+            select: {checkout_username: true, checkout_date: true, persona: true}
         });
 
-        if (current && current.checkout_username) {
-            const {checkout_username: takenBy, checkout_date} = current;
-            if (takenBy !== username) {
+        if (!current) {
+            return res.status(404).send('Document not found');
+        }
+
+        if (!isAdmin && !current.persona.includes(userPersona)) {
+            return res.status(403).json({ error: "Your role does not have permission to checkout or modify this document." });
+        }
+
+        if (current.checkout_username && current.checkout_username !== username) {
+            if (!isAdmin) {
                 return res.status(423).json({
-                    error: `Document is checked out by ${takenBy} since ${checkout_date}`
+                    error: `Document is already checked out by ${current.checkout_username} since ${current.checkout_date}`
                 });
             }
+            console.log(`[ADMIN OVERRIDE] ${username} is force-checking out document ${id} from ${current.checkout_username}`);
         }
 
         try {
@@ -544,15 +610,15 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {id},
                 data: {checkout_username: username, checkout_date: new Date()}
             });
-            return res.status(200).json({message: 'Document checked out'});
+            return res.status(200).json({message: 'Document checked out successfully'});
         } catch (error) {
-            res.status(500).json({error: 'Something went wrong 1'});
+            res.status(500).json({error: 'Something went wrong writing the checkout to the database'});
         }
 
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong 2'});
+        console.error("Checkout route error:", error);
+        res.status(500).json({error: 'Something went wrong processing the checkout'});
     }
-
 });
 
 router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
@@ -561,18 +627,33 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
     const {username} = req.body;
 
     try {
+        const user = await prisma.employee.findUnique({
+            where: { username },
+            select: { persona: true }
+        });
+        const isAdmin = user?.persona === 'Admin';
+        const userPersona = user?.persona || '';
+
         const current = await prisma.contentform.findUnique({
             where: {id},
-            select: {checkout_username: true, checkout_date: true}
+            select: {checkout_username: true, checkout_date: true, persona: true}
         });
 
         if (!current) {
-            return res.status(400).send('Document isnt checked out')
+            return res.status(404).send('Document not found');
         }
 
-        const {checkout_username: takenBy, checkout_date} = current;
+        if (!isAdmin && !current.persona.includes(userPersona)) {
+            return res.status(403).json({ error: "Your role does not have permission to modify this document." });
+        }
 
-        if (takenBy !== username) {
+        const {checkout_username: takenBy} = current;
+
+        if (!takenBy) {
+            return res.status(400).send('Document is not currently checked out');
+        }
+
+        if (takenBy !== username && !isAdmin) {
             return res.status(401).json({error: "You can only check in documents that you have checked out"});
         }
 
@@ -582,12 +663,13 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                 data: {checkout_username: null, checkout_date: null}
             });
 
-            return res.status(200).json({message: 'Document checked in'});
+            return res.status(200).json({message: 'Document checked in successfully'});
         } catch (error) {
-            res.status(500).json({error: 'Something went wrong checking in doc'});
+            res.status(500).json({error: 'Something went wrong writing the checkin to the database'});
         }
     } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
+        console.error("Checkin route error:", error);
+        res.status(500).json({error: 'Something went wrong processing the checkin'});
     }
 });
 
@@ -662,7 +744,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
 
-        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).json({ error: 'Make sure all fields are filled in' });
         }
 
@@ -671,7 +753,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         }
 
         const expiration = new Date(expiration_date);
-        const review = new Date(review_date);
+        //const review = new Date(review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -679,9 +761,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             return res.status(409).json({ error: 'Document is expired' });
         }
 
-        if (review < today) {
-            return res.status(409).json({ error: 'Review date should be in the future' });
-        }
+        //no longer done since expiration = review
+        //if (review < today) {
+        //    return res.status(409).json({ error: 'Review date should be in the future' });
+        //}
 
         const updateData: any = {
             name,
@@ -692,7 +775,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             content_type,
             status,
             employee: {connect: {username: resolvedOwner}},
-            review_date: review_date ? new Date(review_date) : null
+            //Safe check for if review_date exists
+            //But Date can still be invalid so just null
+            //review_date: review_date ? new Date(review_date) : null
+            review_date : null
         };
 
         if (req.file) {
@@ -737,6 +823,34 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             data: updateData
         });
 
+        const sender = await prisma.employee.findUnique({ where: { auth0Id } });
+        if (sender && updated.persona && updated.persona.length > 0) {
+            const allRecipients = [];
+            for (const p of updated.persona) {
+                const recipients = await prisma.employee.findMany({
+                    where: { persona: p },
+                    select: { empid: true }
+                });
+                allRecipients.push(...recipients);
+            }
+
+            const admins = await prisma.admin.findMany({
+                select: { adid: true }
+            });
+            const adminEmpids = admins.map(a => a.adid);
+
+            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+
+            if (recipientEmpids.length > 0) {
+                await sendNotificationToUsers(
+                    'Document Updated',
+                    `Document "${updated.name}" has been updated.`,
+                    recipientEmpids,
+                    sender.empid
+                );
+            }
+        }
+
         res.json(updated);
     } catch (error) {
         console.error('Error updating document:', error);
@@ -758,76 +872,6 @@ router.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
     }
 });
 
-router.post('/contentforms/:id/favorite', checkJWT, async (req, res) => {
-    const auth0Id = req.auth!.payload.sub as string;
-    const id = parseInt(req.params.id);
-    const {is_favorite} = req.body;
-    try {
-        const updated = await prisma.contentform.update({
-            where: {id},
-            data: {is_favorite}
-        });
-        res.json(updated);
-    } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
-    }
-});
-
-router.get('/ba-files', async (req, res) => {
-    const {data, error} = await supabase
-        .from('ba_files_with_size')
-        .select('name, file_size_kb')
-        .not('file_size_kb', 'is', null)
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file size'})
-    }
-
-    res.json(data)
-})
-
-router.get('/uw-files', async (req, res) => {
-    const {data, error} = await supabase
-        .from('underwriter_files_with_size')
-        .select('name, file_size_kb')
-        .not('file_size_kb', 'is', null)
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file size'})
-    }
-
-    res.json(data)
-})
-
-
-router.get('/uw-files/:name', async (req, res) => {
-    const {name} = req.params;
-    const {data, error} = await supabase
-        .from('underwriter_files_with_size') // your VIEW
-        .select('name, file_size_kb')
-        .eq('name', name)
-        .single()
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file'})
-    }
-    res.json(data)
-})
-
-router.get('/ba-files/:name', async (req, res) => {
-    const {name} = req.params;
-    const {data, error} = await supabase
-        .from('ba_files_with_size') // your VIEW
-        .select('name, file_size_kb')
-        .eq('name', name)
-        .single()
-
-    if (error) {
-        return res.status(500).json({error: 'Cannot find file'})
-    }
-    res.json(data)
-})
-
 router.post('/newtag', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const { name } = req.body;
@@ -842,7 +886,6 @@ router.post('/newtag', checkJWT, async(req, res) => {
                 tag_name: name
             },
         });
-
 
         return res.status(200).json({
             message: 'new tag added',
@@ -875,7 +918,6 @@ router.post('/assigntag', checkJWT, async(req, res) => {
     }
 
     try {
-
         const assignTag = await prisma.jointagscontent.create({
             data: {
                 id: form.id,
@@ -1091,9 +1133,5 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
         return res.status(500).json({error: 'Could not remove document from favorites'});
     }
 })
-
-router.use((req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-});
 
 export default router;

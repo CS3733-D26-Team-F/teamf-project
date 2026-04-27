@@ -8,7 +8,7 @@ export type ContentForm = {
     date_modified: string;
     expiration_date: string;
     content_type: string;
-    review_date: string;
+    review_date: string | null;
     status: string;
     is_favorite: boolean;
     is_deleted: boolean;
@@ -27,7 +27,7 @@ export type StagedFile = {
     status: string;
     date_modified: string;
     expiration_date: string;
-    review_date: string;
+    review_date: string | null;
     uploadType: 'file' | 'url';
 };
 

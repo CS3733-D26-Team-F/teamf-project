@@ -15,14 +15,18 @@ export function ManageTags({allTags}: ManageTagsProps) {
     const api = useApi();
 
     const [createTag, setCreateTag] = useState<string>("");
-    const [deleteTag, setDeleteTag] = useState<string>("");
+    const [deleteTag, setDeleteTag] = useState<string | null>(null);
 
     const [currentTags, setCurrentTags] = useState<string[]>([]);
 
     async function updateTags() {
         const response = await api(`${DOMAIN}/getTags`)
-        const data: Metatag[] = await response.json();
-        const tags: string[] = data.map(tag => tag.tag_name);
+        const object = await response.json();
+        //Object is not an array and cannot be treated as one
+        //This is why object.data needs to happen
+        const metaTagArray: Metatag[] = object.data
+        //Please do not call map on just the response
+        const tags: string[] = metaTagArray.map(tag => tag.tag_name);
         setCurrentTags(tags);
     }
 
@@ -32,16 +36,24 @@ export function ManageTags({allTags}: ManageTagsProps) {
     }
 
     async function runCreateTag() {
+        if (createTag != "") {
         await api(`${DOMAIN}/newtag`, {method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: createTag}) });
         await updateTags();
         setCreateTag("");
+        }
 
     }
 
     async function runDeleteTag() {
-        await api(`${DOMAIN}/deletetag`, {method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({name: deleteTag}) });
-        await updateTags();
-        setDeleteTag("");
+        if (deleteTag != null) {
+            await api(`${DOMAIN}/deletetag`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: deleteTag})
+            });
+            await updateTags();
+            setDeleteTag(null);
+        }
     }
 
     return(
