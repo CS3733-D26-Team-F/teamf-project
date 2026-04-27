@@ -1,14 +1,14 @@
-import type {ContentForm} from "./interfaces/DocumentsInterfaces.tsx"
+import type {ContentForm} from "../interfaces/DocumentsInterfaces.tsx"
 import {Text, Paper, Group, Pagination} from '@mantine/core';
 import { useToggle } from '@mantine/hooks';
 import * as React from "react";
 import Switch from "@mui/material/Switch";
-import {useApi} from "./api.ts";
+import {useApi} from "../api.ts";
 import {IconClock} from "@tabler/icons-react";
 import dayjs from "dayjs";
-import {FileTypeBadge} from "./Badges/FileTypeBadge.tsx";
-import {PersonaBadges} from "./Badges/PersonaBadge.tsx";
-import {getFileType} from "./content/Functions.tsx";
+import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
+import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
+import {getFileType} from "../content/Functions.tsx";
 import {useTranslation} from "react-i18next";
 
 export function ContentCurrencyWidget() {
@@ -16,7 +16,9 @@ export function ContentCurrencyWidget() {
     const [roleModified, setRoleModified] = React.useState<ContentForm[]>([]);
     const currentUsername = localStorage.getItem('username');
     const currentPersona = localStorage.getItem('persona');
-    const [value, toggle] = useToggle(['Owner', 'Role'] as const);
+    const [value, toggle] = useToggle(
+        currentPersona === 'Admin' ? ['Role', 'Owner'] as const : ['Owner', 'Role'] as const
+    );
     const [page, setPage] = React.useState(1);
     const {t} = useTranslation();
     const PAGE_SIZE = 3;
@@ -41,21 +43,17 @@ export function ContentCurrencyWidget() {
 
             const now = new Date();
             const past48hours = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-            const nowDay = now.toISOString().split('T')[0];
-            const past48hoursDay = past48hours.toISOString().split('T')[0];
 
             const modifiedRecently = data
                 .filter(form => {
-                    const lastModified = new Date(form.date_modified);
-                    const lastModifiedDate = lastModified.toISOString().split('T')[0];
+                    const lastModified = new Date(form.date_modified).getTime();
                     return (
-                        lastModifiedDate >= past48hoursDay &&
-                        lastModifiedDate <= nowDay &&
+                        lastModified >= past48hours.getTime() &&
                         form.owner === currentUsername
                     );
                 })
                 .sort((a, b) =>
-                    new Date(a.date_modified).getTime() - new Date(b.date_modified).getTime()
+                    new Date(b.date_modified).getTime() - new Date(a.date_modified).getTime()
                 );
 
 
@@ -78,21 +76,17 @@ export function ContentCurrencyWidget() {
 
             const now = new Date();
             const past48hours = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-            const nowDay = now.toISOString().split('T')[0];
-            const past48hoursDay = past48hours.toISOString().split('T')[0];
 
             const modifiedRecently = data
                 .filter(form => {
-                    const lastModified = new Date(form.date_modified);
-                    const lastModifiedDate = lastModified.toISOString().split('T')[0];
+                    const lastModified = new Date(form.date_modified).getTime();
                     return (
-                        lastModifiedDate >= past48hoursDay &&
-                        lastModifiedDate <= nowDay &&
+                        lastModified >= past48hours.getTime() &&
                         (form.persona.includes(currentPersona as string) || currentPersona === 'Admin')
                     );
                 })
                 .sort((a, b) =>
-                    new Date(a.date_modified).getTime() - new Date(b.date_modified).getTime()
+                    new Date(b.date_modified).getTime() - new Date(a.date_modified).getTime()
                 );
 
 
@@ -122,13 +116,17 @@ export function ContentCurrencyWidget() {
                 <Text fw={700} size="sm" c="dimmed">{t('modify_widget')}</Text>
             </Group>
 
-            <Group>
-                <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>
-                <Switch
-                    checked={value === 'Owner'}
-                    onChange={() => toggle()}
-                />
-            </Group>
+            {currentPersona === 'Admin' ? (
+                <Text fw={700} size="sm" c="dimmed">View: All Personas</Text>
+            ) : (
+                <Group>
+                    <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>
+                    <Switch
+                        checked={value === 'Owner'}
+                        onChange={() => toggle()}
+                    />
+                </Group>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {paginated.length === 0 ? (
