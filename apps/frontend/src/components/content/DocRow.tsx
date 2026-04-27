@@ -86,9 +86,12 @@ export function DocRow({
                 opacity: isSomeoneCheckout ? 0.7 : 1,
                 backgroundColor: isLockedForUser ? 'var(--mantine-color-gray-1)' : undefined,
             }} onClick={() => {
-                console.log('row clicked, dropdownViewMode:', dropdownViewMode);
                 if (dropdownViewMode === 'dropdown') {
-                    onDrop(doc.id);
+                    if (isUrl || getFileType(doc.url).toLowerCase() === 'link') {
+                        window.open(doc.url, '_blank');
+                    } else {
+                        onDrop(doc.id);
+                    }
                 } else {
                     onView(doc.url, doc.name, doc.id, isUrl)
                 }
@@ -110,7 +113,6 @@ export function DocRow({
                 <Table.Td><StatusBadge status={doc.status} size="sm" filter={false}/> </Table.Td>
                 <Table.Td><TagBadges tags={doc.jointagscontent}/> </Table.Td>
                 <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
-                <Table.Td>{doc.review_date?.split('T')[0]}</Table.Td>
                 <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
                 <Table.Td onClick={e => e.stopPropagation()}>
                     <Group gap="xs">
@@ -249,14 +251,6 @@ export function DocRow({
                                         width="100%"
                                         height="600px"
                                         style={{border: 'none'}}/>
-                                </Box>
-                            )}
-                            {getFileType(doc.url) === 'Link' && (
-                                <Box>
-                                    {(() => {
-                                        window.open(doc.url, '_blank');
-                                        return null;
-                                    })()}
                                 </Box>
                             )}
                         </Box>

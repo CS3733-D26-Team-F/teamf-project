@@ -9,7 +9,7 @@ import {
     Tooltip, SegmentedControl, Accordion
 } from '@mantine/core';
 import {
-    IconSearch, IconPlus, IconTrash,
+    IconSearch, IconTrash,
     IconFilter, IconClock, IconWindowMaximize
 } from '@tabler/icons-react';
 import {IconLayoutBottombar} from "@tabler/icons-react"
@@ -151,7 +151,6 @@ export function Documents() {
         persona: persona !== 'Admin' ? [persona ?? ''] : [],
         date_modified: today,
         expiration_date: '',
-        review_date: '',
         content_type: '',
         status: '',
         jointagscontent: [] as string[]
@@ -171,7 +170,6 @@ export function Documents() {
             content_type: '',
             status: '',
             date_modified: today,
-            review_date: '',
             expiration_date: ''
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
@@ -201,7 +199,6 @@ export function Documents() {
         persona: [] as string[],
         date_modified: today,
         expiration_date: '',
-        review_date: '',
         content_type: '',
         status: '',
         jointagscontent: [] as string[]
@@ -485,7 +482,7 @@ export function Documents() {
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
-        formPayload.append('review_date', addData.review_date);
+        formPayload.append('review_date', "");
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
 
@@ -534,7 +531,6 @@ export function Documents() {
                 owner: persona === 'Admin' ? '' : username ?? '',
                 persona: persona !== 'Admin' ? [persona ?? ''] : [],
                 date_modified: today,
-                review_date: '',
                 expiration_date: '',
                 content_type: '',
                 status: '',
@@ -563,7 +559,7 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(sf.persona));
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
-                formPayload.append('review_date', sf.review_date);
+                formPayload.append('review_date', "");
                 formPayload.append('content_type', sf.content_type);
                 formPayload.append('status', sf.status);
                 formPayload.append('file', sf.file);
@@ -600,7 +596,6 @@ export function Documents() {
                     persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],
                     date_modified: today,
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
-                    review_date: doc.review_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
                     jointagscontent: doc.jointagscontent
@@ -620,7 +615,7 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(editData.persona));
                 formPayload.append('date_modified', editData.date_modified);
                 formPayload.append('expiration_date', editData.expiration_date);
-                formPayload.append('review_date', editData.review_date);
+                formPayload.append('review_date', "");
                 formPayload.append('content_type', editData.content_type);
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
@@ -1305,7 +1300,7 @@ export function Documents() {
                                  onChange={setFilterPersona} data={roles} clearable/>
                     <MultiSelect label={t('status')} placeholder={t('all_status')} value={filterStatus}
                                  onChange={setFilterStatus}
-                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
+                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}
                                  clearable/>
                     <MultiSelect label={t('file_type')} placeholder={t('all_type')} value={filterType}
                                  onChange={setFilterType}
@@ -1481,15 +1476,13 @@ export function Documents() {
                                 data={[t('reference'), t('workflow')]}/>
                         <Select label={t('document_status')} value={addData.status}
                                 onChange={val => setAddData({...addData, status: val ?? ''})}
-                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}/>
+                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
                         <TextInput label={t('last_modified')} type="date" value={addData.date_modified}
                                    onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
-                        <TextInput label={t('review_date')} type="date" value={addData.review_date}
-                                   onChange={e => setAddData({...addData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {addError && (
@@ -1574,15 +1567,13 @@ export function Documents() {
                                 data={[t('reference'), t('workflow')]}/>
                         <Select label={t('document_status')} value={editData.status}
                                 onChange={val => setEditData({...editData, status: val ?? ''})}
-                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}/>
+                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
                         <TextInput label={t('last_modified')} type="date" value={editData.date_modified}
                                    onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
-                        <TextInput label={t('review_date')} type="date" value={editData.review_date}
-                                   onChange={e => setEditData({...editData, review_date: e.target.value})}/>
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {editError && (
@@ -1677,7 +1668,7 @@ export function Documents() {
                                                               value={staged.content_type}
                                                               onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
                                             <Table.Td><Select
-                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('checked_out')]}
+                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('checked_out')]}
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
                                             <Table.Td>
@@ -1688,10 +1679,7 @@ export function Documents() {
                                                     <TextInput type="date" label={t('expires')} size="xs"
                                                                value={staged.expiration_date}
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
-                                                    <TextInput type="date" label={t('review_by')} size="xs"
-                                                               value={staged.review_date}
-                                                               onChange={e => updateStagedFile(staged.id, 'review_date', e.target.value)}/>
-                                                </Stack>
+                                                    </Stack>
                                             </Table.Td>
                                             <Table.Td><ActionIcon color="var(--color-neutral-red)"
                                                                   onClick={() => removeStagedFile(staged.id)}><IconTrash
