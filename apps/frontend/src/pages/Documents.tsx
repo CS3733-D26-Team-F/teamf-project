@@ -154,7 +154,7 @@ export function Documents() {
         expiration_date: '',
         content_type: '',
         status: '',
-        jointagscontent: []
+        jointagscontent: [] as string[]
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -748,7 +748,7 @@ export function Documents() {
                         if (tagData.data.length > 0) {
                             //Tags are id and tag_name, we only want name
                             for (const tag of tagData.data) {
-                                docTags.push(tag.tag_name)
+                                docTags.push(tag.tag_name);
                             }
                         }
 
@@ -774,6 +774,7 @@ export function Documents() {
                 if (tag.tag_name === tagToAdd) {
                     tagID = tag.metid;
                 }
+                if (tag.tag_name === tagToAdd) tagID = tag.metid;
             }
             await api(`${DOMAIN}/assigntag`, {
                 method: 'POST',
@@ -789,6 +790,7 @@ export function Documents() {
                 if (tag.tag_name === tagToRemove) {
                     tagID = tag.metid;
                 }
+                if (tag.tag_name === tagToRemove) tagID = tag.metid;
             }
             await api(`${DOMAIN}/unassigntag`, {
                 method: 'DELETE',
@@ -1733,12 +1735,12 @@ export function Documents() {
                                 <Table.Thead>
                                     <Table.Tr>
                                         <Table.Th w={200}>File Name / URL</Table.Th>
-                                        <Table.Th w={150}>Owner</Table.Th>
-                                        <Table.Th w={150}>Persona</Table.Th>
-                                        <Table.Th w={150}>Content Type</Table.Th>
-                                        <Table.Th w={150}>Status</Table.Th>
+                                        <Table.Th w={150}>{t('owner')}</Table.Th>
+                                        <Table.Th w={150}>{t('persona')}</Table.Th>
+                                        <Table.Th w={150}>{t('content_type')}</Table.Th>
+                                        <Table.Th w={150}>{t('status')}</Table.Th>
                                         <Table.Th w={150}>Tags</Table.Th>
-                                        <Table.Th w={150}>Dates</Table.Th>
+                                        <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
@@ -1806,3 +1808,5 @@ export function Documents() {
         </>
     );
 }
+
+export default Documents;
