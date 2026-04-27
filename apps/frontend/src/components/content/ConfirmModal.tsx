@@ -1,4 +1,6 @@
 import { Modal, Group, Button, Text } from '@mantine/core';
+import {useTranslation} from "react-i18next";
+
 
 type ConfirmProps = {
     opened: boolean;
@@ -10,12 +12,13 @@ type ConfirmProps = {
 }
 
 export function ConfirmModal(props: ConfirmProps) {
+    const {t} = useTranslation();
     return (
         <Modal opened={props.opened} onClose={props.onClose} title={props.title} centered>
             <Text size="sm" mb="md">{props.message}</Text>
             <Group justify="flex-end">
-                <Button className="invert-hover-outline" onClick={props.onCancel}>Cancel</Button>
-                <Button className="invert-hover" onClick={async () => await props.onConfirm()}>Confirm</Button>
+                <Button className="invert-hover-outline" onClick={props.onCancel}>{t('cancel')}</Button>
+                <Button className="invert-hover" onClick={async () => await props.onConfirm()}>{t('confirm')}</Button>
             </Group>
         </Modal>
     )

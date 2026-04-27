@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useListState } from "@mantine/hooks";
 import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
 import { IconTrash, IconClipboardList } from "@tabler/icons-react";
+import {useTranslation} from "react-i18next";
 
 interface ToDoItem {
     id: string;
@@ -13,6 +14,7 @@ export function ToDoList() {
     const [value, setValue] = useState('');
     const [initialized, setInitialized] = useState(false);
     const [items, handlers] = useListState<ToDoItem>([]);
+    const {t} = useTranslation();
 
     useEffect(() => {
         try {
@@ -22,7 +24,7 @@ export function ToDoList() {
                 if (parsed.length > 0) handlers.setState(parsed);
             }
         } catch (e) {
-            console.error('Failed to load todos:', e);
+            console.error(t('todo_fail'), e);
         }
         setInitialized(true);
     }, []);
@@ -48,34 +50,34 @@ export function ToDoList() {
             <Group justify="space-between" align="center">
                 <Group gap="xs">
                     <IconClipboardList size={20} color="var(--yale-blue)" />
-                    <Title order={3} style={{ color: 'var(--yale-blue)', margin: 0 }}>Tasks</Title>
+                    <Title order={3} style={{ color: 'var(--yale-blue)', margin: 0 }}>{t('task')}</Title>
                 </Group>
                 <Group gap="xs">
-                    {pending > 0 && <Badge color="blue" variant="light">{pending} pending</Badge>}
-                    {done > 0 && <Badge color="var(--pacific-blue)" variant="light">{done} done</Badge>}
+                    {pending > 0 && <Badge color="blue" variant="light">{pending} {t('pending')}</Badge>}
+                    {done > 0 && <Badge color="var(--pacific-blue)" variant="light">{done} {t('done')}</Badge>}
                 </Group>
             </Group>
 
             <Group gap="xs">
                 <TextInput
-                    placeholder="Add a new task..."
+                    placeholder={t('add_task')}
                     value={value}
                     onChange={(e) => setValue(e.currentTarget.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                    onKeyDown={(e) => e.key === t('enter') && addTask()}
                     style={{ flex: 1 }}
                     styles={{ input: { borderColor: 'var(--pacific-blue)' } }}
                 />
                 <Button
                     onClick={addTask}
                     style={{ backgroundColor: 'var(--yale-blue)' }}>
-                    Add
+                    {t('add')}
                 </Button>
             </Group>
 
             <Stack gap="xs" style={{ overflowY: 'auto', flex: 1 }}>
                 {items.length === 0 && (
                     <Text c="dimmed" size="sm" ta="center" mt="md">
-                        No tasks yet — add one above
+                        {t('no_task')}
                     </Text>
                 )}
                 {items.map((item, index) => (

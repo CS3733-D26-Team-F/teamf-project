@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import {FileTypeBadge} from "./Badges/FileTypeBadge.tsx";
 import {PersonaBadges} from "./Badges/PersonaBadge.tsx";
 import {getFileType} from "./content/Functions.tsx";
+import {useTranslation} from "react-i18next";
 
 export function ContentCurrencyWidget() {
     const [ownerModified, setOwnerModified] = React.useState<ContentForm[]>([]);
@@ -17,6 +18,7 @@ export function ContentCurrencyWidget() {
     const currentPersona = localStorage.getItem('persona');
     const [value, toggle] = useToggle(['Owner', 'Role'] as const);
     const [page, setPage] = React.useState(1);
+    const {t} = useTranslation();
     const PAGE_SIZE = 3;
 
     React.useEffect(() => {
@@ -117,11 +119,11 @@ export function ContentCurrencyWidget() {
         >
             <Group gap={6} mb="xs">
                 <IconClock size={14} color="gray" />
-                <Text fw={700} size="sm" c="dimmed">Modified Within the Past 48 Hours</Text>
+                <Text fw={700} size="sm" c="dimmed">{t('modify_widget')}</Text>
             </Group>
 
             <Group>
-                <Text fw={700} size="sm" c="dimmed">View: {value}</Text>
+                <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>
                 <Switch
                     checked={value === 'Owner'}
                     onChange={() => toggle()}
@@ -130,7 +132,7 @@ export function ContentCurrencyWidget() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {paginated.length === 0 ? (
-                    <Text c="dimmed">No documents modified within the past 48 hours</Text>
+                    <Text c="dimmed">{t('noModify_widget')}</Text>
                 ) : (
                 paginated.map(doc => (
                     <Paper
@@ -145,7 +147,7 @@ export function ContentCurrencyWidget() {
                         <Group justify="space-between">
                             <Text fw={600} size="sm">{doc.name}</Text>
                             <Text size="sm" c="dimmed">
-                                Last Modified: {dayjs(doc.date_modified).format("MMM D, YYYY")}
+                                {t('lastModify')}: {dayjs(doc.date_modified).format("MMM D, YYYY")}
                             </Text>
                         </Group>
 
