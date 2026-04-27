@@ -154,7 +154,7 @@ export function Documents() {
         expiration_date: '',
         content_type: '',
         status: '',
-        jointagscontent: []
+        jointagscontent: [] as string
     });
     const [bulkOpen, setBulkOpen] = useState(false);
     const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -220,7 +220,7 @@ export function Documents() {
         expiration_date: '',
         content_type: '',
         status: '',
-        jointagscontent: []
+        jointagscontent: [] as string[]
     });
     const [editFile, setEditFile] = useState<File | null>(null);
     const [editUrl, setEditUrl] = useState<string>('');
@@ -501,7 +501,6 @@ export function Documents() {
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
-        formPayload.append('review_date', "");
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
 
@@ -576,7 +575,7 @@ export function Documents() {
             return;
         }
 
-        const missingData = stagedFiles.some(sf => !sf.name || !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status || !sf.expiration_date || !sf.review_date);
+        const missingData = stagedFiles.some(sf => !sf.name || !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status || !sf.expiration_date);
         if (missingData) {
             alert('Please fill in all fields for every entry.');
             return;
@@ -590,7 +589,6 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(sf.persona));
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
-                formPayload.append('review_date', sf.review_date);
                 formPayload.append('status', sf.status);
                 formPayload.append('content_type', sf.content_type);
 
@@ -618,11 +616,10 @@ export function Documents() {
 
     async function handleSaveClick() {
         const expiration = new Date(editData.expiration_date);
-        const review = new Date(editData.review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired') || (review < today)) {
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired')) {
             return;
         }
 
@@ -665,7 +662,6 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(editData.persona));
                 formPayload.append('date_modified', editData.date_modified);
                 formPayload.append('expiration_date', editData.expiration_date);
-                formPayload.append('review_date', "");
                 formPayload.append('content_type', editData.content_type);
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
@@ -724,7 +720,7 @@ export function Documents() {
         const toEdit: string[] = (editData.jointagscontent ?? []);
 
         //sets are faster
-        const wantedTags = new Set(toEdit)
+        const wantedTags = new Set(toEdit);
         const currentTags = new Set(docTags);
 
         //Find what tags to remove
@@ -1731,17 +1727,6 @@ export function Documents() {
                                             <Table.Td>
                                                 <Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} />
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')}
-                                                                   value={staged.persona}
-                                                                   onChange={val => updateStagedFile(staged.id, 'persona', val)}
-                                                                   disabled={persona !== 'Admin'}/></Table.Td>
-                                            <Table.Td><Select data={[t('reference'), t('workflow')]}
-                                                              value={staged.content_type}
-                                                              onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
-                                            <Table.Td><Select
-                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('checked_out')]}
-                                                value={staged.status}
-                                                onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label={t('modified')} size="xs"
