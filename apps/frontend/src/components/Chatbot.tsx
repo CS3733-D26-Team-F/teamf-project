@@ -343,6 +343,7 @@ function ToolResultRenderer({ part, onView, onSendMessage }: {
         case 'document_checked_out':
         case 'document_checked_in':
         case 'document_favorited':
+        case 'notification_created':
             return (
                 <Paper p="xs" radius="md" mt="xs" style={{ background: 'var(--mantine-color-green-0)', border: '1px solid var(--mantine-color-green-3)' }}>
                     <Group gap="xs">
@@ -409,6 +410,7 @@ function toolLoadingLabel(toolName: string): string {
         'checkoutDocument': 'Checking out document...',
         'checkinDocument': 'Checking in document...',
         'summarizePortalActivity': 'Generating portal summary...',
+        'createNotification': 'Creating notification...',
         'changeTheme': 'Applying theme...',
     };
     return labels[toolName] || 'Processing...';
@@ -888,78 +890,78 @@ export function Chatbot() {
                             onChange={(e) => setAttachedFile(e.target.files?.[0] ?? null)}
                         />
 
-                            <Textarea
-                                placeholder={
-                                    !dbUsername ? 'Please log in to use the assistant.' :
-                                        isListening ? 'Listening...' :
-                                            'Ask about documents, employees, or portal navigation...'
-                                }
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
-                                size="sm"
-                                radius="md"
-                                autosize
-                                minRows={1}
-                                maxRows={4}
-                                leftSection={
-                                    <Tooltip label="Attach file" withArrow>
+                        <Textarea
+                            placeholder={
+                                !dbUsername ? 'Please log in to use the assistant.' :
+                                    isListening ? 'Listening...' :
+                                        'Ask about documents, employees, or portal navigation...'
+                            }
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
+                            size="sm"
+                            radius="md"
+                            autosize
+                            minRows={1}
+                            maxRows={4}
+                            leftSection={
+                                <Tooltip label="Attach file" withArrow>
+                                    <ActionIcon
+                                        size="sm"
+                                        variant="subtle"
+                                        color="gray"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
+                                    >
+                                        <IconPaperclip size={15} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            }
+                            rightSectionWidth={72}
+                            rightSection={
+                                <Group gap={2} mr={2} wrap="nowrap">
+                                    <Tooltip label={isListening ? 'Stop listening' : 'Voice input'} withArrow>
                                         <ActionIcon
                                             size="sm"
-                                            variant="subtle"
-                                            color="gray"
-                                            onClick={() => fileInputRef.current?.click()}
+                                            variant={isListening ? 'filled' : 'subtle'}
+                                            color={isListening ? 'red' : 'gray'}
+                                            onClick={toggleVoice}
                                             disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
                                         >
-                                            <IconPaperclip size={15} />
+                                            <IconMicrophone size={14} />
                                         </ActionIcon>
                                     </Tooltip>
-                                }
-                                rightSectionWidth={72}
-                                rightSection={
-                                    <Group gap={2} mr={2} wrap="nowrap">
-                                        <Tooltip label={isListening ? 'Stop listening' : 'Voice input'} withArrow>
-                                            <ActionIcon
-                                                size="sm"
-                                                variant={isListening ? 'filled' : 'subtle'}
-                                                color={isListening ? 'red' : 'gray'}
-                                                onClick={toggleVoice}
-                                                disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
-                                            >
-                                                <IconMicrophone size={14} />
+                                    {status === 'submitted' || status === 'streaming' ? (
+                                        <Tooltip label="Stop generating" withArrow>
+                                            <ActionIcon size="sm" color="red" variant="filled" onClick={stop}>
+                                                <IconSquare size={12} fill="currentColor" />
                                             </ActionIcon>
                                         </Tooltip>
-                                        {status === 'submitted' || status === 'streaming' ? (
-                                            <Tooltip label="Stop generating" withArrow>
-                                                <ActionIcon size="sm" color="red" variant="filled" onClick={stop}>
-                                                    <IconSquare size={12} fill="currentColor" />
-                                                </ActionIcon>
-                                            </Tooltip>
-                                        ) : (
-                                            <Tooltip label="Send (Enter)" withArrow>
-                                                <ActionIcon
-                                                    size="sm"
-                                                    color="blue"
-                                                    variant="filled"
-                                                    disabled={!input.trim() || !dbUsername}
-                                                    onClick={handleSubmit}
-                                                >
-                                                    <IconSend size={14} />
-                                                </ActionIcon>
-                                            </Tooltip>
-                                        )}
-                                    </Group>
-                                }
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        if (input.trim() && dbUsername && status !== 'submitted' && status !== 'streaming') {
-                                            handleSubmit(e as any);
-                                        }
+                                    ) : (
+                                        <Tooltip label="Send (Enter)" withArrow>
+                                            <ActionIcon
+                                                size="sm"
+                                                color="blue"
+                                                variant="filled"
+                                                disabled={!input.trim() || !dbUsername}
+                                                onClick={handleSubmit}
+                                            >
+                                                <IconSend size={14} />
+                                            </ActionIcon>
+                                        </Tooltip>
+                                    )}
+                                </Group>
+                            }
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (input.trim() && dbUsername && status !== 'submitted' && status !== 'streaming') {
+                                        handleSubmit(e as any);
                                     }
-                                    // Shift+Enter falls through naturally and adds a newline
-                                }}
-                            />
+                                }
+                                // Shift+Enter falls through naturally and adds a newline
+                            }}
+                        />
 
                         <Text size="xs" c="dimmed" ta="center" mt={6}>
                             Hanover Insurance — Internal Portal Assistant
