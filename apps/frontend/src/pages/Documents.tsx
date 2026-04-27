@@ -21,6 +21,7 @@ import {PageTitle} from "../components/Title.tsx"
 import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
+import {checkOutBadges} from "../components/Badges/checkOutBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
 import {useApi} from "../../src/components/api.ts";
 import type {
@@ -164,15 +165,33 @@ export function Documents() {
         const newStaged: StagedFile[] = files.map(f => ({
             id: Math.random().toString(36).substring(7),
             file: f,
+            url: '',
+            uploadType: 'file' as const,
             name: f.name,
             owner: persona === 'Admin' ? '' : username ?? '',
             persona: persona !== 'Admin' ? [persona ?? ''] : [],
             content_type: '',
             status: '',
             date_modified: today,
-            expiration_date: ''
+            expiration_date: '',
+            jointagscontent: []
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
+    }
+
+    function autoFillFromFirst() {
+        if (stagedFiles.length === 0) return;
+        const first = stagedFiles[0];
+        setStagedFiles(prev => prev.map((sf, i) => i === 0 ? sf : {
+            ...sf,
+            owner: first.owner,
+            persona: first.persona,
+            content_type: first.content_type,
+            status: first.status,
+            date_modified: first.date_modified,
+            expiration_date: first.expiration_date,
+            jointagscontent: first.jointagscontent,
+        }));
     }
 
     function updateStagedFile<K extends keyof StagedFile>(id: string, field: K, value: StagedFile[K]) {
@@ -184,6 +203,24 @@ export function Documents() {
 
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
+    }
+
+    function addStagedUrl() {
+        setStagedFiles(prev => [...prev, {
+            id: Math.random().toString(36).substring(7),
+            file: null,
+            url: '',
+            uploadType: 'url' as const,
+            name: '',
+            owner: persona === 'Admin' ? '' : username ?? '',
+            persona: persona !== 'Admin' ? [persona ?? ''] : [],
+            content_type: 'URL',
+            status: '',
+            date_modified: today,
+            expiration_date: '',
+            review_date: '',
+            jointagscontent: []
+        }]);
     }
 
     const [addFile, setAddFile] = useState<File | null>(null);
@@ -482,7 +519,6 @@ export function Documents() {
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
         formPayload.append('expiration_date', addData.expiration_date);
-        formPayload.append('review_date', "");
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
 
@@ -550,7 +586,19 @@ export function Documents() {
         }
     }
 
+
     async function handleBulkAdd() {
+        if (stagedFiles.length === 0) {
+            alert('Please upload at least one file or URL.');
+            return;
+        }
+
+        const missingData = stagedFiles.some(sf => !sf.name || !sf.owner || !sf.persona || !sf.date_modified || !sf.content_type || !sf.status || !sf.expiration_date);
+        if (missingData) {
+            alert('Please fill in all fields for every entry.');
+            return;
+        }
+
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
@@ -559,23 +607,62 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(sf.persona));
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
-                formPayload.append('review_date', "");
-                formPayload.append('content_type', sf.content_type);
                 formPayload.append('status', sf.status);
-                formPayload.append('file', sf.file);
+                formPayload.append('content_type', sf.content_type);
+
+                if (sf.uploadType === 'file' && sf.file) {
+                    formPayload.append('file', sf.file);
+                } else {
+                    formPayload.append('url', normalizeUrl(sf.url));
+                }
+
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-                setBulkOpen(false);
-                setStagedFiles([]);
-                loadDocuments();
+                if (sf.jointagscontent.length > 0) {
+                    const flat = await api(`${DOMAIN}/contentforms`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                                [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                            return newFlat;
+                        });
+                    const docID = flat.find(d => d.name === sf.name)?.id ?? 0;
+                    for (const tagToAdd of sf.jointagscontent) {
+                        const tagID = createdTags.find(t => t.tag_name === tagToAdd)?.metid ?? 0;
+                        if (tagID) {
+                            await api(`${DOMAIN}/assigntag`, {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({id: docID, metid: tagID})
+                            });
+                        }
+                    }
+                }
+
             } catch (err: any) {
                 if (err.status === 409 || err.status === 400 || err.status === 406) {
-                    setAddError(err.message)
+                    setAddError(err.message);
                 } else {
                     throw err;
                 }
                 return;
             }
         }
+
+        setBulkOpen(false);
+        setStagedFiles([]);
+        loadDocuments();
+    }
+
+    async function handleSaveClick() {
+        const expiration = new Date(editData.expiration_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired')) {
+            return;
+        }
+
+        setConfirmSaveOpen(true);
     }
 
     function openEdit(doc: ContentForm) {
@@ -604,9 +691,8 @@ export function Documents() {
             });
     }
 
-    async function handleSaveClick() {
+    async function handleEdit() {
         if (!editId) return;
-        setEditError('');
         try {
             if (editFile) {
                 const formPayload = new FormData();
@@ -615,7 +701,6 @@ export function Documents() {
                 formPayload.append('persona', JSON.stringify(editData.persona));
                 formPayload.append('date_modified', editData.date_modified);
                 formPayload.append('expiration_date', editData.expiration_date);
-                formPayload.append('review_date', "");
                 formPayload.append('content_type', editData.content_type);
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
@@ -631,20 +716,19 @@ export function Documents() {
                     body: JSON.stringify(editData)
                 });
             }
-            setConfirmSaveOpen(true);
         } catch (err: any) {
             if (err.status === 409 || err.status === 400 || err.status === 406) {
                 setEditError(err.message);
+                console.log("error: ", editError)
             } else {
                 throw err;
             }
+            return;
         }
-    }
 
-    async function handleEdit() {
-        if (!editId) return;
+        //add/remove any tags to the file before closing edit
 
-        // tag logic
+        //get Document id for what we are editing
         const flat = await api(`${DOMAIN}/contentforms`)
             .then(res => res.json())
             .then(data => {
@@ -657,6 +741,7 @@ export function Documents() {
         for (const doc of flat) {
             if (doc.name === editData.name) {
                 docID = doc.id;
+                //Also get what tags it had originally so we know what to remove/add
                 await api(`${DOMAIN}/grabformtags/${doc.name}`)
                     .then(res => res.json())
                     .then(tagData => {
@@ -666,11 +751,14 @@ export function Documents() {
                                 docTags.push(tag.tag_name);
                             }
                         }
+
                     });
             }
         }
-
+        //make sure jointagscontent is not undefined
         const toEdit: string[] = (editData.jointagscontent ?? []);
+
+        //sets are faster
         const wantedTags = new Set(toEdit);
         const currentTags = new Set(docTags);
 
@@ -720,6 +808,10 @@ export function Documents() {
         setEditOpen(false);
         setEditError('');
         loadDocuments();
+    }
+
+
+    function closeEdit() {
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -749,7 +841,6 @@ export function Documents() {
         setEditOpen(false);
         setEditUrl('');
         setEditUploadMode('file');
-        setEditError('');
     }
 
     async function handleDelete() {
@@ -1029,9 +1120,9 @@ export function Documents() {
                                 </FilledButton>
                             </>
                         )}
-                        <FilledButton 
+                        <FilledButton
                             variant={activeFilterCount > 0 ? 'filled' : 'outline'}
-                            leftSection={<IconFilter size={16} />} 
+                            leftSection={<IconFilter size={16} />}
                             onClick={() => setFilterOpen(true)}
                         >
                             {t('filter_doc')}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
@@ -1620,29 +1711,35 @@ export function Documents() {
             />
 
             {/* bulk upload modal */}
-            <Modal opened={bulkOpen} onClose={() => {
-                setBulkOpen(false);
-                setStagedFiles([]);
-                setAddError('');
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]);
             }} title={t('bulk_doc')} size="1200px">
                 <Stack>
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>{t('add_file')}</Text>
-                        <input type="file" multiple onChange={e => {
-                            handleBulkFileSelect(Array.from(e.target.files ?? []));
-                            e.target.value = '';
-                        }}/>
+                        <Text size="sm" fw={500} mb={4}>Add Files or URLs</Text>
+                        <Group>
+                            <input
+                                type="file"
+                                multiple
+                                style={{ display: 'none' }}
+                                id="bulk-file-input"
+                                onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
+                            />
+                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ Add Files</Button>
+                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
+                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> AutoFill From First</Button>
+                        </Group>
                     </Box>
                     {stagedFiles.length > 0 && (
-                        <Box style={{overflowX: 'auto'}}>
+                        <Box style={{ overflowX: 'auto' }}>
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <Table.Thead>
                                     <Table.Tr>
-                                        <Table.Th w={200}>{t('file_name')}</Table.Th>
+                                        <Table.Th w={200}>File Name / URL</Table.Th>
                                         <Table.Th w={150}>{t('owner')}</Table.Th>
                                         <Table.Th w={150}>{t('persona')}</Table.Th>
                                         <Table.Th w={150}>{t('content_type')}</Table.Th>
                                         <Table.Th w={150}>{t('status')}</Table.Th>
+                                        <Table.Th w={150}>Tags</Table.Th>
                                         <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
@@ -1650,27 +1747,36 @@ export function Documents() {
                                 <Table.Tbody>
                                     {stagedFiles.map(staged => (
                                         <Table.Tr key={staged.id}>
-                                            <Table.Td><TextInput value={staged.name}
-                                                                 onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}/></Table.Td>
+                                            <Table.Td>
+                                                {staged.uploadType === 'url'
+                                                    ? <Stack gap={4}>
+                                                        <TextInput placeholder="Document name" value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} />
+                                                        <TextInput placeholder="https://example.com" value={staged.url} onChange={e => updateStagedFile(staged.id, 'url', e.target.value)} />
+                                                    </Stack>
+                                                    : <TextInput value={staged.name} onChange={e => updateStagedFile(staged.id, 'name', e.target.value)} />
+                                                }
+                                            </Table.Td>
                                             <Table.Td>
                                                 {persona === 'Admin'
-                                                    ? <Select
-                                                        data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
-                                                        value={staged.owner}
-                                                        onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
-                                                    : <TextInput value={staged.owner} readOnly/>}
+                                                    ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
+                                                    : <TextInput value={staged.owner} readOnly />}
                                             </Table.Td>
-                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')}
-                                                                   value={staged.persona}
-                                                                   onChange={val => updateStagedFile(staged.id, 'persona', val)}
-                                                                   disabled={persona !== 'Admin'}/></Table.Td>
-                                            <Table.Td><Select data={[t('reference'), t('workflow')]}
-                                                              value={staged.content_type}
-                                                              onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
-                                            <Table.Td><Select
-                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('checked_out')]}
-                                                value={staged.status}
-                                                onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
+                                            <Table.Td>
+                                                <MultiSelect data={roles} value={staged.persona} onChange={val => updateStagedFile(staged.id, 'persona', val)} disabled={persona !== 'Admin'} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select data={['Reference', 'Workflow']} value={staged.content_type} onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <Select data={['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']} value={staged.status} onChange={val => updateStagedFile(staged.id, 'status', val ?? '')} />
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <MultiSelect
+                                                    data={getArrayTags()}
+                                                    value={staged.jointagscontent}
+                                                    onChange={val => updateStagedFile(staged.id, 'jointagscontent', val)}
+                                                />
+                                            </Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label={t('modified')} size="xs"
@@ -1681,9 +1787,9 @@ export function Documents() {
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
                                                     </Stack>
                                             </Table.Td>
-                                            <Table.Td><ActionIcon color="var(--color-neutral-red)"
-                                                                  onClick={() => removeStagedFile(staged.id)}><IconTrash
-                                                size={16}/></ActionIcon></Table.Td>
+                                            <Table.Td>
+                                                <ActionIcon color="var(--color-neutral-red)" onClick={() => removeStagedFile(staged.id)}><IconTrash size={16} /></ActionIcon>
+                                            </Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>
@@ -1691,14 +1797,7 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
-                        {addError && (
-                            <ErrorMessage message={addError}/>
-                        )}
-                        <Button className="invert-hover-outline" onClick={() => {
-                            setBulkOpen(false);
-                            setAddError('');
-                            setStagedFiles([]);
-                        }}>✕ {t('cancel')}</Button>
+                        <Button className="invert-hover-outline" onClick={() => { setBulkOpen(false);setAddError(''); setStagedFiles([]); }}>✕ {t('cancel')}</Button>
                         <Button onClick={handleBulkAdd} className="invert-hover"
                                 disabled={stagedFiles.length === 0}>
                             + {t('submit')} {stagedFiles.length > 0 ? stagedFiles.length : ''} {t('files')}
