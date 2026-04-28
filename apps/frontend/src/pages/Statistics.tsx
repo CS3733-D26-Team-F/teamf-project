@@ -12,6 +12,8 @@ import { DOMAIN } from "../const.ts";
 import { useApi } from "../components/api.ts";
 import {useAuth0} from "@auth0/auth0-react";
 import {t} from "i18next";
+import { Transactions } from "../components/mainmenu/Transactions.tsx"
+import { DocStatusWidget } from "../components/statistics/DocStatusWidget.tsx";
 
 const ALL_WIDGETS = {
     todo: { label: 'To-Do List', component: <ToDoList /> },
@@ -20,14 +22,16 @@ const ALL_WIDGETS = {
     heatmap: { label: 'Heat Map', component: <HeatMap /> },
     calendar: { label: 'Calendar', component: <Calendar /> },
     charts: { label: 'Charts', component: <ChartGrid /> },
+    transactions: { label: 'Transactions', component: <Transactions /> },
+    docstats: { label: 'Document Status', component: <DocStatusWidget /> },
 };
 
 const DEFAULT_LAYOUTS = {
     "Admin": ['stats', 'todo'],
-    "Underwriter": ['todo', 'calendar'],
-    "Business Analyst": ['stats', 'todo', 'calendar'],
-    "Actuarial Analyst": ['charts', 'stats'],
-    "EXL Operations": ['charts', 'calendar', 'stats']
+    "Underwriter": ['docstats', 'todo', 'calendar'],
+    "Business Analyst": ['stats', 'todo', 'docstats', 'calendar'],
+    "Actuarial Analyst": ['charts', 'transactions', 'stats'],
+    "EXL Operations": ['transactions', 'charts', 'calendar', 'stats']
 };
 
 export function Statistics() {
@@ -64,8 +68,6 @@ export function Statistics() {
     }, [name]);
 
     const handleSaveLayout = async (newLayout: string[]) => {
-        const name = localStorage.getItem('username');
-        const role = localStorage.getItem('persona');
 
         try {
             if (activeWidgets.length > 0) {
@@ -82,6 +84,7 @@ export function Statistics() {
                 await api(`${DOMAIN}/addWidgets`, {
                     method: 'POST',
                     body: JSON.stringify({
+                        'Content-Type': 'application/json',
                         username: name,
                         widgets: newLayout
                     })
@@ -129,7 +132,7 @@ export function Statistics() {
                     if (!widget) return null;
 
                     return (
-                            <Card shadow="sm" radius="md" h="100%">
+                            <Card shadow="sm" radius="md" h="100%" key={key}>
                                 {isEditing && (
                                     <button
                                         onClick={() => {
