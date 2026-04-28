@@ -24,6 +24,10 @@ app.use(cors({
     credentials: true,
 }));
 
+// Parse incoming JSON request bodies for API routes.
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Serve static files from the frontend build output.
 app.use(express.static(staticPath));
 
@@ -37,9 +41,6 @@ app.use('/', chatRoutes);
 app.use('/', notificationRoutes);
 app.use('/', loginRoutes);  // loginRoutes before contentRoutes!
 app.use('/', contentRoutes);
-
-// Parse incoming JSON request bodies for API routes.
-app.use(express.json());
 
 app.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));

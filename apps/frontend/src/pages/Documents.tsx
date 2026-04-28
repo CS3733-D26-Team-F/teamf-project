@@ -533,7 +533,7 @@ export function Documents() {
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
         formPayload.append('username', addData.username);
-
+        console.log("add data", addData);
         if (addFile) {
             formPayload.append('file', addFile);
         } else {

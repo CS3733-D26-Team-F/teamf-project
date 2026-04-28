@@ -7,8 +7,6 @@ import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
-router.use(upload.single('file'));
-
 async function resolveRequestUsername(req: any): Promise<string | null> {
     const bodyUsername = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
     if (bodyUsername && bodyUsername !== 'null' && bodyUsername !== 'undefined') return bodyUsername;
@@ -201,7 +199,6 @@ router.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res
         return res.status(500).json({error: 'Something went wrong with the upload'});
     }
 });
-
 
 router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
@@ -839,7 +836,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         //}
 
         const updateData: any = {
-            name,
+            name: name,
             owner: resolvedOwner,
             persona,  // now correctly set
             date_modified: new Date(date_modified),
