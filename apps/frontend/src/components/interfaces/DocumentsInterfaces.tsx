@@ -8,7 +8,7 @@ export type ContentForm = {
     date_modified: string;
     expiration_date: string;
     content_type: string;
-    review_date: string;
+    review_date: string | null;
     status: string;
     is_favorite: boolean;
     is_deleted: boolean;
@@ -18,7 +18,8 @@ export type ContentForm = {
 
 export type StagedFile = {
     id: string;
-    file: File;
+    file: File | null;
+    url: string;
     name: string;
     owner: string;
     persona: string[];
@@ -26,7 +27,9 @@ export type StagedFile = {
     status: string;
     date_modified: string;
     expiration_date: string;
-    review_date: string;
+    review_date: string | null;
+    uploadType: 'file' | 'url';
+    jointagscontent: string[];
 };
 
 export type Employee = {

@@ -48,7 +48,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         return res.status(400).send({error: "Name of content is required"});
     }
 
-    if (!newName || !owner || !persona || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+    if (!newName || !owner || !persona || !date_modified || !expiration_date || !content_type || !status) {
         return res.status(406).send({error: "Make sure all fields are filled in"});
     }
 
@@ -208,7 +208,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(400).json({error: 'File or URL is required'});
         }
 
-        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).send({error: "Make sure all fields are filled in"});
         }
 
@@ -219,7 +219,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
         }
 
         const expiration = new Date(expiration_date);
-        const review = new Date(review_date);
+        //Date can be invalid
+        //const review = new Date(review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -227,9 +228,10 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(409).json({ error: 'Document is expired' });
         }
 
-        if (review < today) {
-            return res.status(409).json({ error: 'Review date should be in the future' });
-        }
+        //No longer done since expiration=review
+        //if (review < today) {
+        //    return res.status(409).json({ error: 'Review date should be in the future' });
+        //}
 
         const employee = await prisma.employee.findUnique({
             where: {username: ownerUsername}
@@ -281,7 +283,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                review_date: new Date(review_date)
+                //Date can be invalid so just date instead of review_date
+                review_date: new Date()
             }
         });
 
@@ -784,7 +787,8 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
 
-        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status || !review_date) {
+
+        if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).json({ error: 'Make sure all fields are filled in' });
         }
 
@@ -793,7 +797,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         }
 
         const expiration = new Date(expiration_date);
-        const review = new Date(review_date);
+        //const review = new Date(review_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -801,9 +805,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             return res.status(409).json({ error: 'Document is expired' });
         }
 
-        if (review < today) {
-            return res.status(409).json({ error: 'Review date should be in the future' });
-        }
+        //no longer done since expiration = review
+        //if (review < today) {
+        //    return res.status(409).json({ error: 'Review date should be in the future' });
+        //}
 
         const updateData: any = {
             name,
@@ -814,7 +819,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             content_type,
             status,
             employee: {connect: {username: resolvedOwner}},
-            review_date: review_date ? new Date(review_date) : null
+            //Safe check for if review_date exists
+            //But Date can still be invalid so just null
+            //review_date: review_date ? new Date(review_date) : null
+            review_date : null
         };
 
         if (req.file) {

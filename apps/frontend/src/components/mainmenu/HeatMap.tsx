@@ -4,8 +4,10 @@ import { Heatmap } from '@mantine/charts';
 import dayjs from 'dayjs';
 import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
+import {useTranslation} from "react-i18next";
 
 export function HeatMap() {
+    const {t} = useTranslation();
     const [HeatmapData, setHeatmapData] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const api = useApi();
@@ -31,7 +33,7 @@ export function HeatMap() {
 
                 setHeatmapData(dateCounts);
             } catch (error) {
-                console.error("Failed to fetch heatmap data:", error);
+                console.error(t('heat_error'), error);
             } finally {
                 setLoading(false);
             }
@@ -59,7 +61,7 @@ export function HeatMap() {
         }}>
             <Paper p="md" radius="md" w="100%" >
                 <Text fw={700} size="md" mb="md">
-                    Activity over the Past 6 months
+                    {t('heat_activity')}
                 </Text>
                 <Heatmap
                     data={HeatmapData}
@@ -80,7 +82,7 @@ export function HeatMap() {
                     withTooltip
                     withMonthLabels
                     getTooltipLabel={({ date, value }) =>
-                        `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? 'No contributions' : `${value} contribution${value > 1 ? 's' : ''}`}`
+                        `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? t('heat_noCont') : `${value} ${t('heat_cont')}${value > 1 ? 's' : ''}`}`
                     }/>
             </Paper>
         </div>

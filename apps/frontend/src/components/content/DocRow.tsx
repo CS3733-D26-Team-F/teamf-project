@@ -113,7 +113,6 @@ export function DocRow({
                 <Table.Td><StatusBadge status={doc.status} size="sm" filter={false}/> </Table.Td>
                 <Table.Td><TagBadges tags={doc.jointagscontent}/> </Table.Td>
                 <Table.Td>{doc.date_modified?.split('T')[0]}</Table.Td>
-                <Table.Td>{doc.review_date?.split('T')[0]}</Table.Td>
                 <Table.Td>{doc.expiration_date?.split('T')[0]}</Table.Td>
                 <Table.Td onClick={e => e.stopPropagation()}>
                     <Group gap="xs">

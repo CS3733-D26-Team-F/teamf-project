@@ -141,7 +141,7 @@ router.get('/notifications', checkJWT, async (req, res) => {
             message: jn.notifications.message,
             send_date: jn.notifications.send_date,
             importance: jn.notifications.importance,
-            read: jn.read,
+            read: jn.notifications.read
         }));
 
         res.json(result);

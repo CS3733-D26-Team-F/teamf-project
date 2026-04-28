@@ -42,7 +42,7 @@
     "@mantine/core": "^9.1.0",
     "@mantine/dates": "^9.0.2",
     "@mantine/hooks": "^9.1.0",
-    "@mantine/notifications": "^9.0.2",
+    "@mantine/notifications": "^9.1.0",
     "@mantine/schedule": "^9.0.2",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
