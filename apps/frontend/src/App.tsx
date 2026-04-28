@@ -11,7 +11,7 @@ import { About} from "./pages/About.tsx";
 import {Footer} from "./components/Footer.tsx";
 import { Credit } from './pages/Credit.tsx';
 import { CommandPalette } from './components/CommandPalette'
-import { Dashboard } from './pages/Dashboard';
+import { Statistics } from './pages/Statistics.tsx';
 
 // Top-level application shell:
 // - configures Auth0 once for the whole app
@@ -41,7 +41,7 @@ export default function App() {
                 {/* Define the app's main navigation routes. */}
                 <Routes>
                     <Route path="/" element={<MainMenu />}/>
-                    <Route path="/dashboard" element={<Dashboard />}/>
+                    <Route path="/statistics" element={<Statistics />}/>
                     <Route path="/menu" element={<MainMenu />} />
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
