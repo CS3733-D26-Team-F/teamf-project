@@ -100,7 +100,8 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         expiration_date,
         content_type,
         status,
-        review_date
+        review_date,
+        username
     } = req.body;
 
     const expiration = new Date(req.body.expiration_date);
@@ -166,7 +167,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
             });
             const recipientEmpids = recipients.map(e => e.empid);
             console.log('[updateContentForm] Recipients found:', recipientEmpids);
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Updated',
@@ -176,6 +177,21 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
                 );
             }
         }
+
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        })
+
+        const transaction = await prisma.changes.create({
+            data: {
+                name: contentForm.name,
+                username: employee1.username,
+                change: "Updated Document",
+                date: new Date()
+            }
+        });
+
+        console.log(transaction);
 
         return res.status(200).json({
             message: 'Content form updated successfully',
@@ -245,7 +261,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             date_modified,
             expiration_date,
             content_type,
-            status
+            status,
+            username
         } = req.body;
         const rawFolderId = req.body.folder_id ?? req.body.folderId;
         const folderId = rawFolderId !== undefined && rawFolderId !== '' ? Number(rawFolderId) : null;
@@ -344,6 +361,19 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 }
             }
         });
+
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        })
+
+        const transaction = await prisma.changes.create({
+            data: {
+                name: content.name,
+                username: employee1.username,
+                change: "Added Document",
+                date: new Date(date_modified)
+            }
+        })
 
         return res.status(200).json({
             message: 'Content form created successfully',
@@ -523,8 +553,9 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
 });
 
 // Soft delete - sets is_deleted flag instead of removing from DB
-router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
+router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
+    console.log(req.params.username);
     try {
         const id = parseInt(req.params.id);
         const updated = await prisma.contentform.update({
@@ -549,7 +580,7 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             const adminEmpids = admins.map(a => a.adid);
 
             const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Deleted',
@@ -560,6 +591,18 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             }
         }
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: req.params.username}
+        })
+
+        const transaction = await prisma.changes.create({
+            data: {
+                name: updated.name,
+                username: employee1.username,
+                change: "Deleted Document",
+                date: new Date()
+            }
+        });
         res.json(updated);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -1574,12 +1617,14 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             expiration_date,
             review_date,
             content_type,
-            status
+            status,
+            username
         } = req.body;
         const resolvedOwner = ownerUsername ?? owner;
         console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
+
 
         if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).json({ error: 'Make sure all fields are filled in' });
@@ -1677,7 +1722,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             const adminEmpids = admins.map(a => a.adid);
 
             const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Updated',
@@ -1687,6 +1732,19 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
                 );
             }
         }
+
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        })
+
+        const transaction = await prisma.changes.create({
+            data: {
+                name: updated.name,
+                username: employee1.username,
+                change: "Updated Document",
+                date: new Date()
+            }
+        })
 
         res.json(updated);
     } catch (error) {
@@ -1970,5 +2028,38 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
         return res.status(500).json({error: 'Could not remove document from favorites'});
     }
 })
+
+router.post('/transactionDates', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const today = new Date();
+
+    const transactions = await prisma.changes.findMany({
+        where: {date: today}
+    })
+
+    return(transactions);
+})
+
+router.post('/changes', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {username} = req.body;
+    try {
+        const emp1 = await prisma.employee.findUnique({
+            where: { username }
+        })
+
+        if (!emp1) {
+            return res.json([]); // no employee found
+        }
+        const changes = await prisma.changes.findMany({
+            where: {username: emp1.username}
+
+        });
+        res.json(changes);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 
 export default router;

@@ -1,22 +1,26 @@
-import type {ContentForm} from "./interfaces/DocumentsInterfaces.tsx"
+import type {ContentForm} from "../interfaces/DocumentsInterfaces.tsx"
 import {Text, Paper, Group, Pagination} from '@mantine/core';
 import { useToggle } from '@mantine/hooks';
 import * as React from "react";
 import Switch from "@mui/material/Switch";
-import {useApi} from "./api.ts";
+import {useApi} from "../api.ts";
 import {IconClock} from "@tabler/icons-react";
 import dayjs from "dayjs";
-import {FileTypeBadge} from "./Badges/FileTypeBadge.tsx";
-import {PersonaBadges} from "./Badges/PersonaBadge.tsx";
-import {getFileType} from "./content/Functions.tsx";
+import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
+import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
+import {getFileType} from "../content/Functions.tsx";
+import {useTranslation} from "react-i18next";
 
 export function ContentCurrencyWidget() {
     const [ownerModified, setOwnerModified] = React.useState<ContentForm[]>([]);
     const [roleModified, setRoleModified] = React.useState<ContentForm[]>([]);
     const currentUsername = localStorage.getItem('username');
     const currentPersona = localStorage.getItem('persona');
-    const [value, toggle] = useToggle(['Owner', 'Role'] as const);
+    const [value, toggle] = useToggle(
+        currentPersona === 'Admin' ? ['Role', 'Owner'] as const : ['Owner', 'Role'] as const
+    );
     const [page, setPage] = React.useState(1);
+    const {t} = useTranslation();
     const PAGE_SIZE = 3;
 
     React.useEffect(() => {
@@ -39,21 +43,17 @@ export function ContentCurrencyWidget() {
 
             const now = new Date();
             const past48hours = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-            const nowDay = now.toISOString().split('T')[0];
-            const past48hoursDay = past48hours.toISOString().split('T')[0];
 
             const modifiedRecently = data
                 .filter(form => {
-                    const lastModified = new Date(form.date_modified);
-                    const lastModifiedDate = lastModified.toISOString().split('T')[0];
+                    const lastModified = new Date(form.date_modified).getTime();
                     return (
-                        lastModifiedDate >= past48hoursDay &&
-                        lastModifiedDate <= nowDay &&
+                        lastModified >= past48hours.getTime() &&
                         form.owner === currentUsername
                     );
                 })
                 .sort((a, b) =>
-                    new Date(a.date_modified).getTime() - new Date(b.date_modified).getTime()
+                    new Date(b.date_modified).getTime() - new Date(a.date_modified).getTime()
                 );
 
 
@@ -76,21 +76,17 @@ export function ContentCurrencyWidget() {
 
             const now = new Date();
             const past48hours = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-            const nowDay = now.toISOString().split('T')[0];
-            const past48hoursDay = past48hours.toISOString().split('T')[0];
 
             const modifiedRecently = data
                 .filter(form => {
-                    const lastModified = new Date(form.date_modified);
-                    const lastModifiedDate = lastModified.toISOString().split('T')[0];
+                    const lastModified = new Date(form.date_modified).getTime();
                     return (
-                        lastModifiedDate >= past48hoursDay &&
-                        lastModifiedDate <= nowDay &&
+                        lastModified >= past48hours.getTime() &&
                         (form.persona.includes(currentPersona as string) || currentPersona === 'Admin')
                     );
                 })
                 .sort((a, b) =>
-                    new Date(a.date_modified).getTime() - new Date(b.date_modified).getTime()
+                    new Date(b.date_modified).getTime() - new Date(a.date_modified).getTime()
                 );
 
 
@@ -117,20 +113,24 @@ export function ContentCurrencyWidget() {
         >
             <Group gap={6} mb="xs">
                 <IconClock size={14} color="gray" />
-                <Text fw={700} size="sm" c="dimmed">Modified Within the Past 48 Hours</Text>
+                <Text fw={700} size="sm" c="dimmed">{t('modify_widget')}</Text>
             </Group>
 
-            <Group>
-                <Text fw={700} size="sm" c="dimmed">View: {value}</Text>
-                <Switch
-                    checked={value === 'Owner'}
-                    onChange={() => toggle()}
-                />
-            </Group>
+            {currentPersona === 'Admin' ? (
+                <Text fw={700} size="sm" c="dimmed">View: All Personas</Text>
+            ) : (
+                <Group>
+                    <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>
+                    <Switch
+                        checked={value === 'Owner'}
+                        onChange={() => toggle()}
+                    />
+                </Group>
+            )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {paginated.length === 0 ? (
-                    <Text c="dimmed">No documents modified within the past 48 hours</Text>
+                    <Text c="dimmed">{t('noModify_widget')}</Text>
                 ) : (
                 paginated.map(doc => (
                     <Paper
@@ -145,7 +145,7 @@ export function ContentCurrencyWidget() {
                         <Group justify="space-between">
                             <Text fw={600} size="sm">{doc.name}</Text>
                             <Text size="sm" c="dimmed">
-                                Last Modified: {dayjs(doc.date_modified).format("MMM D, YYYY")}
+                                {t('lastModify')}: {dayjs(doc.date_modified).format("MMM D, YYYY")}
                             </Text>
                         </Group>
 

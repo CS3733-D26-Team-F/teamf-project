@@ -33,7 +33,7 @@ export function Hero() {
     return(
         <>
             {
-                <main className="main-menu">
+                <main className="main-menu" style={{ fontFamily: 'Roboto, sans-serif' }}>
                     <div className="image-stack">
                         {/* Render every slide; CSS controls which one is visible. */}
                         {images.map((src, i) => (

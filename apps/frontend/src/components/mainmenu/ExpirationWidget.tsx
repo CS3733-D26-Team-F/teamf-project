@@ -1,22 +1,26 @@
-import type {ContentForm} from "./interfaces/DocumentsInterfaces.tsx"
+import type {ContentForm} from "../interfaces/DocumentsInterfaces.tsx"
 import {Text, Paper, Group, Pagination} from '@mantine/core';
 import { useToggle } from '@mantine/hooks';
 import * as React from "react";
 import Switch from "@mui/material/Switch";
-import {useApi} from "./api.ts";
+import {useApi} from "../api.ts";
 import {IconClock} from "@tabler/icons-react";
 import dayjs from "dayjs";
-import {FileTypeBadge} from "./Badges/FileTypeBadge.tsx";
-import {getFileType} from "./content/Functions.tsx";
-import {PersonaBadges} from "./Badges/PersonaBadge.tsx";
+import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
+import {getFileType} from "../content/Functions.tsx";
+import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
+import {useTranslation} from "react-i18next";
 
 export function ExpirationWidget() {
     const [ownerExpiring, setOwnerExpiring] = React.useState<ContentForm[]>([]);
     const [roleExpiring, setRoleExpiring] = React.useState<ContentForm[]>([]);
     const currentUsername = localStorage.getItem('username');
     const currentPersona = localStorage.getItem('persona');
-    const [value, toggle] = useToggle(['Owner', 'Role'] as const);
+    const [value, toggle] = useToggle(
+        currentPersona === 'Admin' ? ['Role', 'Owner'] as const : ['Owner', 'Role'] as const
+    );
     const [page, setPage] = React.useState(1);
+    const {t} = useTranslation();
     const PAGE_SIZE = 3;
 
     React.useEffect(() => {
@@ -118,20 +122,24 @@ export function ExpirationWidget() {
             >
                 <Group gap={6} mb="xs">
                     <IconClock size={14} color="gray" />
-                    <Text fw={700} size="sm" c="dimmed">Expiring Within the Next 48 Hours</Text>
+                    <Text fw={700} size="sm" c="dimmed">{t('expire_widget')}</Text>
                 </Group>
 
-                <Group>
-                    <Text fw={700} size="sm" c="dimmed">View: {value}</Text>
-                    <Switch
-                        checked={value === 'Owner'}
-                        onChange={() => toggle()}
-                    />
-                </Group>
+                {currentPersona === 'Admin' ? (
+                    <Text fw={700} size="sm" c="dimmed">{t('view')}: All Personas</Text>
+                ) : (
+                    <Group>
+                        <Text fw={700} size="sm" c="dimmed">View: {value}</Text>
+                        <Switch
+                            checked={value === 'Owner'}
+                            onChange={() => toggle()}
+                        />
+                    </Group>
+                )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {paginated.length === 0 ? (
-                        <Text c="dimmed">No documents expiring within the next 48 hours</Text>
+                        <Text c="dimmed">{t('noExpire_widget')}</Text>
                     ) : (
                         paginated.map(doc => (
                             <Paper
@@ -146,7 +154,7 @@ export function ExpirationWidget() {
                                 <Group justify="space-between">
                                     <Text fw={600} size="sm">{doc.name}</Text>
                                     <Text size="sm" c="dimmed">
-                                        Expiration Date: {dayjs(doc.expiration_date).format("MMM D, YYYY")}
+                                        {t('noExpire_widget')}: {dayjs(doc.expiration_date).format("MMM D, YYYY")}
                                     </Text>
                                 </Group>
 

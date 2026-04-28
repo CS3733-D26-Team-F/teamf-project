@@ -296,6 +296,8 @@ export function Documents() {
         const newStaged: StagedFile[] = files.map(f => ({
             id: Math.random().toString(36).substring(7),
             file: f,
+            url: '',
+            uploadType: 'file' as const,
             name: f.name,
             owner: persona === 'Admin' ? '' : username ?? '',
             persona: persona !== 'Admin' ? [persona ?? ''] : [],
@@ -303,9 +305,25 @@ export function Documents() {
             status: '',
             folder_id: selectedFolderId,
             date_modified: today,
-            expiration_date: ''
+            expiration_date: '',
+            jointagscontent: []
         }));
         setStagedFiles(prev => [...prev, ...newStaged]);
+    }
+
+    function autoFillFromFirst() {
+        if (stagedFiles.length === 0) return;
+        const first = stagedFiles[0];
+        setStagedFiles(prev => prev.map((sf, i) => i === 0 ? sf : {
+            ...sf,
+            owner: first.owner,
+            persona: first.persona,
+            content_type: first.content_type,
+            status: first.status,
+            date_modified: first.date_modified,
+            expiration_date: first.expiration_date,
+            jointagscontent: first.jointagscontent,
+        }));
     }
 
     function updateStagedFile<K extends keyof StagedFile>(id: string, field: K, value: StagedFile[K]) {
@@ -316,6 +334,24 @@ export function Documents() {
 
     function removeStagedFile(id: string) {
         setStagedFiles(prev => prev.filter(item => item.id !== id));
+    }
+
+    function addStagedUrl() {
+        setStagedFiles(prev => [...prev, {
+            id: Math.random().toString(36).substring(7),
+            file: null,
+            url: '',
+            uploadType: 'url' as const,
+            name: '',
+            owner: persona === 'Admin' ? '' : username ?? '',
+            persona: persona !== 'Admin' ? [persona ?? ''] : [],
+            content_type: 'URL',
+            status: '',
+            folder_id: selectedFolderId,
+            date_modified: today,
+            expiration_date: '',
+            jointagscontent: []
+        }]);
     }
 
     const [addFile, setAddFile] = useState<File | null>(null);
@@ -866,14 +902,23 @@ export function Documents() {
         }
     }
 
-    async function handleBulkAdd() {
-        try {
-            for (const sf of stagedFiles) {
-                if (!sf.name || !sf.owner || sf.persona.length === 0 || !sf.content_type || !sf.status || !sf.expiration_date || !sf.folder_id || !sf.file) {
-                    setAddError('Please fill all required fields for each file.');
-                    return;
-                }
 
+    async function handleBulkAdd() {
+        if (stagedFiles.length === 0) {
+            setAddError('Please upload at least one file or URL.');
+            return;
+        }
+
+        const missingData = stagedFiles.some(sf =>
+            !sf.name || !sf.owner || sf.persona.length === 0 || !sf.date_modified || !sf.content_type || !sf.status || !sf.expiration_date
+        );
+        if (missingData) {
+            setAddError('Please fill in all fields for every entry.');
+            return;
+        }
+
+        for (const sf of stagedFiles) {
+            try {
                 const formPayload = new FormData();
                 formPayload.append('filename', sf.name);
                 formPayload.append('ownerUsername', sf.owner);
@@ -881,27 +926,66 @@ export function Documents() {
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
                 formPayload.append('content_type', sf.content_type);
-                formPayload.append('url', '');
                 formPayload.append('status', sf.status);
+
                 if (sf.folder_id !== null) {
                     formPayload.append('folder_id', String(sf.folder_id));
                 }
-                formPayload.append('file', sf.file);
+
+                if (sf.uploadType === 'file' && sf.file) {
+                    formPayload.append('file', sf.file);
+                } else {
+                    formPayload.append('url', normalizeUrl(sf.url));
+                }
 
                 await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
-            }
 
-            setBulkOpen(false);
-            setStagedFiles([]);
-            setAddError('');
-            loadDocuments();
-        } catch (err: any) {
-            if (err.status === 409 || err.status === 400 || err.status === 406) {
-                setAddError(err.message);
+                if (sf.jointagscontent.length > 0) {
+                    const flat = await api(`${DOMAIN}/contentforms`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const newFlat: ContentForm[] = Array.isArray(data) ? data :
+                                [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
+                            return newFlat;
+                        });
+                    const docID = flat.find(d => d.name === sf.name)?.id ?? 0;
+
+                    for (const tagToAdd of sf.jointagscontent) {
+                        const tagID = createdTags.find(t => t.tag_name === tagToAdd)?.metid ?? 0;
+                        if (!tagID || !docID) continue;
+                        await api(`${DOMAIN}/assigntag`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({id: docID, metid: tagID})
+                        });
+                    }
+                }
+            } catch (err: any) {
+                if (err.status === 409 || err.status === 400 || err.status === 406) {
+                    setAddError(err.message);
+                } else {
+                    throw err;
+                }
                 return;
             }
-            throw err;
         }
+
+        setBulkOpen(false);
+        setStagedFiles([]);
+        setAddError('');
+        loadDocuments();
+    }
+
+    async function handleSaveClick() {
+        const expiration = new Date(editData.expiration_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired')) {
+            return;
+        }
+
+        setConfirmSaveOpen(true);
     }
 
     function openEdit(doc: ContentForm) {
@@ -932,15 +1016,23 @@ export function Documents() {
     }
 
     function closeEdit() {
+        if (editId) {
+            api(`${DOMAIN}/contentforms/${editId}/checkin`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username})
+            });
+        }
         setEditOpen(false);
+        setEditId(null);
+        setEditFile(null);
         setEditUrl('');
         setEditUploadMode('file');
         setEditError('');
     }
 
-    async function handleSaveClick() {
+    async function handleEdit() {
         if (!editId) return;
-        setEditError('');
         try {
             if (editFile) {
                 const formPayload = new FormData();
@@ -964,19 +1056,19 @@ export function Documents() {
                     body: JSON.stringify(editData)
                 });
             }
-            setConfirmSaveOpen(true);
         } catch (err: any) {
             if (err.status === 409 || err.status === 400 || err.status === 406) {
                 setEditError(err.message);
+                console.log("error: ", editError)
             } else {
                 throw err;
             }
+            return;
         }
-    }
 
-    async function handleEdit() {
-        if (!editId) return;
+        //add/remove any tags to the file before closing edit
 
+        // tag logic
         const flat = await api(`${DOMAIN}/contentforms`)
             .then(res => res.json())
             .then(data => {
@@ -989,6 +1081,7 @@ export function Documents() {
         for (const doc of flat) {
             if (doc.name === editData.name) {
                 docID = doc.id;
+                //Also get what tags it had originally so we know what to remove/add
                 await api(`${DOMAIN}/grabformtags/${doc.name}`)
                     .then(res => res.json())
                     .then(tagData => {
@@ -997,11 +1090,14 @@ export function Documents() {
                                 docTags.push(tag.tag_name);
                             }
                         }
+
                     });
             }
         }
-
+        //make sure jointagscontent is not undefined
         const toEdit: string[] = (editData.jointagscontent ?? []);
+
+        //sets are faster
         const wantedTags = new Set(toEdit);
         const currentTags = new Set(docTags);
 
@@ -1033,7 +1129,7 @@ export function Documents() {
         }
 
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username})
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username}),
         });
 
         setEditFile(null);
@@ -1043,8 +1139,9 @@ export function Documents() {
     }
 
     async function handleDelete() {
+        console.log(localStorage.getItem('username'));
         if (!deleteId) return;
-        await api(`${DOMAIN}/contentforms/${deleteId}/softdelete`, {method: 'PATCH'});
+        await api(`${DOMAIN}/contentforms/${deleteId}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'});
         setDeleteOpen(false);
         setSelectedIds(prev => prev.filter(id => id !== deleteId));
         setSelectedFavIds(prev => prev.filter(id => id !== deleteId));
@@ -1715,7 +1812,7 @@ export function Documents() {
                             <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/softdelete`, {method: 'PATCH'})));
+                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'})));
                                 setSelectedIds([]);
                                 setSelectedFavIds([]);
                                 loadDocuments();
@@ -2338,18 +2435,23 @@ export function Documents() {
             />
 
             {/* bulk upload modal */}
-            <Modal opened={bulkOpen} onClose={() => {
-                setBulkOpen(false);
-                setStagedFiles([]);
-                setAddError('');
+            <Modal opened={bulkOpen} onClose={() => { setBulkOpen(false); setStagedFiles([]);
             }} title={t('bulk_doc')} size="1200px">
                 <Stack>
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>{t('add_file')}</Text>
-                        <input type="file" multiple onChange={e => {
-                            handleBulkFileSelect(Array.from(e.target.files ?? []));
-                            e.target.value = '';
-                        }}/>
+                        <Text size="sm" fw={500} mb={4}>Add Files or URLs</Text>
+                        <Group>
+                            <input
+                                type="file"
+                                multiple
+                                style={{ display: 'none' }}
+                                id="bulk-file-input"
+                                onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
+                            />
+                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ Add Files</Button>
+                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
+                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> AutoFill From First</Button>
+                        </Group>
                     </Box>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
@@ -2361,16 +2463,15 @@ export function Documents() {
                         </Group>
                     )}
                     {stagedFiles.length > 0 && (
-                        <Box style={{overflowX: 'auto'}}>
+                        <Box style={{ overflowX: 'auto' }}>
                             <Table highlightOnHover withTableBorder withColumnBorders>
                                 <Table.Thead>
                                     <Table.Tr>
-                                        <Table.Th w={200}>{t('file_name')}</Table.Th>
+                                        <Table.Th w={200}>File Name / URL</Table.Th>
                                         <Table.Th w={150}>{t('owner')}</Table.Th>
                                         <Table.Th w={150}>{t('persona')}</Table.Th>
                                         <Table.Th w={150}>{t('content_type')}</Table.Th>
                                         <Table.Th w={150}>{t('status')}</Table.Th>
-                                        <Table.Th w={150}>Folder</Table.Th>
                                         <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
@@ -2378,45 +2479,24 @@ export function Documents() {
                                 <Table.Tbody>
                                     {stagedFiles.map(staged => (
                                         <Table.Tr key={staged.id}>
-                                            <Table.Td>
-                                                <TextInput value={staged.name}
-                                                           onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}/>
-                                            </Table.Td>
+                                            <Table.Td><TextInput value={staged.name}
+                                                                 onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}/></Table.Td>
                                             <Table.Td>
                                                 {persona === 'Admin'
-                                                    ? <Select
-                                                        data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)}
-                                                        value={staged.owner}
-                                                        onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')}/>
-                                                    : <TextInput value={staged.owner} readOnly/>}
+                                                    ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />
+                                                    : <TextInput value={staged.owner} readOnly />}
                                             </Table.Td>
-                                            <Table.Td>
-                                                <MultiSelect
-                                                    data={roles.filter(role => role !== 'Admin')}
-                                                    value={staged.persona}
-                                                    onChange={val => updateStagedFile(staged.id, 'persona', val)}
-                                                    disabled={persona !== 'Admin'}
-                                                />
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <Select data={[t('reference'), t('workflow')]}
-                                                        value={staged.content_type}
-                                                        onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/>
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <Select
-                                                    data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('approved')]}
-                                                    value={staged.status}
-                                                    onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/>
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <Select
-                                                    data={folders.map(f => ({label: f.name, value: String(f.id)}))}
-                                                    value={staged.folder_id !== null ? String(staged.folder_id) : null}
-                                                    onChange={val => updateStagedFile(staged.id, 'folder_id', val ? Number(val) : null)}
-                                                    clearable
-                                                />
-                                            </Table.Td>
+                                            <Table.Td><MultiSelect data={roles.filter(role => role !== 'Admin')}
+                                                                   value={staged.persona}
+                                                                   onChange={val => updateStagedFile(staged.id, 'persona', val)}
+                                                                   disabled={persona !== 'Admin'}/></Table.Td>
+                                            <Table.Td><Select data={[t('reference'), t('workflow')]}
+                                                              value={staged.content_type}
+                                                              onChange={val => updateStagedFile(staged.id, 'content_type', val ?? '')}/></Table.Td>
+                                            <Table.Td><Select
+                                                data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('checked_out')]}
+                                                value={staged.status}
+                                                onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label={t('modified')} size="xs"
@@ -2427,12 +2507,9 @@ export function Documents() {
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
                                                 </Stack>
                                             </Table.Td>
-                                            <Table.Td>
-                                                <ActionIcon color="var(--color-neutral-red)"
-                                                            onClick={() => removeStagedFile(staged.id)}>
-                                                    <IconTrash size={16}/>
-                                                </ActionIcon>
-                                            </Table.Td>
+                                            <Table.Td><ActionIcon color="var(--color-neutral-red)"
+                                                                  onClick={() => removeStagedFile(staged.id)}><IconTrash
+                                                size={16}/></ActionIcon></Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>
@@ -2440,7 +2517,9 @@ export function Documents() {
                         </Box>
                     )}
                     <Group justify="flex-end" mt="md">
-                        {addError && <ErrorMessage message={addError}/>}
+                        {addError && (
+                            <ErrorMessage message={addError}/>
+                        )}
                         <Button className="invert-hover-outline" onClick={() => {
                             setBulkOpen(false);
                             setAddError('');

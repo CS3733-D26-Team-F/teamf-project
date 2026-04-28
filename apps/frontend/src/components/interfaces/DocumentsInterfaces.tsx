@@ -35,7 +35,9 @@ export type Folder = {
 
 export type StagedFile = {
     id: string;
-    file: File;
+    file: File | null;
+    url: string;
+    uploadType: 'file' | 'url';
     name: string;
     owner: string;
     persona: string[];
@@ -44,6 +46,8 @@ export type StagedFile = {
     folder_id: number | null;
     date_modified: string;
     expiration_date: string;
+    jointagscontent: string[];
+    review_date?: string | null;
 };
 
 export type Employee = {

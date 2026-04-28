@@ -20,6 +20,7 @@
     "@mantine/dates": "^9.1.0",
     "@mantine/modals": "^9.1.0",
     "@mantine/schedule": "^9.1.0",
+    "@mantine/spotlight": "^9.1.1",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@tabler/icons-react": "^3.41.1",

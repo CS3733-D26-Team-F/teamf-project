@@ -25,7 +25,8 @@ The user you are talking to is: ${displayName} (username: ${username}, role: ${u
    - Documents can be restored. Admins can permanently delete from here.
 4. Employees Page (/manageemployees) — Admin only. Lists all employees by role.
    - Features: Search bar, Add Employee button, Edit and Delete per row.
-5. Profile & Settings — Top-right dropdown. Includes profile, theme toggle, and logout.
+5. Notifications Page (/notifications) — Shows employee notifications, read/unread state, and delete controls.
+6. Profile & Settings — Top-right dropdown. Includes profile, theme toggle, and logout.
 </App_Map>
 
 <Permissions>
@@ -75,6 +76,12 @@ When deleting employees:
 - ALWAYS call deleteEmployee with confirmed: false first, even if the user says "yes" or "confirm" in their message.
 - Never ask for confirmation via text. Always use the tool to generate the confirmation card.
 - Only call deleteEmployee with confirmed: true after the user clicks the confirmation button.
+
+When creating notifications:
+- Extract the notification title and message exactly from the user's request when provided.
+- Use recipientMode: "all" only when the user clearly asks to notify all employees. Only admins can send a notification to all employees. When an employee that is not an admin asks to create a notification, only ask them for the name of the recipient, do not ask them if they want to send it to all employees.
+- Use recipientMode: "users" with recipientUsernames or recipientEmpids when the user names specific employees.
+- Ask for missing title, message, or recipients before calling the tool.
 </Tool_Usage_Guide>
 `;
 
@@ -752,6 +759,112 @@ router.post('/api/chat', async (req, res) => {
                             employees: { total: totalEmployees }
                         },
                         message: `Portal summary: ${totalDocs} documents (${activeDocs} active, ${expiredDocs} expired, ${checkedOutDocs} checked out, ${expiringDocs} expiring soon). ${totalEmployees} employees registered.`
+                    };
+                }
+            }),
+
+            // Create Notification
+            createNotification: tool({
+                description: 'Create a notification with a custom title and message for all employees or specific employees. Use recipientMode "all" for every employee, or "users" with recipientUsernames and/or recipientEmpids for selected employees.',
+                parameters: z.object({
+                    title: z.string().max(50).describe('Notification title. Maximum 50 characters.'),
+                    message: z.string().max(256).describe('Notification message. Maximum 256 characters.'),
+                    recipientMode: z.enum(['all', 'users']).describe('Use "all" for every employee, or "users" for specific employees.'),
+                    recipientUsernames: z.array(z.string()).optional().describe('Specific employee usernames to notify. Required when recipientMode is "users" unless recipientEmpids are provided.'),
+                    recipientEmpids: z.array(z.number()).optional().describe('Specific employee IDs to notify. Required when recipientMode is "users" unless recipientUsernames are provided.'),
+                    importance: z.number().int().optional().describe('Optional importance value. Defaults to 1.')
+                }),
+                execute: async (args: any) => {
+                    if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
+
+                    const sender = await prisma.employee.findUnique({ where: { username } });
+                    if (!sender) return { success: false, message: `Sender "${username}" not found.` };
+
+                    const title = args.title.trim();
+                    const message = args.message.trim();
+                    if (!title || !message) {
+                        return { success: false, message: 'Notification title and message are required.' };
+                    }
+
+                    let recipients: { empid: number; username: string }[] = [];
+
+                    if (args.recipientMode === 'all') {
+                        if (userRole !== 'Admin') {
+                            return { success: false, message: 'Only Admins can create notifications for all employees.' };
+                        }
+
+                        recipients = await prisma.employee.findMany({
+                            select: { empid: true, username: true }
+                        });
+                    } else {
+                        const requestedUsernames: string[] = (args.recipientUsernames ?? [])
+                            .map((u: string) => u.trim())
+                            .filter(Boolean);
+                        const requestedEmpids: number[] = args.recipientEmpids ?? [];
+
+                        if (requestedUsernames.length === 0 && requestedEmpids.length === 0) {
+                            return { success: false, message: 'Please provide at least one recipient username or employee ID.' };
+                        }
+
+                        recipients = await prisma.employee.findMany({
+                            where: {
+                                OR: [
+                                    ...(requestedUsernames.length > 0 ? [{ username: { in: requestedUsernames } }] : []),
+                                    ...(requestedEmpids.length > 0 ? [{ empid: { in: requestedEmpids } }] : [])
+                                ]
+                            },
+                            select: { empid: true, username: true }
+                        });
+
+                        const foundUsernames = new Set(recipients.map(r => r.username));
+                        const foundEmpids = new Set(recipients.map(r => r.empid));
+                        const missingUsernames = requestedUsernames.filter((u: string) => !foundUsernames.has(u));
+                        const missingEmpids = requestedEmpids.filter((empid: number) => !foundEmpids.has(empid));
+
+                        if (missingUsernames.length > 0 || missingEmpids.length > 0) {
+                            const missing = [
+                                ...missingUsernames.map((u: string) => `@${u}`),
+                                ...missingEmpids.map((empid: number) => `employee ID ${empid}`)
+                            ].join(', ');
+                            return { success: false, message: `Could not find recipient(s): ${missing}.` };
+                        }
+                    }
+
+                    const uniqueRecipientEmpids = [...new Set(recipients.map(r => r.empid))];
+                    if (uniqueRecipientEmpids.length === 0) {
+                        return { success: false, message: 'No notification recipients found.' };
+                    }
+
+                    const notification = await prisma.notifications.create({
+                        data: {
+                            title,
+                            message,
+                            send_date: new Date(),
+                            importance: args.importance ?? 1,
+                            sender: sender.empid
+                        }
+                    });
+
+                    await prisma.joinednotice.createMany({
+                        data: uniqueRecipientEmpids.map(empid => ({
+                            empid,
+                            notid: notification.notid,
+                            read: false
+                        }))
+                    });
+
+                    return {
+                        success: true,
+                        type: 'notification_created',
+                        notification: {
+                            notid: notification.notid,
+                            title: notification.title,
+                            message: notification.message,
+                            send_date: notification.send_date,
+                            importance: notification.importance
+                        },
+                        recipientCount: uniqueRecipientEmpids.length,
+                        message: `Notification "${title}" sent to ${uniqueRecipientEmpids.length} employee(s).`
                     };
                 }
             }),
