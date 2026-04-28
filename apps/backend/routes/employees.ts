@@ -49,6 +49,7 @@ router.post('/getEmployee', checkJWT, async (req, res) => {
 
 // Update employee fields locally and mirror certain changes back to Auth0.
 router.patch('/updateEmployee', checkJWT, async (req, res) => {
+    console.log("updateEmployee hit, body:", req.body);
     const auth0Id = req.auth!.payload.sub as string;
     const token = await getManagementToken();
     const {username, newUsername, password, persona, first_name, last_name, pfp_URL} = req.body;

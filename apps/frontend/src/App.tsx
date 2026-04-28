@@ -1,6 +1,6 @@
 import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { MainMenu } from './pages/MainMenu';
-import { ProfilePage } from './pages/ProfilePage';
+// import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider} from "@auth0/auth0-react";
@@ -30,7 +30,7 @@ export default function App() {
                 // API audience requested for backend access.
                 audience: import.meta.env.VITE_AUTH0_AUDIENCE,
                 // Scopes requested for the user's identity and API access.
-                scope: "openid profile email read:profile read:data read:api"
+                scope: "openid profile email read:profile read:data read:api offline_access"
             }}
             // Persist session across page reloads.
             useRefreshTokens = {true}
@@ -46,7 +46,7 @@ export default function App() {
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
-                    <Route path="/profilePage" element={<ProfilePage />}/>
+                    {/*<Route path="/profilePage" element={<ProfilePage />}/>*/}
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/about" element={<About />}/>
                     <Route path="/credit" element={<Credit />}/>
