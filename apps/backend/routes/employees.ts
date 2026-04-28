@@ -24,7 +24,7 @@ router.get('/employees', async (req, res) => {
 });
 
 // Lookup a single employee by username.
-router.post('/getEmployee', async (req, res) => {
+router.post('/getEmployee', checkJWT, async (req, res) => {
     //const auth0Id = req.auth!.payload.sub as string;
     const {username} = req.body;
 

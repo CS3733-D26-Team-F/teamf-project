@@ -27,7 +27,7 @@ const ALL_WIDGETS = {
 };
 
 const DEFAULT_LAYOUTS = {
-    "Admin": ['stats', 'todo'],
+    "Admin": ['docstats', 'stats', 'todo'],
     "Underwriter": ['docstats', 'todo', 'calendar'],
     "Business Analyst": ['stats', 'todo', 'docstats', 'calendar'],
     "Actuarial Analyst": ['charts', 'transactions', 'stats'],
@@ -68,11 +68,13 @@ export function Statistics() {
     }, [name]);
 
     const handleSaveLayout = async (newLayout: string[]) => {
-
         try {
             if (activeWidgets.length > 0) {
                 await api(`${DOMAIN}/removeWidgets`, {
                     method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                    },
                     body: JSON.stringify({
                         username: name,
                         widgets: activeWidgets
@@ -83,8 +85,10 @@ export function Statistics() {
             if (newLayout.length > 0) {
                 await api(`${DOMAIN}/addWidgets`, {
                     method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                    },
                     body: JSON.stringify({
-                        'Content-Type': 'application/json',
                         username: name,
                         widgets: newLayout
                     })
