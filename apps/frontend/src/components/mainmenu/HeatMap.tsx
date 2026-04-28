@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
 import {useTranslation} from "react-i18next";
+import {HelpModal} from "./StatsPopup.tsx";
 
 export function HeatMap() {
     const {t} = useTranslation();
@@ -59,7 +60,10 @@ export function HeatMap() {
             padding: '1rem',
             boxSizing: 'border-box'
         }}>
-            <Paper p="md" radius="md" w="100%" >
+            <Paper p="md" radius="md" style={{ position: 'relative', width: '100%' }}>
+                <HelpModal title="Activity Heatmap">
+                    <Text>Shows document modification activity over the last 6 months. Darker colours indicate more changes on that day. Hover over boxes to see dates and details.</Text>
+                </HelpModal>
                 <Text fw={700} size="md" mb="md">
                     {t('heat_activity')}
                 </Text>

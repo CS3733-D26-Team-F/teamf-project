@@ -10,6 +10,7 @@ import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
 import {getFileType} from "../content/Functions.tsx";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {useTranslation} from "react-i18next";
+import {HelpModal} from "./StatsPopup.tsx";
 
 export function ExpirationWidget() {
     const [ownerExpiring, setOwnerExpiring] = React.useState<ContentForm[]>([]);
@@ -117,9 +118,13 @@ export function ExpirationWidget() {
                 p="md"
                 style={{
                     marginLeft: 20,
-                    marginTop: 20
+                    marginTop: 20,
+                    position: 'relative'
                 }}
             >
+                <HelpModal title="Expiring Soon">
+                    <Text>Shows documents expiring in the next 48 hours, filtered by your ownership or role.</Text>
+                </HelpModal>
                 <Group gap={6} mb="xs">
                     <IconClock size={14} color="gray" />
                     <Text fw={700} size="sm" c="dimmed">{t('expire_widget')}</Text>

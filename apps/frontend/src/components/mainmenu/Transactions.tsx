@@ -4,6 +4,7 @@ import { useApi } from "../api.ts";
 import dayjs from "dayjs";
 import {Group, Paper, Text} from "@mantine/core";
 import {FilePlusIcon, NotePencilIcon, TrashIcon} from "@phosphor-icons/react";
+import {HelpModal} from "./StatsPopup.tsx";
 
 type Change = {
     chad: number;
@@ -45,7 +46,11 @@ export function Transactions() {
     const deletedToday = todaysChanges.filter(c => c.change_ === "Deleted Document").length;
 
     return (
-        <Paper withBorder p="md" radius="md" style={{ width: 300 }}>
+
+        <Paper withBorder p="md" radius="md" style={{ width: 300, position: "relative" }}>
+            <HelpModal title="Transactions">
+                <Text>Number of transactions of documents added, edited, and deleted today.</Text>
+            </HelpModal>
             <Text fw={700} size="lg" mb="md">My Activity Today</Text>
 
             <Group justify="space-between" mb="xs">
@@ -72,5 +77,7 @@ export function Transactions() {
                 </Group>
             </Group>
         </Paper>
+
+
     )
 }
