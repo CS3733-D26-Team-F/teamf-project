@@ -57,14 +57,19 @@ export function ProfileComponent() {
                 transition: 'box-shadow 0.15s', overflow: 'hidden', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 16 }}>
             
             <Table  style={{ padding: '20px' }}>
-                
-                <thead id="profile-header" style={{ padding: '20px' }}>
-                    <tr>
-                        <th>{t('user')}: {localStorage.getItem('first_name')}</th>
-                        <th>{t('role')}: {localStorage.getItem('persona')}</th>
+                <Table.Tbody>
+                    <th>{t('user')}: {localStorage.getItem('first_name')}</th>
+                    <th>{t('role')}: {localStorage.getItem('persona')}</th>
 
+                </Table.Tbody>
+
+                <Table.Tbody>
+                    <tr>
+                        <td>{t('employee_id')}: {localStorage.getItem('empid')}</td>
+                        
                     </tr>
-                </thead>
+                </Table.Tbody>
+
                 <tbody>
                     <tr>
                         {/* Profile image is loaded from the backend when available, otherwise fallback is used. */}

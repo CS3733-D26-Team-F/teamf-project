@@ -8,7 +8,7 @@ import {
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
     Tooltip, SegmentedControl, Pagination, Accordion
 } from '@mantine/core';
-import {IconPlus, IconFolder, IconDotsVertical, IconChevronDown, IconChevronRight, IconSearch, IconTrash, IconFilter, IconClock, IconWindowMaximize} from '@tabler/icons-react';
+import {IconFolder, IconDotsVertical, IconChevronDown, IconChevronRight, IconSearch, IconTrash, IconFilter, IconClock, IconWindowMaximize} from '@tabler/icons-react';
 import {IconLayoutBottombar} from "@tabler/icons-react"
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -49,6 +49,16 @@ type DocumentFormData = {
     folder: string;
     jointagscontent: string[];
 };
+
+type PageMap = {
+    Underwriter: number;
+    'Business Analyst': number;
+    'Actuarial Analyst': number;
+    'EXL Operations': number;
+    All: number;
+};
+
+type PageKey = keyof PageMap;
 
 export function Documents() {
     const roles = allPersonas
@@ -125,7 +135,6 @@ export function Documents() {
     const [editFolderError, setEditFolderError] = useState('');
     const [deleteFolderOpen, setDeleteFolderOpen] = useState(false);
     const [deleteFolderId, setDeleteFolderId] = useState<number | null>(null);
-    const [SelectedIdsFolder, setSelectedIdsFolder] = useState<number[]>([]);
     const [duplicateFolderOpen, setDuplicateFolderOpen] = useState(false);
     const [duplicateFolderId, setDuplicateFolderId] = useState<number | null>(null);
     const [expandedFolderIds, setExpandedFolderIds] = useState<number[]>([]);
@@ -174,15 +183,6 @@ export function Documents() {
         [folders]
     );
 
-    const selectedChildFolders = useMemo(
-        () => selectedFolderId === null
-            ? []
-            : folders
-                .filter(folder => (folder.parent_folder_id ?? null) === selectedFolderId)
-                .sort((a, b) => a.name.localeCompare(b.name)),
-        [folders, selectedFolderId]
-    );
-
     const folderParentOptions = useMemo(
         () => [{label: 'Top level', value: 'root'}, ...folders.map(f => ({label: f.name, value: String(f.id)}))],
         [folders]
@@ -196,7 +196,7 @@ export function Documents() {
     const [favoritesPage, setFavoritesPage] = useState(1);
     const [documentsPage, setDocumentsPage] = useState(1);
 
-    const [currentPage, setCurrentPage] = useState({"Underwriter": 1, "Business Analyst": 1, "Actuarial Analyst": 1, "EXL Operations": 1, "All": 1});
+    const [currentPage, setCurrentPage] = useState<PageMap>({"Underwriter": 1, "Business Analyst": 1, "Actuarial Analyst": 1, "EXL Operations": 1, "All": 1});
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
@@ -508,12 +508,10 @@ export function Documents() {
     async function deleteFolder(folderId: number) {
         const targetFolderIds = [folderId, ...getDescendantFolderIds(folderId)];
         const containedDocs = documents.filter(d => d.folder_id !== null && targetFolderIds.includes(d.folder_id));
-        const containedFolders = folders.filter(f => f.parent_folder_id !== null && targetFolderIds.includes(f.parent_folder_id));
         try {
             await api(`${DOMAIN}/folders/${folderId}`, {method: 'DELETE'});
             setDeleteFolderOpen(false);
             setDeleteFolderId(null);
-            setSelectedIdsFolder(prev => prev.filter(id => !containedFolders.some(doc => doc.id === id)));
             setSelectedFavIds(prev => prev.filter(id => !containedDocs.some(doc => doc.id === id)));
             if (selectedFolderId !== null && targetFolderIds.includes(selectedFolderId)) {
                 setSelectedFolderId(null);
@@ -1183,11 +1181,9 @@ export function Documents() {
     if (!allowedAccess) return <AccessDenied/>;
 
 
-    function contentTable(persona: any, documentsToDisplay: ContentForm[]) {
+    function contentTable(persona: PageKey, documentsToDisplay: ContentForm[]) {
         const currentPageCount = Math.max(1, Math.ceil(documentsToDisplay.length / pageSize));
-        const paginatedDocumentsToDisplay= documentsToDisplay.slice((currentPage[persona] - 1) * pageSize, currentPage[persona] * pageSize);
-
-        console.log(persona, currentPage)
+        const paginatedDocumentsToDisplay = documentsToDisplay.slice((currentPage[persona] - 1) * pageSize, currentPage[persona] * pageSize);
 
         return (
             <>
@@ -1229,10 +1225,7 @@ export function Documents() {
                     <Pagination
                         value={currentPage[persona]}
                         onChange={ value => {
-                            const tmpDict = {}
-                            for (const key in currentPage) {
-                                tmpDict[key] = currentPage[key]
-                            }
+                            const tmpDict: PageMap = {...currentPage};
                             tmpDict[persona] = value;
                             setCurrentPage(tmpDict)
                         }}
@@ -1244,7 +1237,6 @@ export function Documents() {
 
     function personaAccordion(givenPersona: string) {
         const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
-        const paginatedExistingDocs= existingDocuments.slice((documentsPage - 1) * pageSize, documentsPage * pageSize);
         if (existingDocuments.length == 0) {
             return null;
         }
@@ -1254,7 +1246,7 @@ export function Documents() {
                     <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
-                    {contentTable(givenPersona, existingDocuments)}
+                    {contentTable(givenPersona as PageKey, existingDocuments)}
                 </Accordion.Panel>
             </Accordion.Item>
         );
@@ -1607,126 +1599,22 @@ export function Documents() {
                                 allowDeselect={false}
                             />
                         </Group>
-                        {sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) && (
-                            <Box>
-                                <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
-                                <Table highlightOnHover withTableBorder withColumnBorders>
-                                    <TableHead
-                                        onSort={toggleFavSort}
-                                        currentField={favSortField}
-                                        currentDir={favSortDir}
-                                        onSelectAll={() => allFavSelected ? setSelectedFavIds([]) : setSelectedFavIds(paginatedFavorites.map(d => d.id))}
-                                        allChecked={allFavSelected}
-                                        indeterminate={selectedFavIds.length > 0 && !allFavSelected}
-                                    />
-                                    <Table.Tbody>
-                                        {paginatedFavorites.map(doc => (
-                                            <DocRow
-                                                key={doc.id}
-                                                doc={doc}
-                                                isSelected={selectedFavIds.includes(doc.id)}
-                                                onSelect={toggleFavSelect}
-                                                currentUsername={localStorage.getItem('username') ?? ''}
-                                                isCheckedOut={!!checkedOutMap[doc.id]}
-                                                checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                                onCheckOut={checkOutHandle}
-                                                onCheckIn={checkInHandle}
-                                                isDropped={inlineDropdownId === doc.id}
-                                                onDrop={() => toggleDropdown(doc.id)}
-                                                dropdownViewMode={dropdownViewMode}
-                                                {...rowCallbacks}
-                                            />
-                                        ))}
-                                    </Table.Tbody>
-                                </Table>
-                                <Group justify="space-between" mt="sm">
-                                    <Text size="sm" c="dimmed">
-                                        Page {favoritesPage} of {favoritesPageCount}
-                                    </Text>
-                                    <Pagination value={favoritesPage} onChange={setFavoritesPage} total={favoritesPageCount}/>
-                                </Group>
-                            </Box>
-                        )}
-                        <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('all_doc')}</Text>
-                            {selectedFolderId !== null && selectedChildFolders.length > 0 && (
-                                <Stack gap={6} mb="sm">
-                                    <Text size="xs" c="dimmed">Nested folders</Text>
-                                    {selectedChildFolders.map(childFolder => (
-                                        <Box
-                                            key={`child-folder-${childFolder.id}`}
-                                            p="xs"
-                                            style={{
-                                                border: '1px solid #d7dee8',
-                                                borderRadius: 8,
-                                                background: '#f8fafc',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => setSelectedFolderId(childFolder.id)}
-                                        >
-                                            <Group gap={8} wrap="nowrap" align="center">
-                                                <ActionIcon variant="light" color="gray" size="sm">
-                                                    <IconFolder size={14}/>
-                                                </ActionIcon>
-                                                <div style={{minWidth: 0}}>
-                                                    <Text fw={600} size="xs" style={{color: 'var(--color-yale-blue)'}}>
-                                                        {childFolder.name}
-                                                    </Text>
-                                                    <Text size="10px" c="dimmed">
-                                                        {(folderDocCounts[childFolder.id] ?? 0)} document(s)
-                                                    </Text>
-                                                </div>
-                                            </Group>
-                                        </Box>
-                                    ))}
-                                </Stack>
-                            )}
-                            <Table highlightOnHover withTableBorder withColumnBorders>
-                                <TableHead
-                                    onSort={toggleSort}
-                                    currentField={sortField}
-                                    currentDir={sortDir}
-                                    onSelectAll={() => allSelected ? setSelectedIds([]) : setSelectedIds(paginatedDocuments.map(d => d.id))}
-                                    allChecked={allSelected}
-                                    indeterminate={selectedIds.length > 0 && !allSelected}
-                                />
-                                <Table.Tbody>
-                                    {paginatedDocuments.map(doc => (
-                                        <DocRow
-                                            key={doc.id}
-                                            doc={doc}
-                                            isSelected={selectedIds.includes(doc.id)}
-                                            onSelect={toggleSelect}
-                                            currentUsername={localStorage.getItem('username') ?? ''}
-                                            isCheckedOut={!!checkedOutMap[doc.id]}
-                                            checkedOutBy={checkedOutMap[doc.id] ?? null}
-                                            onCheckOut={checkOutHandle}
-                                            onCheckIn={checkInHandle}
-                                            isDropped={inlineDropdownId === doc.id}
-                                            onDrop={() => toggleDropdown(doc.id)}
-                                            dropdownViewMode={dropdownViewMode}
-                                            {...rowCallbacks}
-                                        />
-                                    ))}
-                                </Table.Tbody>
-                            </Table>
-                            <Group justify="space-between" mt="sm">
-                                <Text size="sm" c="dimmed">
-                                    Page {documentsPage} of {documentsPageCount}
-                                </Text>
-                                <Pagination value={documentsPage} onChange={setDocumentsPage} total={documentsPageCount}/>
-                            </Group>
-                        </Box>
                         {!search ?
                             <Accordion multiple defaultValue={["favorites", persona]}>
                                 {favoriteAccordion}
                                 {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
                             </Accordion>
                             :
-                            <>
-                                <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
-                                {contentTable("All", filtered)}
-                            </>
+                            <Accordion multiple defaultValue={["All"]}>
+                                <Accordion.Item value="All" key="All">
+                                    <Accordion.Control aria-label="All documents">
+                                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                    </Accordion.Control>
+                                    <Accordion.Panel>
+                                        {contentTable("All", filtered)}
+                                    </Accordion.Panel>
+                                </Accordion.Item>
+                            </Accordion>
                         }
                     </Stack>
                 )}
