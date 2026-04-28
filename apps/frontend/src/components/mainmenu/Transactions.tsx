@@ -21,12 +21,9 @@ export function Transactions() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const res = await api(`${DOMAIN}/changes`, {
+            const res = await api(`${DOMAIN}/changes/${localStorage.getItem('username')}`, {
                 method: "POST",
                 headers: {'content-type': 'application/json'},
-                body: JSON.stringify({
-                    username: localStorage.getItem('username')
-                })
             });
             const data: Change [] = await res.json();
             console.log("RAW CHANGES FROM BACKEND:", data);
