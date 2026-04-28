@@ -1265,6 +1265,12 @@ router.post('/changes', checkJWT, async (req, res) => {
         if (!emp1) {
             return res.json([]); // no employee found
         }
+
+        if (emp1.persona === 'Admin') {
+            const changes = await prisma.changes.findMany();
+            return res.json(changes);
+        }
+
         const changes = await prisma.changes.findMany({
             where: {empid: emp1.empid}
         });
