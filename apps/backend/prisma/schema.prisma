@@ -38,7 +38,7 @@ model contentform {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee {
   empid           Int               @id @default(autoincrement())
-  username        String            @unique(map: "unique_user") @db.VarChar(50)
+  username        String            @unique @db.VarChar(50)
   password        String?           @db.VarChar(20)
   persona         String?           @db.VarChar(50)
   theme           Int?              @default(0)
@@ -142,10 +142,10 @@ model folders {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model changes {
   chad        Int          @id @default(autoincrement())
-  name        String?      @db.VarChar(50)
-  username    String?      @db.VarChar(50)
+  id          Int?
+  empid       Int?
   change      String?      @db.VarChar(50)
   date        DateTime?    @db.Date
-  contentform contentform? @relation(fields: [name], references: [name], onDelete: Cascade)
-  employee    employee?    @relation(fields: [username], references: [username], onDelete: Cascade)
+  employee    employee?    @relation(fields: [empid], references: [empid], onDelete: Cascade)
+  contentform contentform? @relation(fields: [id], references: [id], onDelete: Cascade)
 }
