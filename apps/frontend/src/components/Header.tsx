@@ -89,6 +89,7 @@ export function Header() {
                                         }}
                                     >{displayCount}</p>
                                 </div>
+                                )}
                             </Link>
                         </nav>
                     <Chatbot />
