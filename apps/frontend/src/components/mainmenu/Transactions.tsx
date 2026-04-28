@@ -22,10 +22,12 @@ export function Transactions() {
 
     useEffect(() => {
         const fetchData = async () => {
+            const form = new FormData();
+            form.append('username', localStorage.getItem('username') || '');
+
             const res = await api(`${DOMAIN}/changes`, {
                 method: "POST",
-                headers: {'content-type': 'application/json'},
-                body: JSON.stringify(localStorage.getItem('username'))
+                body: form,
             });
             const data: Change [] = await res.json();
             console.log("RAW CHANGES FROM BACKEND:", data);
@@ -54,7 +56,7 @@ export function Transactions() {
             <HelpModal title="Transactions">
                 <Text>Number of transactions of documents added, edited, and deleted today.</Text>
             </HelpModal>
-            <Text fw={700} size="lg" mb="md">My Activity Today</Text>
+            <Text fw={700} size="lg" mb="md">{t('activity_today')}</Text>
 
             <Group justify="space-between" mb="xs">
                 <Text>{t('files_added')}</Text>

@@ -26,6 +26,7 @@ app.use(cors({
 
 // Parse incoming JSON request bodies for API routes.
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the frontend build output.
 app.use(express.static(staticPath));
