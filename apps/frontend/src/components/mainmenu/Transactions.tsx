@@ -54,7 +54,7 @@ export function Transactions() {
             <HelpModal title="Transactions">
                 <Text>Number of transactions of documents added, edited, and deleted today.</Text>
             </HelpModal>
-            <Text fw={700} size="lg" mb="md">My Activity Today</Text>
+            <Text fw={700} size="lg" mb="md">{t('activity_today')}</Text>
 
             <Group justify="space-between" mb="xs">
                 <Text>{t('files_added')}</Text>
