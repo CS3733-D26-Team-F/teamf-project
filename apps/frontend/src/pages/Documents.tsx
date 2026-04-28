@@ -525,7 +525,7 @@ export function Documents() {
 
     async function handleAdd() {
         const formPayload = new FormData();
-        formPayload.append('filename', addData.name);
+        formPayload.append('name', addData.name);
         formPayload.append('ownerUsername', addData.owner);
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
@@ -533,7 +533,7 @@ export function Documents() {
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
         formPayload.append('username', addData.username);
-
+        console.log("add data", addData);
         if (addFile) {
             formPayload.append('file', addFile);
         } else {
@@ -615,7 +615,7 @@ export function Documents() {
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
-                formPayload.append('filename', sf.name);
+                formPayload.append('name', sf.name);
                 formPayload.append('ownerUsername', sf.owner);
                 formPayload.append('persona', JSON.stringify(sf.persona));
                 formPayload.append('date_modified', sf.date_modified);
@@ -1084,7 +1084,7 @@ export function Documents() {
                                 {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
-                                            <IconWindowMaximize size={16}/>
+                                            <IconLayoutBottombar size={16}/>
                                             <span>{t('dropdown')}</span>
                                         </Group>
                                     ),
@@ -1093,8 +1093,8 @@ export function Documents() {
                                 {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
-                                            <IconLayoutBottombar size={16}/>
-                                            <span>{t('popup')}</span>
+                                            <IconWindowMaximize size={16}/>
+                                            <span>{t('Viewer')}</span>
                                         </Group>
                                     ),
                                     value: 'popup'

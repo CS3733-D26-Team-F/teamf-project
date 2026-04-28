@@ -60,8 +60,10 @@ CRITICAL — ALWAYS ENFORCE THESE:
 <Tool_Usage_Guide>
 When adding documents:
 - Extract: name, owner (username), status, content_type, url (if provided in message)
-- If the message contains an https:// URL, ALWAYS pass it as the url parameter.
+- If the message contains a https:// URL, ALWAYS pass it as the url parameter.
 - Never use a pending-upload placeholder if a real URL exists in the message.
+- Available Status Types: 'In Progress', 'Internal Review', 'Client Review', 'Approved'.
+- Available Content Types: 'Workflow', 'Reference'.
 
 When deleting documents:
 - Always confirm before executing unless the user explicitly confirmed in the same message.
