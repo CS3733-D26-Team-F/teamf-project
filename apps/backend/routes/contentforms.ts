@@ -668,6 +668,20 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {id},
                 data: {checkout_username: username, checkout_date: new Date()}
             });
+
+            const employee1 = await prisma.employee.findUnique({
+                where: {username: username}
+            })
+
+            const transaction = await prisma.changes.create({
+                data: {
+                    name: updated.name,
+                    username: employee1.username,
+                    change: "Checked Out Document",
+                    date: new Date().toISOString()
+                }
+            });
+
             return res.status(200).json({
                 message: 'Document checked out successfully',
                 checkedOutBy: username,
@@ -727,6 +741,19 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
             const updated = await prisma.contentform.update({
                 where: {id},
                 data: {checkout_username: null, checkout_date: null}
+            });
+
+            const employee1 = await prisma.employee.findUnique({
+                where: {username: username}
+            })
+
+            const transaction = await prisma.changes.create({
+                data: {
+                    name: updated.name,
+                    username: employee1.username,
+                    change: "Checked In Document",
+                    date: new Date().toISOString()
+                }
             });
 
             return res.status(200).json({
