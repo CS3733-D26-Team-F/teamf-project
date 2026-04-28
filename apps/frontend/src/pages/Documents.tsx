@@ -255,8 +255,11 @@ export function Documents() {
     const [trashSelected, setTrashSelected] = useState<number[]>([]);
 
     const filteredTrash = trashDocs.filter(doc => {
-        const matchSearch = !trashSearch || doc.name.toLowerCase().includes(trashSearch.toLowerCase()) || doc.owner.toLowerCase().includes(trashSearch.toLowerCase());
-        const matchPersona = !trashPersonaFilter || doc.persona.includes(trashPersonaFilter);
+        const search = trashSearch.toLowerCase();
+        const owner = doc.owner ?? '';
+        const persona = doc.persona ?? [];
+        const matchSearch = !trashSearch || doc.name.toLowerCase().includes(search) || owner.toLowerCase().includes(search);
+        const matchPersona = !trashPersonaFilter || persona.includes(trashPersonaFilter);
         return matchSearch && matchPersona;
     });
 
