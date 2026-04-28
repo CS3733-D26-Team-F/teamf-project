@@ -992,7 +992,7 @@ router.post('/api/chat', async (req, res) => {
 
             // Portal Activity Summary
             summarizePortalActivity: tool({
-                description: 'Generate a high-level executive summary of portal activity. Use when user asks for a briefing, overview, or dashboard summary.',
+                description: 'Generate a high-level executive summary of portal activity. Use when user asks for a briefing, overview, or statistics summary.',
                 parameters: z.object({}),
                 execute: async () => {
                     if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };

@@ -27,7 +27,7 @@ export function EditButton({ activeWidgets=[], onSave, allWidgets={} }: EditButt
 
     return(
         <div style={{ textAlign: 'right', margin: '24px' }}>
-            <Drawer opened={opened} onClose={close} title="Edit Dashboard">
+            <Drawer opened={opened} onClose={close} title="Edit Statistics">
                 <Stack>
                     <MultiSelect
                         label="Widgets"
@@ -35,7 +35,7 @@ export function EditButton({ activeWidgets=[], onSave, allWidgets={} }: EditButt
                         value={selected}
                         onChange={setSelected}
                     />
-                    <Button onClick={() => {
+                    <Button style={{ backgroundColor: 'var(--yale-blue)' }} onClick={() => {
                         console.log("Saving these keys:", selected);
                         onSave(selected);
                         close();
@@ -44,7 +44,7 @@ export function EditButton({ activeWidgets=[], onSave, allWidgets={} }: EditButt
                     </Button>
                 </Stack>
             </Drawer>
-            <Button onClick={open}>{t('edit_layout')}</Button>
+            <Button onClick={open} style={{ backgroundColor: 'var(--yale-blue)' }}>{t('edit_layout')}</Button>
         </div>
     );
 }
