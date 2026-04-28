@@ -59,29 +59,20 @@ export function AreaChart() {
     }, []);
 
     return (
-        <div
-            style={{
-                height: '100%',
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-            }}
-        >
-                <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
-                    <Text fw={700} size="lg" mb="md">
-                        {t('chart_update')}
-                    </Text>
-                        <MantineAreaChart
-                            h={400}
-                            data={chartData}
-                            dataKey="date"
-                            series={[{ name: 'Updated', color: 'blue.6', label: t('file_update') }]}
-                            curveType="monotone"
-                            tickLine="y"
-                            gridAxis="xy"
-                        />
-                </Paper>
-        </div>
+        <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
+            <Text fw={700} size="lg" mb="md">
+                {t('chart_update')}
+            </Text>
+                <MantineAreaChart
+                    h={400}
+                    data={chartData}
+                    dataKey="date"
+                    series={[{ name: 'Updated', color: 'var(--yale-blue)', label: t('file_update') }]}
+                    curveType="monotone"
+                    tickLine="y"
+                    gridAxis="xy"
+                    style={{ width: '100%' }}
+                />
+        </Paper>
     );
 }

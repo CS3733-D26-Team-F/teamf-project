@@ -50,41 +50,31 @@ export function HeatMap() {
         );
     }
     return (
-        <div style={{
-            width: '100%',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '1rem',
-            boxSizing: 'border-box'
-        }}>
-            <Paper p="md" radius="md" w="100%" >
-                <Text fw={700} size="md" mb="md">
-                    {t('heat_activity')}
-                </Text>
-                <Heatmap
-                    data={HeatmapData}
-                    startDate={startDate}
-                    endDate={endDate}
-                    colors={[
-                        'var(--pale-sky)',
-                        'var(--fresh-sky)',
-                        'var(--sapphire)',
-                        'var(--yale-blue)',
-                    ]}
-                    getRectProps={({ value }) =>
-                        value === null || value === 0
-                            ? { fill: '#D3D3D3' }
-                            : {}
-                    }
-                    rectSize={16}
-                    withTooltip
-                    withMonthLabels
-                    getTooltipLabel={({ date, value }) =>
-                        `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? t('heat_noCont') : `${value} ${t('heat_cont')}${value > 1 ? 's' : ''}`}`
-                    }/>
-            </Paper>
-        </div>
+        <Paper p="md" radius="md" w="100%" h="100%">
+            <Text fw={900} size="xl" mb="md">
+                {t('heat_activity')}
+            </Text>
+            <Heatmap
+                data={HeatmapData}
+                startDate={startDate}
+                endDate={endDate}
+                colors={[
+                    'var(--pale-sky)',
+                    'var(--fresh-sky)',
+                    'var(--sapphire)',
+                    'var(--yale-blue)',
+                ]}
+                getRectProps={({ value }) =>
+                    value === null || value === 0
+                        ? { fill: '#D3D3D3' }
+                        : {}
+                }
+                rectSize={18}
+                withTooltip
+                withMonthLabels
+                getTooltipLabel={({ date, value }) =>
+                    `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? t('heat_noCont') : `${value} ${t('heat_cont')}${value > 1 ? 's' : ''}`}`
+                }/>
+        </Paper>
     );
 }
