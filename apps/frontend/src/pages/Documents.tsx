@@ -9,7 +9,7 @@ import {
     Tooltip, SegmentedControl, Accordion
 } from '@mantine/core';
 import {
-    IconSearch, IconTrash,
+    IconSearch, IconTrash, IconHelp,
     IconFilter, IconClock, IconWindowMaximize
 } from '@tabler/icons-react';
 import {IconLayoutBottombar} from "@tabler/icons-react"
@@ -36,6 +36,7 @@ import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
 import {useTranslation} from "react-i18next";
+import { HelpModal } from '../components/helpModal.tsx';
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -74,6 +75,8 @@ export function Documents() {
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
     const [favSortField, setFavSortField] = useState<keyof ContentForm | null>(null);
     const [favSortDir, setFavSortDir] = useState<'asc' | 'desc'>('asc');
+
+    const [ openHelpModal, setOpenHelpModal ] = useState(false);
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
@@ -987,8 +990,28 @@ export function Documents() {
             <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
 
             <Box p="md">
-                <Group justify="space-between" align="center" w="100%">
+                <Group justify="space-between" align="left" w="100%">
                     <PageTitle title={titleProp}/>
+                    <Button
+                        variant="default"
+                        onClick={() => setOpenHelpModal(true)}
+                        
+                    >
+                        <IconHelp />
+                    </Button>
+                    <HelpModal
+                                        title={titleProp}
+                                        opened={openHelpModal}
+                                        onClose={() => setOpenHelpModal(false)}
+                                        popupContent={
+                                            <div>
+                                                <Text size="sm" mb="md">This is the content page. Here you can view and manage the content for your website.</Text>
+                                                <Text size="sm" mb="md">To add new content, click the "Add Content" button and follow the prompts.</Text>
+                                                <Text size="sm" mb="md">Make sure to save any changes you make before navigating away from the page.</Text>
+                                            </div>
+                                        }
+                                    />
+                    
                     <Group gap="s">
                         <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
                         <SegmentedControl

@@ -55,7 +55,7 @@ export function ManageEmployeesForm() {
                 </Group>
 
                 <HelpModal
-                    title="Employeee Page"
+                    title="Employee Page"
                     opened={openHelpModal}
                     onClose={() => setOpenHelpModal(false)}
                     popupContent={
