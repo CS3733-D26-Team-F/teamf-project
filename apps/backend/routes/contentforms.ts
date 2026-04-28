@@ -611,7 +611,7 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
 router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
-    const {username} = req.body;
+    const {username} = req.body || {};
     console.log('checkout hit', {id, username});
 
     if (!username) {

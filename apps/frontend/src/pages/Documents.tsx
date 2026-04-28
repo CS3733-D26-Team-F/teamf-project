@@ -100,7 +100,7 @@ export function Documents() {
         const res = await api(`${DOMAIN}/contentforms/${id}/checkout`, {
             method: "POST",
             headers: {'content-type': 'application/json'},
-            body: JSON.stringify({username})
+            body: JSON.stringify({username}),
         });
         if (res.ok) {
             setCheckedOutMap(prev => ({...prev, [id]: username!}));

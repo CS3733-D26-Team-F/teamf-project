@@ -144,7 +144,7 @@ model changes {
   chad        Int          @id @default(autoincrement())
   name        String?      @db.VarChar(50)
   username    String?      @db.VarChar(50)
-  change_     String?      @map("change") @db.VarChar(50)
+  change      String?      @db.VarChar(50)
   date        DateTime?    @db.Date
   contentform contentform? @relation(fields: [name], references: [name], onDelete: Cascade)
   employee    employee?    @relation(fields: [username], references: [username], onDelete: Cascade)
