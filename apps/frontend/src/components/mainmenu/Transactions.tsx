@@ -4,6 +4,7 @@ import { useApi } from "../api.ts";
 import dayjs from "dayjs";
 import {Group, Paper, Text} from "@mantine/core";
 import {FilePlusIcon, NotePencilIcon, TrashIcon} from "@phosphor-icons/react";
+import {useTranslation} from "react-i18next";
 
 type Change = {
     chad: number;
@@ -13,6 +14,7 @@ type Change = {
     date: string;
 };
 export function Transactions() {
+    const {t} = useTranslation();
     const [changes, setChanges] = useState<Change[]>([]);
 
     const api = useApi();
@@ -46,10 +48,10 @@ export function Transactions() {
 
     return (
         <Paper withBorder p="md" radius="md" style={{ width: 300 }}>
-            <Text fw={700} size="lg" mb="md">My Activity Today</Text>
+            <Text fw={700} size="lg" mb="md">{t('activity_today')}</Text>
 
             <Group justify="space-between" mb="xs">
-                <Text>Files Added</Text>
+                <Text>{t('files_added')}</Text>
                 <Group gap={4}>
                     <Text fw={700}>{addedToday}</Text>
                     <FilePlusIcon size={18} />
@@ -57,7 +59,7 @@ export function Transactions() {
             </Group>
 
             <Group justify="space-between" mb="xs">
-                <Text>Files Edited</Text>
+                <Text>{t('files_edited')}</Text>
                 <Group gap={4}>
                     <Text fw={700}>{editedToday}</Text>
                     <NotePencilIcon size={18} />
@@ -65,7 +67,7 @@ export function Transactions() {
             </Group>
 
             <Group justify="space-between">
-                <Text>Files Deleted</Text>
+                <Text>{t('files_deleted')}</Text>
                 <Group gap={4}>
                     <Text fw={700}>{deletedToday}</Text>
                     <TrashIcon size={18} />

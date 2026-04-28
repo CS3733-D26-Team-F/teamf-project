@@ -2,12 +2,22 @@ import {useEffect, useMemo, useState} from 'react';
 import {Paper, Loader, Center, Text} from '@mantine/core';
 import { Heatmap } from '@mantine/charts';
 import dayjs from 'dayjs';
+import 'dayjs/locale/es';      //spanish
+import 'dayjs/locale/fr';      //french
+import 'dayjs/locale/zh-cn';  //mandarin
+import 'dayjs/locale/ar';     //arabic
+import 'dayjs/locale/hi';     //hindi
+import 'dayjs/locale/bn';     //bengali
+import 'dayjs/locale/ru';      //russian
+import 'dayjs/locale/tr';      //turkish
+import 'dayjs/locale/ga';      //irish
+dayjs.locale('en');
 import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
 import {useTranslation} from "react-i18next";
 
 export function HeatMap() {
-    const {t} = useTranslation();
+    const {t, i18n } = useTranslation();
     const [HeatmapData, setHeatmapData] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const api = useApi();
@@ -17,6 +27,26 @@ export function HeatMap() {
         startDate: dayjs().subtract(6, 'month').toDate(),
         endDate: dayjs().toDate()
     }), []);
+
+    const localeMap: Record <string, string> = {
+        'eng': 'en',
+        'esp': 'es',
+        'french': 'fr',
+        'mandarin': 'zh-cn',
+        'arabic': 'ar',
+        'hindi': 'hi',
+        'bengali': 'bn',
+        'russian': 'ru',
+        'turkish': 'tr',
+        'irish': 'ga',
+    };
+
+    const currentLocale = useMemo(() => {
+        const locale = localeMap[i18n.language] ?? 'en';
+        dayjs.locale(locale);
+        return locale;
+    }, [i18n.language]);
+
 
     useEffect(() => {
         const fetchHeatmapData = async () => {
@@ -64,6 +94,7 @@ export function HeatMap() {
                     {t('heat_activity')}
                 </Text>
                 <Heatmap
+                    key = {currentLocale}
                     data={HeatmapData}
                     startDate={startDate}
                     endDate={endDate}

@@ -8,6 +8,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { FilledButton } from "../components/Buttons/FilledButton.tsx";
 import { DOMAIN } from "../const";
 import { useApi } from "../components/api.ts";
+import {useTranslation} from "react-i18next";
 
 interface NotificationProps {
     title: string;
@@ -21,6 +22,7 @@ interface NotificationProps {
 }
 
 function Notification({ title, message, send_date, importance: _importance, read, notid, onToggleRead, onDelete }: NotificationProps) {
+    const {t} = useTranslation();
     const [opened, { open, close }] = useDisclosure(false);
     const [confirmed, { open: confirmOpen, close: confirmClose }] = useDisclosure(false);
     return (
@@ -61,15 +63,15 @@ function Notification({ title, message, send_date, importance: _importance, read
 
                 <Group>
                     <FilledButton onClick={open}>
-                        View Notification
+                        {t('view_noti')}
                     </FilledButton>
 
                     <Button variant="default" onClick={() => onToggleRead(notid, !read)}>
-                        {read ? 'Mark Unread' : 'Mark as Read'}
+                        {read ? t('noti_mark') : t('noti_unmark')}
                     </Button>
 
                     <Button variant="default" onClick={confirmOpen} className="invert-hover-red">
-                        Delete
+                        {t('delete')}
                     </Button>
 
                 </Group>
@@ -102,19 +104,19 @@ function Notification({ title, message, send_date, importance: _importance, read
                 size="xl"
                 title={
                     <Text fw={700} size="lg" c="var(--color-yale-blue)">
-                        Confirm Deletion
+                        {t('delete')}
                     </Text>
                 }
                 centered
             >
                 <Stack>
-                    <Text>Are you sure you want to delete this notification?</Text>
+                    <Text>{t('noti_delete_confirm_two')}</Text>
                     <Group justify="center" mt="md">
-                        <Button variant="default" onClick={confirmClose}>Cancel</Button>
+                        <Button variant="default" onClick={confirmClose}>{t("cancel")}</Button>
                         <Button color="red" onClick={() => {
                             confirmClose();
                             onDelete(notid);
-                        }}>Delete</Button>
+                        }}>{t('delete')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -136,6 +138,7 @@ export function Notifications() {
     const [loading, setLoading] = useState(true);
     const api = useApi();
     const fetched = useRef(false);
+    const {t} = useTranslation();
 
     useEffect(() => {
         if (fetched.current) return;
@@ -183,7 +186,7 @@ export function Notifications() {
                 ));
             }
         } catch (error) {
-            console.error('Failed to toggle read status:', error);
+            console.error(t('noti_fail_read'), error);
         }
     };
 
@@ -197,17 +200,17 @@ export function Notifications() {
                 setNotifications(prev => prev.filter(n => n.notid !== notid));
             }
         } catch (error) {
-            console.error('Failed to delete notification:', error);
+            console.error(t('noti_fail_delete'), error);
         }
     };
 
     return (
         <>
             <Header />
-            <PageTitle title="Notifications" />
+            <PageTitle title={t("notifications")} />
             <Box p="md">
                 <TextInput 
-                    placeholder="Search for notification..." 
+                    placeholder= {t('noti_search')}
                     leftSection={<IconSearch size={16} />} 
                     value={search} 
                     onChange={e => setSearch(e.target.value)} 
@@ -216,9 +219,9 @@ export function Notifications() {
 
                 <Stack>
                     {loading 
-                        ? (<Text>Loading notifications...</Text>)
+                        ? (<Text>{t("noti_load")}</Text>)
                         : filteredNotifications.length === 0 
-                            ? (<Text>No notifications found.</Text>) 
+                            ? (<Text>{t('no_noti_found')}</Text>)
                             : (filteredNotifications.map((notification) => (
                                 <Notification
                                     key={notification.notid}

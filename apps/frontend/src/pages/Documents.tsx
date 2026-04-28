@@ -21,7 +21,6 @@ import {PageTitle} from "../components/Title.tsx"
 import {PersonaBadges} from "../components/Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../components/Badges/StatusBadge.tsx"
 import {FileTypeBadge} from "../components/Badges/FileTypeBadge.tsx";
-import {checkOutBadges} from "../components/Badges/checkOutBadge.tsx";
 import {ConfirmModal} from "../components/content/ConfirmModal"
 import {useApi} from "../../src/components/api.ts";
 import type {
@@ -80,6 +79,13 @@ export function Documents() {
     const [viewerLabel, setViewerLabel] = useState('');
     const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
     const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
+
+    const personaMap: Record<string, string> = {
+        'Underwriter': 'underwriter',
+        'Business Analyst': 'bus_ana',
+        'Actuarial Analyst': 'act_ana',
+        'EXL Operations': 'exl_op',
+    };
 
     const toggleDropdown = (id: number) => {
         console.log('toggleExpand called:', id);
@@ -819,28 +825,6 @@ export function Documents() {
         loadDocuments();
     }
 
-
-    function closeEdit() {
-        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username})
-        });
-        setEditOpen(false);
-        setEditUrl('');
-        setEditUploadMode('file');
-        setEditError('');
-        if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username})
-        });
-        setEditOpen(false);
-        setEditUrl('');
-        setEditUploadMode('file');
-        setEditError('');
-    }
-
     function closeEdit() {
         if (editId) api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST',
@@ -1022,6 +1006,7 @@ export function Documents() {
 
     function personaAccordion(givenPersona: string) {
         const existingDocuments = nonFavorites.filter(doc => doc.persona.some(p => givenPersona.includes(p)))
+        const personaKey = personaMap[givenPersona] ?? givenPersona;
         if (existingDocuments.length == 0) {
             return (
                 <>
@@ -1032,7 +1017,7 @@ export function Documents() {
             <>
                 <Accordion.Item value={givenPersona} key={givenPersona}>
                     <Accordion.Control aria-label={givenPersona}>
-                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t(`${givenPersona} Documents`)}</Text>
+                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t(personaKey)} {t('documents')}</Text>
                     </Accordion.Control>
                     <Accordion.Panel>
                         {contentTable(existingDocuments)}
@@ -1100,7 +1085,7 @@ export function Documents() {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
                                             <IconWindowMaximize size={16}/>
-                                            <span>Dropdown</span>
+                                            <span>{t('dropdown')}</span>
                                         </Group>
                                     ),
                                     value: 'dropdown'
@@ -1109,10 +1094,10 @@ export function Documents() {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
                                             <IconLayoutBottombar size={16}/>
-                                            <span>Popup</span>
+                                            <span>{t('popup')}</span>
                                         </Group>
                                     ),
-                                    value: 'popup',
+                                    value: 'popup'
                                 },
                             ]}
                         />
@@ -1184,7 +1169,7 @@ export function Documents() {
                             setFilterOwner([]);
                             setFilterCheckout([]);
                             setFilterTags([]);
-                        }}>Clear all</Badge>
+                        }}>{t('clear_all')}</Badge>
                     </Group>
                 )}
 
@@ -1398,7 +1383,7 @@ export function Documents() {
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title={t('filter_documents')}>
                 <Stack>
                     <MultiSelect label={t('persona')} placeholder={t('all_persona')} value={filterPersona}
-                                 onChange={setFilterPersona} data={roles} clearable/>
+                                 onChange={setFilterPersona} data={roles.map ( r => ({ value: r, label: t(personaMap[r] ?? r)}))} clearable/>
                     <MultiSelect label={t('status')} placeholder={t('all_status')} value={filterStatus}
                                  onChange={setFilterStatus}
                                  data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}
@@ -1561,14 +1546,20 @@ export function Documents() {
                         : <TextInput label={t('name_owner')} value={addData.owner} readOnly/>}
                     <MultiSelect label={t('job_position')} value={addData.persona}
                                  onChange={val => setAddData({...addData, persona: val})}
-                                 data={roles.filter((role) => role !== 'Admin')}
+                                 data={roles
+                                     .filter((role) => role !== 'Admin')
+                                     .map ( r => ({
+                                         value: r,
+                                         label: t(personaMap[r] ?? r)
+                                     }))
+                                 }
                                  disabled={persona !== 'Admin'}/>
                     <Group preventGrowOverflow={false}>
-                        <MultiSelect w="75%" label="Tags" value={addData.jointagscontent}
+                        <MultiSelect w="75%" label= {t('tags')} value={addData.jointagscontent}
                                      onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
                                      data={getArrayTags()}/>
                         <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
-                                onClick={() => setAdvancedTagsOpen(true)}> Advanced Tags </Button>
+                                onClick={() => setAdvancedTagsOpen(true)}> {t('advanced_tags')} </Button>
                     </Group>
                     <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Group grow>
@@ -1592,8 +1583,8 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => {
                             setAddOpen(false);
                             setAddError('');
-                        }}>✕ Cancel Changes</Button>
-                        <Button onClick={handleAdd} className="invert-hover">+ Submit Document</Button>
+                        }}>✕ {t('cancel_changes')}</Button>
+                        <Button onClick={handleAdd} className="invert-hover">+ {t('submit_doc')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -1725,7 +1716,7 @@ export function Documents() {
             }} title={t('bulk_doc')} size="1200px">
                 <Stack>
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Add Files or URLs</Text>
+                        <Text size="sm" fw={500} mb={4}>{t('bulk_upload')}</Text>
                         <Group>
                             <input
                                 type="file"
@@ -1734,9 +1725,9 @@ export function Documents() {
                                 id="bulk-file-input"
                                 onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
                             />
-                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ Add Files</Button>
-                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ Add URL</Button>
-                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> AutoFill From First</Button>
+                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
+                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
+                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
                         </Group>
                     </Box>
                     {stagedFiles.length > 0 && (
