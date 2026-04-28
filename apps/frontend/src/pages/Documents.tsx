@@ -149,6 +149,7 @@ export function Documents() {
 
     const activeFilterCount = filterPersona.length + filterStatus.length + filterType.length + filterOwner.length + filterTags.length + filterCheckout.length + (selectedFolderId !== null ? 1 : 0);
 
+    /* //no longer filters visible documents by user's persona, as folders can now control access and some documents may be visible due to being in a shared folder or owned by the user
     function canSeeDocument(doc: ContentForm) {
         const personas = Array.isArray(doc.persona) ? doc.persona : [];
         if (personas.length === 0) {
@@ -156,11 +157,13 @@ export function Documents() {
         }
         return persona === 'Admin' || doc.owner === (username ?? '') || personas.includes(persona ?? '');
     }
-
+    */
+    
     const visibleDocuments = useMemo(
-        () => documents.filter(canSeeDocument),
-        [documents, persona, username]
+        () => documents,
+        [documents, username]
     );
+    
 
     const folderChildrenMap = useMemo<Record<number, Folder[]>>(() => {
         const map: Record<number, Folder[]> = {};
@@ -396,7 +399,7 @@ export function Documents() {
     const [expandedTrashFolderIds, setExpandedTrashFolderIds] = useState<number[]>([]);
 
     const filteredTrash = trashDocs.filter(doc => {
-        if (!canSeeDocument(doc)) return false;
+        //if (!canSeeDocument(doc)) return false;
         const belongsToTrashedFolder = doc.folder_id !== null && trashFolders.some(folder => folder.id === doc.folder_id);
         if (belongsToTrashedFolder) return false;
         const search = trashSearch.toLowerCase();
