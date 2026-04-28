@@ -138,7 +138,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
                 name: contentForm.name,
                 username: employee1.username,
                 change: "Updated Document",
-                date: new Date()
+                date: new Date().toISOString()
             }
         });
 
@@ -312,7 +312,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 name: content.name,
                 username: employee1.username,
                 change: "Added Document",
-                date: new Date(date_modified)
+                date: new Date(date_modified).toISOString()
             }
         })
 
@@ -497,7 +497,7 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
                 name: updated.name,
                 username: employee1.username,
                 change: "Deleted Document",
-                date: new Date()
+                date: new Date().toISOString()
             }
         });
         res.json(updated);
@@ -930,7 +930,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
                 name: updated.name,
                 username: employee1.username,
                 change: "Updated Document",
-                date: new Date()
+                date: new Date().toISOString()
             }
         })
 
@@ -1241,7 +1241,6 @@ router.post('/changes/:username', checkJWT, async (req, res) => {
         }
         const changes = await prisma.changes.findMany({
             where: {username: emp1.username}
-
         });
         res.json(changes);
     } catch (error) {

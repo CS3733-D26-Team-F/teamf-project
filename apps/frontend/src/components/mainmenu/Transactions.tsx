@@ -10,7 +10,7 @@ type Change = {
     chad: number;
     name: string;
     username: string;
-    change_: string;
+    change: string;
     date: string;
 };
 export function Transactions() {
@@ -33,15 +33,18 @@ export function Transactions() {
         void fetchData()
     }, [api])
 
-    const todaysChanges = changes.filter(c =>
-        c.date.startsWith(dayjs().format("YYYY-MM-DD"))
-    );
+    const todaysChanges = changes.filter((c) => {
+        const itemDate = dayjs.utc(c.date).format("YYYY-MM-DD");
+        const today = dayjs().format("YYYY-MM-DD");
+        console.log(today);
+        return itemDate === today;
+    });
 
 
     //const accessedToday = todaysChanges.filter(c => c.change === "access").length;
-    const addedToday = todaysChanges.filter(c => c.change_ === "Added Document").length;
-    const editedToday = todaysChanges.filter(c => c.change_ === "Updated Document").length;
-    const deletedToday = todaysChanges.filter(c => c.change_ === "Deleted Document").length;
+    const addedToday = todaysChanges.filter(c => c.change === "Added Document").length;
+    const editedToday = todaysChanges.filter(c => c.change === "Updated Document").length;
+    const deletedToday = todaysChanges.filter(c => c.change === "Deleted Document").length;
 
     return (
         <Paper withBorder p="md" radius="md" style={{ width: 300 }}>
