@@ -17,7 +17,6 @@ export function LoginForm() {
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-        console.log("HERE")
         e.preventDefault();
         setLoading(true);
         setError("");

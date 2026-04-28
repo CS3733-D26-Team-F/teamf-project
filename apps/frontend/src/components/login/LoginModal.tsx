@@ -25,7 +25,6 @@ function LoginModal() {
         });
 
         if (!inputToken.ok) {
-            console.log("Backend login failed:", inputToken.status, await inputToken.text());
             return;
         }
 
@@ -54,7 +53,6 @@ function LoginModal() {
 
     useEffect(()=> {
         if(isAuthenticated){
-            console.log("User: ", user);
             if(first){
                 sendToBackend();
             }
