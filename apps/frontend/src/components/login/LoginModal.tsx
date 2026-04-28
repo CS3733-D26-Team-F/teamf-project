@@ -25,11 +25,13 @@ function LoginModal() {
         });
 
         if (!inputToken.ok) {
+            console.log("Backend login failed:", inputToken.status, await inputToken.text());
             return;
         }
 
         const payload = await inputToken.json();
         const employee = payload?.employee;
+
         if (!employee) {
             return;
         }
@@ -71,7 +73,7 @@ function LoginModal() {
                             await loginWithPopup({
                                 authorizationParams: {
                                     audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                                    scope: "openid profile email read:profile read:data read:api"
+                                    scope: "openid profile email read:profile read:data read:api offline_access"
                                 }
                             });
 

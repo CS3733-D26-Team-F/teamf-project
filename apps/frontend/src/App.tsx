@@ -30,7 +30,7 @@ export default function App() {
                 // API audience requested for backend access.
                 audience: import.meta.env.VITE_AUTH0_AUDIENCE,
                 // Scopes requested for the user's identity and API access.
-                scope: "openid profile email read:profile read:data read:api"
+                scope: "openid profile email read:profile read:data read:api offline_access"
             }}
             // Persist session across page reloads.
             useRefreshTokens = {true}

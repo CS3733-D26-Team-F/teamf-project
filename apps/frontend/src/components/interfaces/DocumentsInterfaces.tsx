@@ -35,6 +35,8 @@ export type StagedFile = {
 export type Employee = {
     empid: number;
     username: string;
+    first_name: string;
+    last_name: string;
     persona: string;
 };
 

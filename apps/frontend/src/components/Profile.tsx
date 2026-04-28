@@ -21,7 +21,7 @@ export function Profile() {
     const [profilePicture, setProfilePicture] = useState<string | undefined>(() => (
         localStorage.getItem('pfp_URL') ?? localStorage.getItem('profilePicture') ?? undefined
     ));
-    const {user, logout} = useAuth0();
+    const {isAuthenticated, user, logout} = useAuth0();
     const [settingsOpened, {open: openSettings, close: closeSettings}] = useDisclosure(false);
     const {t} = useTranslation();
     const translate = (lang: string) => {
@@ -136,9 +136,13 @@ export function Profile() {
                         </Menu.Target>
                         <Menu.Dropdown>
                             <Menu.Label>{t('username')}: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
-                            <Menu.Item component={Link} to="/profilePage">{t('profile')}</Menu.Item>
+                            {isAuthenticated && (
+                                <Menu.Item component={Link} to="/profilePage">{t('profile')}</Menu.Item>
+                            )}
                             <Menu.Item onClick={openSettings}>{t('settings')}</Menu.Item>
-                            <Menu.Item onClick={handleLogout}>{t('logout')}</Menu.Item>
+                            {isAuthenticated && (
+                                <Menu.Item onClick={handleLogout}>{t('logout')}</Menu.Item>
+                            )}
                         </Menu.Dropdown>
                     </Menu>
                 </div>
