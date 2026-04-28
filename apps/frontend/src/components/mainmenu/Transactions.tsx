@@ -32,7 +32,7 @@ export function Transactions() {
             setChanges(data);
         };
         void fetchData()
-    }, [api])
+    }, [])
 
     const todaysChanges = changes.filter((c) => {
         const itemDate = dayjs.utc(c.date).format("YYYY-MM-DD");
