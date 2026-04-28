@@ -15,6 +15,7 @@ import {
     IconTrash,
     IconLock,
 } from "@tabler/icons-react";
+import {useTranslation} from "react-i18next";
 
 interface DocRowProps extends RowCallbacks {
     doc: ContentForm;
@@ -78,6 +79,7 @@ export function DocRow({
     const isLockedForUser = isSomeoneCheckout && !isAdmin;
 
     const canEdit = canModify && (isSelfCheckout || (isAdmin && !isCheckedOut));
+    const {t} = useTranslation();
 
     return (
         <>
@@ -117,7 +119,7 @@ export function DocRow({
                 <Table.Td onClick={e => e.stopPropagation()}>
                     <Group gap="xs">
                         {isLockedForUser ? (
-                            <Tooltip label={`This document is checked out by ${checkedOutBy}`}>
+                            <Tooltip label={` ${t('checkout_message')} ${checkedOutBy}`}>
                                 <ActionIcon
                                     variant="subtle"
                                     color="gray"
@@ -129,13 +131,13 @@ export function DocRow({
                             </Tooltip>
                         ) : (
                             <>
-                                <Tooltip label={isFavorited(doc.id) ? 'Unfavorite' : 'Favorite'}>
+                                <Tooltip label={isFavorited(doc.id) ? t('unfavorite') : t('favorite')}>
                                     <ActionIcon variant="subtle" color="yellow" onClick={() => onFavorite(doc)}>
                                         {isFavorited(doc.id) ? <IconStarFilled size={16}/> : <IconStar size={16}/>}
                                     </ActionIcon>
                                 </Tooltip>
 
-                                <Tooltip label={isUrl ? "Open URL" : "Download"}>
+                                <Tooltip label={isUrl ? t('open_url') : t('download')}>
                                     {isUrl ? (
                                         <ActionIcon
                                             variant="subtle"
@@ -155,7 +157,7 @@ export function DocRow({
 
                                 {canModify && (
                                     <Tooltip
-                                        label={canEdit ? "Edit" : (isAdmin && isSomeoneCheckout ? "Force check-in first to edit" : "Check out to edit")}>
+                                        label={canEdit ? t('edit'): (isAdmin && isSomeoneCheckout ? t('force_checkout'): t('force_checkin_long'))}>
                                         <ActionIcon
                                             variant="subtle"
                                             onClick={() => canEdit && onEdit(doc)}
@@ -172,9 +174,9 @@ export function DocRow({
 
                                 {canModify && (
                                     <Tooltip label={
-                                        isSelfCheckout ? 'Click to checkin' :
-                                            (isSomeoneCheckout && isAdmin) ? `Force check-in (Checked out by ${checkedOutBy})` :
-                                                'Checkout'
+                                        isSelfCheckout ? t('click_to_checkin') :
+                                            (isSomeoneCheckout && isAdmin) ? `${t(`force_checkin_longer ${checkedOutBy})`)}` :
+                                                t('checkout')
                                     }>
                                         <ActionIcon
                                             variant="subtle"
@@ -188,7 +190,7 @@ export function DocRow({
 
                                 {canModify && (
                                     <Tooltip
-                                        label={canEdit ? "Delete" : (isAdmin && isSomeoneCheckout ? "Force check-in first to delete" : "Check out to delete")}>
+                                        label={canEdit ? t('delete') : (isAdmin && isSomeoneCheckout ? t('force_checkin_delete') : t('checkout_delete'))}>
                                         <ActionIcon
                                             variant="subtle"
                                             color={canEdit ? "var(--color-neutral-red)" : "gray"}

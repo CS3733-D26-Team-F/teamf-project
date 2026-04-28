@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import {prisma} from '../setup/prisma.js';
 import {supabase} from '../setup/supabase.js';
-import {upload} from '../setup/upload.js';
 import {checkJWT, management, getManagementToken} from '../setup/auth0.js';
+import { upload } from '../setup/upload.js';
 
 const router = Router();
 

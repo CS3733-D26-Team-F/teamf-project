@@ -4,6 +4,8 @@ import { DOMAIN } from "../../const.ts";
 import { useApi } from "../api.ts";
 import {Paper, Text} from '@mantine/core';
 import {useTranslation} from "react-i18next";
+import {HelpModal} from "./StatsPopup.tsx";
+import * as React from "react";
 
 
 export function AreaChart() {
@@ -60,6 +62,9 @@ export function AreaChart() {
 
     return (
         <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
+            <HelpModal title="Recently Modified" position ="top">
+                <Text>Shows number of Updated Documents in the Past week.</Text>
+            </HelpModal>
             <Text fw={700} size="lg" mb="md">
                 {t('chart_update')}
             </Text>

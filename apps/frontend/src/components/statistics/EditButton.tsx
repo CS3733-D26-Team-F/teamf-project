@@ -1,6 +1,7 @@
 import {Button, Drawer, MultiSelect, Stack} from "@mantine/core"
 import {useDisclosure} from "@mantine/hooks";
 import {useEffect, useState } from "react";
+import {useTranslation} from "react-i18next";
 
 interface EditButtonProps {
     activeWidgets: string[];
@@ -9,6 +10,7 @@ interface EditButtonProps {
 }
 
 export function EditButton({ activeWidgets=[], onSave, allWidgets={} }: EditButtonProps) {
+    const {t} = useTranslation();
     const [opened, { open, close }] = useDisclosure(false);
     const [selected, setSelected] = useState<string[]>(activeWidgets);
 
@@ -42,7 +44,7 @@ export function EditButton({ activeWidgets=[], onSave, allWidgets={} }: EditButt
                     </Button>
                 </Stack>
             </Drawer>
-            <Button onClick={open} style={{ backgroundColor: 'var(--yale-blue)' }}>Edit Layout</Button>
+            <Button onClick={open} style={{ backgroundColor: 'var(--yale-blue)' }}>{t('edit_layout')}</Button>
         </div>
     );
 }

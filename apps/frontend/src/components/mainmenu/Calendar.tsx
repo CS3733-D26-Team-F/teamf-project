@@ -14,6 +14,8 @@ import {DOMAIN} from '../../const';
 import {useApi} from "../api.ts";
 import {useTranslation} from "react-i18next";
 import {DatesProvider} from "@mantine/dates";
+import { Text } from "@mantine/core";
+import { HelpModal } from "./StatsPopup.tsx";
 
 export function Calendar() {
     const {t, i18n} = useTranslation();
@@ -45,22 +47,6 @@ export function Calendar() {
     const dayjsLocale = localeMap[i18n.language] || 'en';
 
     // Build events from expiration_date
-    const reviewDates = calendarData
-        .filter(doc => doc.review_date)
-        .filter(doc => doc.expiration_date)
-        .map(doc => {
-            const start = dayjs(doc.review_date).startOf("day");
-            const end = dayjs(doc.review_date).endOf("day");
-            return {
-                id: doc.id,
-                title: `${doc.name} ${t('review_date')}`,
-                start: start.toDate(),
-                end: end.toDate(),
-                allDay: true,
-                color: 'var(--fresh-sky)'
-            };
-
-        });
 
     const expirationDates = calendarData
         .filter(doc => doc.expiration_date)
@@ -77,12 +63,17 @@ export function Calendar() {
             };
         });
 
-    const events = [...reviewDates, ...expirationDates];
+    const events = [...expirationDates];
 
 
     return (
         <DatesProvider settings={{locale: dayjsLocale}}>
             <div style={{width: 1200, margin: "0 auto"}}>
+                <div style={{ display: 'absolute', top: 12, right: 12, zIndex: 10 }}>
+                    <HelpModal title="Calendar">
+                        <Text>Shows expiration dates for all documents.</Text>
+                    </HelpModal>
+                </div>
                 <Schedule key={i18n.language} events={events} defaultView="month"
                           labels={{
                               today: t('today'),
@@ -94,6 +85,6 @@ export function Calendar() {
                           locale={localeMap[i18n.language || 'en']}
                 />
             </div>
-            </DatesProvider>
-            );
-            }
+        </DatesProvider>
+    );
+}

@@ -46,6 +46,7 @@
     "@mantine/schedule": "^9.0.2",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
+    "@phosphor-icons/react": "^2.1.10",
     "@prisma/client": "^7.6.0",
     "@railway/cli": "^4.36.1",
     "@tabler/icons-react": "^3.41.1",
