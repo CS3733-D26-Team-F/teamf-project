@@ -2,12 +2,12 @@ import {useAuth0} from "@auth0/auth0-react";
 import {useEffect, useState} from 'react';
 import {Stack, Button, Menu, Modal, Select, Text} from '@mantine/core';
 import {IconChevronDown} from '@tabler/icons-react';
-import {Link} from 'react-router-dom';
 import {DOMAIN} from '../const';
 import {useDisclosure} from "@mantine/hooks";
 import ThemeToggle from "./ThemeToggle";
 import i18n from "../i18n.ts";
 import {useTranslation} from "react-i18next";
+import {ProfileComponent} from "./ProfilePage/ImageCard.tsx";
 
 // Lightweight fallback avatar shown when no custom profile picture is available.
 const placeholderProfilePicture =
@@ -23,6 +23,7 @@ export function Profile() {
     ));
     const {isAuthenticated, user, logout} = useAuth0();
     const [settingsOpened, {open: openSettings, close: closeSettings}] = useDisclosure(false);
+    const [profileOpened, {open: openProfile, close: closeProfile}] = useDisclosure(false);
     const {t} = useTranslation();
     const translate = (lang: string) => {
         i18n.changeLanguage(lang);
@@ -135,9 +136,8 @@ export function Profile() {
                             </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                            <Menu.Label>{t('username')}: {localStorage.getItem('username') || user?.nickname}</Menu.Label>
                             {isAuthenticated && (
-                                <Menu.Item component={Link} to="/profilePage">{t('profile')}</Menu.Item>
+                                <Menu.Item onClick={openProfile}>{t('profile')}</Menu.Item>
                             )}
                             <Menu.Item onClick={openSettings}>{t('settings')}</Menu.Item>
                             {isAuthenticated && (
@@ -172,6 +172,15 @@ export function Profile() {
                             ]}
                         />
                     </Stack>
+                </Modal>
+                <Modal
+                    opened={profileOpened}
+                    onClose={closeProfile}
+                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">Profile</Text>}
+                    size="lg"
+                    radius="lg"
+                >
+                    <ProfileComponent />
                 </Modal>
             </>
         );

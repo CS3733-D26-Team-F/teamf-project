@@ -33,10 +33,11 @@ export type StagedFile = {
 };
 
 export type Employee = {
-    empid: number;
+    empid: string;
     username: string;
     first_name: string;
     last_name: string;
+    created_at: string;
     persona: string;
 };
 
