@@ -854,7 +854,7 @@ export function Documents() {
         formPayload.append('expiration_date', addData.expiration_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
-        formPayload.append('username', localStorage.getItem('username'));
+        formPayload.append('username', addData.username);
         if (addData.folder) {
             formPayload.append('folder_id', addData.folder);
         }
