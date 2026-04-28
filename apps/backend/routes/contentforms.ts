@@ -1429,7 +1429,7 @@ router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
 
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {status}
+            data: {status, expiration_date: new Date()}
         });
 
         return res.json(formatContentFormWithFolder(updated));

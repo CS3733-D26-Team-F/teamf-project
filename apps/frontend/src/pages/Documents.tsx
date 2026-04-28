@@ -46,6 +46,7 @@ type DocumentFormData = {
     expiration_date: string;
     content_type: string;
     status: string;
+    username: string;
     folder: string;
     jointagscontent: string[];
 };
@@ -291,6 +292,7 @@ export function Documents() {
         expiration_date: '',
         content_type: '',
         status: '',
+        username: '',
         folder: '',
         jointagscontent: [] as string[]
     });
@@ -378,6 +380,7 @@ export function Documents() {
         date_modified: today,
         expiration_date: '',
         content_type: '',
+        username: '',
         status: '',
         folder: '',
         jointagscontent: [] as string[]
@@ -902,6 +905,7 @@ export function Documents() {
                 expiration_date: '',
                 content_type: '',
                 status: '',
+                username: (localStorage.getItem('username') ?? ""),
                 folder: '',
                 jointagscontent: []
             });
@@ -940,6 +944,7 @@ export function Documents() {
                 formPayload.append('date_modified', sf.date_modified);
                 formPayload.append('expiration_date', sf.expiration_date);
                 formPayload.append('content_type', sf.content_type);
+                formPayload.append('username', (localStorage.getItem("username")) ?? "")
                 formPayload.append('status', sf.status);
 
                 if (sf.folder_id !== null) {
@@ -1022,6 +1027,7 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
+                    username: (localStorage.get("username") ?? ""),
                     folder: doc.folder_id !== null ? String(doc.folder_id) : '',
                     jointagscontent: doc.jointagscontent
                 });
@@ -1058,6 +1064,7 @@ export function Documents() {
                 formPayload.append('content_type', editData.content_type);
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
+                formPayload.append('username', editData.username);
                 await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
             } else if (editUploadMode === 'url' && editUrl) {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
@@ -1501,10 +1508,10 @@ export function Documents() {
                                                     onClick={() => setFilterType(p => p.filter(x => x !== v))}>{t('type')}: {v} ×</Badge>)}
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
                                                      style={{cursor: 'pointer'}}
-                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>Owner: {v} ×</Badge>)}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('Owner')}: {v} ×</Badge>)}
                         {filterTags.map(v => <Badge key={v} variant="filled" color="cyan"
                                                     style={{cursor: 'pointer'}}
-                                                    onClick={() => setFilterTags(p => p.filter(x => x !== v))}>Tag: {v} ×</Badge>)}
+                                                    onClick={() => setFilterTags(p => p.filter(x => x !== v))}>{t('Tag')}: {v} ×</Badge>)}
                         {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
                                                         style={{cursor: 'pointer'}}
                                                         onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>{t('checkout_status')}: {v === 'checked out' ? t('checked_out') : t('available')} ×
@@ -2269,7 +2276,7 @@ export function Documents() {
                         <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
                                 onClick={() => setAdvancedTagsOpen(true)}> {t('advanced_tags')} </Button>
                     </Group>
-                    <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
+                    <Text fw={600} mt="sm">{t('Lifecycle & Attributes')}</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
                         <Text fw={600} size="sm">{selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root'}</Text>
@@ -2492,6 +2499,7 @@ export function Documents() {
                                         <Table.Th w={150}>{t('persona')}</Table.Th>
                                         <Table.Th w={150}>{t('content_type')}</Table.Th>
                                         <Table.Th w={150}>{t('status')}</Table.Th>
+                                        <Table.Th w={150}>{t('tags')}</Table.Th>
                                         <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
                                     </Table.Tr>
