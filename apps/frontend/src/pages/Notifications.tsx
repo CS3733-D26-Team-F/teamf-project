@@ -110,7 +110,7 @@ function Notification({ title, message, send_date, importance: _importance, read
                 centered
             >
                 <Stack>
-                    <Text>{t('noti_delete_confirm_two')}</Text>
+                    <Text>{t('not_delete_confirm_two')}</Text>
                     <Group justify="center" mt="md">
                         <Button variant="default" onClick={confirmClose}>{t("cancel")}</Button>
                         <Button className="invert-hover-red" onClick={() => {
