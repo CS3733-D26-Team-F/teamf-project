@@ -1084,7 +1084,7 @@ export function Documents() {
                                 {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
-                                            <IconWindowMaximize size={16}/>
+                                            <IconLayoutBottombar size={16}/>
                                             <span>{t('dropdown')}</span>
                                         </Group>
                                     ),
@@ -1093,8 +1093,8 @@ export function Documents() {
                                 {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
-                                            <IconLayoutBottombar size={16}/>
-                                            <span>{t('popup')}</span>
+                                            <IconWindowMaximize size={16}/>
+                                            <span>{t('Viewer')}</span>
                                         </Group>
                                     ),
                                     value: 'popup'
