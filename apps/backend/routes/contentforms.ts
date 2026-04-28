@@ -1228,11 +1228,11 @@ router.post('/transactionDates', checkJWT, async(req, res) => {
     return(transactions);
 })
 
-router.post('/changes/:username', checkJWT, async (req, res) => {
+router.post('/changes', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const {username} = req.params;
+    const username = await resolveRequestUsername(req);
     try {
-        const emp1 = await prisma.employee.findMany({
+        const emp1 = await prisma.employee.findUnique({
             where: { username: username }
         })
 
