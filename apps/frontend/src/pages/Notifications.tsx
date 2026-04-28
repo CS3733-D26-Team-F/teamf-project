@@ -162,10 +162,46 @@ export function Notifications() {
         fetchNotifications();
     }, [api]);
 
-    const filteredNotifications = notifications.filter(n =>
+    const filteredNotifications = notifications.filter(n => 
         n.title.toLowerCase().includes(search.toLowerCase()) ||
         n.message.toLowerCase().includes(search.toLowerCase())
     );
+
+    const [markAllReadModalOpened, { open: openMarkAllRead, close: closeMarkAllRead }] = useDisclosure(false);
+    const [clearAllModalOpened, { open: openClearAll, close: closeClearAll }] = useDisclosure(false);
+
+    const handleMarkAllRead = async () => {
+        try {
+            const unreadNotifications = notifications.filter(n => !n.read);
+            const promises = unreadNotifications.map(n => 
+                api(`${DOMAIN}/notifications/${n.notid}/read`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ read: true }),
+                })
+            );
+            await Promise.all(promises);
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            closeMarkAllRead();
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+        }
+    };
+
+    const handleClearAll = async () => {
+        try {
+            const promises = notifications.map(n => 
+                api(`${DOMAIN}/notifications/${n.notid}`, {
+                    method: 'DELETE',
+                })
+            );
+            await Promise.all(promises);
+            setNotifications([]);
+            closeClearAll();
+        } catch (error) {
+            console.error('Failed to clear all notifications:', error);
+        }
+    };
 
     const formatDate = (date: string | Date) => {
         const d = new Date(date);
@@ -212,13 +248,60 @@ export function Notifications() {
             <Header />
             <PageTitle title={t("notifications")} />
             <Group justify="flex-end" p="md">
-                <Button variant="default" onClick={() => {}}>
+                <Button variant="default" onClick={openMarkAllRead}>
                     Mark All as Read
                 </Button>
-                <Button variant="default" className="invert-hover-red">
+                <Button variant="default" className="invert-hover-red" onClick={openClearAll}>
                     Clear All
                 </Button>
             </Group>
+
+            <Modal
+                opened={markAllReadModalOpened}
+                onClose={closeMarkAllRead}
+                size="xl"
+                title={
+                    <Text fw={700} size="lg" c="var(--color-yale-blue)">
+                        Mark All as Read
+                    </Text>
+                }
+                centered
+            >
+                <Stack>
+                    <Text>Are you sure you want to mark all notifications as read?</Text>
+                    <Group justify="center" mt="md">
+                        <Button variant="default" onClick={closeMarkAllRead}>Cancel</Button>
+                        <Button onClick={() => {
+                            closeMarkAllRead();
+                            handleMarkAllRead();
+                        }}>Confirm</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            <Modal
+                opened={clearAllModalOpened}
+                onClose={closeClearAll}
+                size="xl"
+                title={
+                    <Text fw={700} size="lg" c="var(--color-yale-blue)">
+                        Clear All Notifications
+                    </Text>
+                }
+                centered
+            >
+                <Stack>
+                    <Text>Are you sure you want to delete all notifications? This action cannot be undone.</Text>
+                    <Group justify="center" mt="md">
+                        <Button variant="default" onClick={closeClearAll}>Cancel</Button>
+                        <Button className="invert-hover-red" onClick={() => {
+                            closeClearAll();
+                            handleClearAll();
+                        }}>Delete All</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
             <Box p="md">
                 <TextInput 
                     placeholder= {t('noti_search')}
