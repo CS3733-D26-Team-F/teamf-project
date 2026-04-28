@@ -674,8 +674,8 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
 
             const transaction = await prisma.changes.create({
                 data: {
-                    name: updated.name,
-                    username: employee1.username,
+                    id: updated.id,
+                    empid: employee1.empid,
                     change: "Checked Out Document",
                     date: new Date().toISOString()
                 }
@@ -748,8 +748,8 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
 
             const transaction = await prisma.changes.create({
                 data: {
-                    name: updated.name,
-                    username: employee1.username,
+                    id: updated.id,
+                    empid: employee1.empid,
                     change: "Checked In Document",
                     date: new Date().toISOString()
                 }
