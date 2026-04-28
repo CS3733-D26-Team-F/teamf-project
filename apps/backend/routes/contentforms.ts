@@ -7,6 +7,8 @@ import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
+router.use(upload.single('file'));
+
 async function resolveRequestUsername(req: any): Promise<string | null> {
     const bodyUsername = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
     if (bodyUsername && bodyUsername !== 'null' && bodyUsername !== 'undefined') return bodyUsername;
@@ -135,8 +137,8 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
 
         const transaction = await prisma.changes.create({
             data: {
-                name: contentForm.name,
-                username: employee1.username,
+                id: contentForm.id,
+                empid: employee1.empid,
                 change: "Updated Document",
                 date: new Date().toISOString()
             }
@@ -207,7 +209,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
     try {
         console.log('backend received', req.body);
         const {
-            filename,
+            name,
             ownerUsername,
             date_modified,
             expiration_date,
@@ -223,7 +225,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             return res.status(400).json({error: 'File or URL is required'});
         }
 
-        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
+        if (!name || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).send({error: "Make sure all fields are filled in"});
         }
 
@@ -287,7 +289,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
         // Create the content form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
-                name: filename,
+                name: name,
                 url: contentUrl,
                 owner: ownerUsername,
                 persona : persona,
@@ -309,8 +311,8 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
 
         const transaction = await prisma.changes.create({
             data: {
-                name: content.name,
-                username: employee1.username,
+                id: content.id,
+                empid: employee1.empid,
                 change: "Added Document",
                 date: new Date(date_modified).toISOString()
             }
@@ -494,8 +496,8 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
 
         const transaction = await prisma.changes.create({
             data: {
-                name: updated.name,
-                username: employee1.username,
+                id: updated.id,
+                empid: employee1.empid,
                 change: "Deleted Document",
                 date: new Date().toISOString()
             }
@@ -927,8 +929,8 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
 
         const transaction = await prisma.changes.create({
             data: {
-                name: updated.name,
-                username: employee1.username,
+                id: updated.id,
+                empid: employee1.empid,
                 change: "Updated Document",
                 date: new Date().toISOString()
             }
@@ -1240,7 +1242,7 @@ router.post('/changes', checkJWT, async (req, res) => {
             return res.json([]); // no employee found
         }
         const changes = await prisma.changes.findMany({
-            where: {username: emp1.username}
+            where: {empid: emp1.empid}
         });
         res.json(changes);
     } catch (error) {

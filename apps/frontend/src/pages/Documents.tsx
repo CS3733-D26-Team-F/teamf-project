@@ -525,7 +525,7 @@ export function Documents() {
 
     async function handleAdd() {
         const formPayload = new FormData();
-        formPayload.append('filename', addData.name);
+        formPayload.append('name', addData.name);
         formPayload.append('ownerUsername', addData.owner);
         formPayload.append('persona', JSON.stringify(addData.persona));
         formPayload.append('date_modified', addData.date_modified);
@@ -615,7 +615,7 @@ export function Documents() {
         for (const sf of stagedFiles) {
             try {
                 const formPayload = new FormData();
-                formPayload.append('filename', sf.name);
+                formPayload.append('name', sf.name);
                 formPayload.append('ownerUsername', sf.owner);
                 formPayload.append('persona', JSON.stringify(sf.persona));
                 formPayload.append('date_modified', sf.date_modified);
