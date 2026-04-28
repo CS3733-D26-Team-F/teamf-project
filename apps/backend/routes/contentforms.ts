@@ -1199,10 +1199,15 @@ router.post('/changes', checkJWT, async (req, res) => {
     const {username} = req.body;
     try {
         const emp1 = await prisma.employee.findUnique({
-            where: {username: username}
+            where: { username }
         })
+
+        if (!emp1) {
+            return res.json([]); // no employee found
+        }
         const changes = await prisma.changes.findMany({
             where: {username: emp1.username}
+
         });
         res.json(changes);
     } catch (error) {
