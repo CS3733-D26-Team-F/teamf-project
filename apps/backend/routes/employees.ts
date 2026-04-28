@@ -449,4 +449,88 @@ router.post('/updateTheme', checkJWT, async (req, res) => {
     }
 });
 
+router.get('/getWidgets', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const username = req.query.username as string;
+
+    if (!username) {
+        return res.status(400).json({ error: 'Persona query parameter is required' });
+    }
+
+    try {
+        const empl = await prisma.employee.findUnique(
+            { where: {username : username}}
+        );
+
+        if (!empl) {
+            return res.status(404).json('Employee Not Found');
+        }
+
+        console.log('Employee Widgets:', empl.widgets);
+        res.json(empl.widgets);
+
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.post('/addWidgets', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body is missing" });
+    }
+
+    const { username, widgets } = req.body || {};
+
+    const employee = await prisma.employee.findUnique(
+        {where: {username : username}}
+    );
+
+    if (!employee) {
+        return res.status(404).json({error: 'Employee not found'});
+    }
+    try {
+        const newWidgets = [...employee.widgets, ...widgets];
+
+        const updated = await prisma.employee.update({
+            where: {username: username},
+            data: {widgets: newWidgets}
+        })
+        console.log('Employee Widgets Updated:', newWidgets);
+        res.json(updated.widgets);
+    } catch (error) {
+        res.status(500).json({error: 'Widgets could not update'});
+    }
+});
+
+router.post('/removeWidgets', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body is missing" });
+    }
+    const { username, widgets } = req.body || {};
+
+    const employee = await prisma.employee.findUnique(
+        {where: {username : username}}
+    );
+
+    if (!employee) {
+        return res.status(404).json({error: 'Employee not found'});
+    }
+    try {
+        const newWidgets = employee.widgets.filter(w => !widgets.includes(w));
+        const updated = await prisma.employee.update({
+            where: {username: username},
+            data: {widgets: newWidgets}
+        })
+        console.log('Employee Widgets Updated:', newWidgets);
+        res.json(updated.widgets);
+    } catch (error) {
+        res.status(500).json({error: 'Widgets already not in the list'});
+    }
+});
+
+
 export default router;
