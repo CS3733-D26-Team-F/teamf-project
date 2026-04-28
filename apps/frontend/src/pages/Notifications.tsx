@@ -29,11 +29,11 @@ function Notification({ title, message, send_date, importance: _importance, read
         <Box
             mb="lg"
             style={{
-                opacity: read ? 0.7 : 1 ,
+                opacity: read ? 0.5 : 1 ,
                 border: '1px solid #dee2e6',
                 borderRadius: 8,
                 padding: 16,
-                background: read ? 'grey' : 'white'
+                background: 'white'
             }}
         >
             {/* Notification Title */}
@@ -67,7 +67,7 @@ function Notification({ title, message, send_date, importance: _importance, read
                     </FilledButton>
 
                     <Button variant="default" onClick={() => onToggleRead(notid, !read)}>
-                        {read ? t('noti_mark') : t('noti_unmark')}
+                        {read ? t('noti_unmark') : t('noti_mark')}
                     </Button>
 
                     <Button variant="default" onClick={confirmOpen} className="invert-hover-red">
@@ -113,7 +113,7 @@ function Notification({ title, message, send_date, importance: _importance, read
                     <Text>{t('noti_delete_confirm_two')}</Text>
                     <Group justify="center" mt="md">
                         <Button variant="default" onClick={confirmClose}>{t("cancel")}</Button>
-                        <Button color="red" onClick={() => {
+                        <Button className="invert-hover-red" onClick={() => {
                             confirmClose();
                             onDelete(notid);
                         }}>{t('delete')}</Button>
@@ -122,7 +122,7 @@ function Notification({ title, message, send_date, importance: _importance, read
             </Modal>
 
             <Text style={{
-               background: read ? 'var(--color-light-gray)' : '#f8f9fa',
+               background: '#f8f9fa',
                borderRadius: 6,
                padding: '8px 12px'
             }}>
@@ -174,11 +174,14 @@ export function Notifications() {
 
     const handleToggleRead = async (notid: number, read: boolean) => {
         try {
+            console.log('[handleToggleRead] notid:', notid, 'read:', read);
             const response = await api(`${DOMAIN}/notifications/${notid}/read`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ read }),
             });
+
+            console.log('[handleToggleRead] response ok:', response.ok);
 
             if (response.ok) {
                 setNotifications(prev => prev.map(n => 
@@ -208,6 +211,14 @@ export function Notifications() {
         <>
             <Header />
             <PageTitle title={t("notifications")} />
+            <Group justify="flex-end" p="md">
+                <Button variant="default" onClick={() => {}}>
+                    Mark All as Read
+                </Button>
+                <Button variant="default" className="invert-hover-red">
+                    Clear All
+                </Button>
+            </Group>
             <Box p="md">
                 <TextInput 
                     placeholder= {t('noti_search')}
