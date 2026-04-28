@@ -7,6 +7,21 @@ import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
+async function resolveRequestUsername(req: any): Promise<string | null> {
+    const bodyUsername = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    if (bodyUsername && bodyUsername !== 'null' && bodyUsername !== 'undefined') return bodyUsername;
+
+    const auth0Id = req.auth?.payload?.sub as string | undefined;
+    if (!auth0Id) return null;
+
+    const employee = await prisma.employee.findUnique({
+        where: { auth0Id },
+        select: { username: true }
+    });
+
+    return employee?.username ?? null;
+}
+
 router.get('/api/auth/me', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const employee = await prisma.employee.findUnique({where: {auth0Id}});
@@ -123,7 +138,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
                 name: contentForm.name,
                 username: employee1.username,
                 change: "Updated Document",
-                date: new Date()
+                date: new Date().toISOString()
             }
         });
 
@@ -297,7 +312,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 name: content.name,
                 username: employee1.username,
                 change: "Added Document",
-                date: new Date(date_modified)
+                date: new Date(date_modified).toISOString()
             }
         })
 
@@ -482,7 +497,7 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
                 name: updated.name,
                 username: employee1.username,
                 change: "Deleted Document",
-                date: new Date()
+                date: new Date().toISOString()
             }
         });
         res.json(updated);
@@ -611,11 +626,11 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
 router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
-    const {username} = req.body;
+    const username = await resolveRequestUsername(req);
     console.log('checkout hit', {id, username});
 
     if (!username) {
-        return res.status(400).send('Requires username');
+        return res.status(400).json({error: 'Requires username'});
     }
 
     try {
@@ -653,7 +668,11 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {id},
                 data: {checkout_username: username, checkout_date: new Date()}
             });
-            return res.status(200).json({message: 'Document checked out successfully'});
+            return res.status(200).json({
+                message: 'Document checked out successfully',
+                checkedOutBy: username,
+                checkedOutAt: updated.checkout_date
+            });
         } catch (error) {
             res.status(500).json({error: 'Something went wrong writing the checkout to the database'});
         }
@@ -667,7 +686,11 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
 router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const id = parseInt(req.params.id);
-    const {username} = req.body;
+    const username = await resolveRequestUsername(req);
+
+    if (!username) {
+        return res.status(400).json({error: 'Requires username'});
+    }
 
     try {
         const user = await prisma.employee.findUnique({
@@ -706,7 +729,10 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                 data: {checkout_username: null, checkout_date: null}
             });
 
-            return res.status(200).json({message: 'Document checked in successfully'});
+            return res.status(200).json({
+                message: 'Document checked in successfully',
+                checkedInBy: username
+            });
         } catch (error) {
             res.status(500).json({error: 'Something went wrong writing the checkin to the database'});
         }
@@ -904,7 +930,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
                 name: updated.name,
                 username: employee1.username,
                 change: "Updated Document",
-                date: new Date()
+                date: new Date().toISOString()
             }
         })
 
@@ -1204,10 +1230,10 @@ router.post('/transactionDates', checkJWT, async(req, res) => {
 
 router.post('/changes', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const {username} = req.body;
+    const username = await resolveRequestUsername(req);
     try {
         const emp1 = await prisma.employee.findUnique({
-            where: { username }
+            where: { username: username }
         })
 
         if (!emp1) {
@@ -1215,7 +1241,6 @@ router.post('/changes', checkJWT, async (req, res) => {
         }
         const changes = await prisma.changes.findMany({
             where: {username: emp1.username}
-
         });
         res.json(changes);
     } catch (error) {

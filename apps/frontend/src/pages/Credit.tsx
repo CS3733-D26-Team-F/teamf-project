@@ -2,9 +2,10 @@ import {Header} from "../components/Header.tsx";
 import {PageTitle} from "../components/Title.tsx";
 import {Center, Group, Stack, Text} from "@mantine/core";
 import {CreditCard} from "../components/CreditCard.tsx";
+import {useTranslation} from "react-i18next";
 
 export function Credit() {
-
+    const {t} = useTranslation();
     const imageGap = 40;
 
     return (
@@ -13,10 +14,10 @@ export function Credit() {
                 About - Hanover Insurance
             </title>
             <Header />
-            <PageTitle title="Credits"/>
+            <PageTitle title={t('credits')}/>
             <Stack m={20} gap={40}>
                 <Text size={"xl"}>
-                    We utilized the PERN stack for this project. We used Prisma and the PostgreSQL Editor in Supabase, Express, React, and Node.js to build and run our program.
+                    {t('pern')}
                 </Text>
                 <ul>
                     <li>Prisma 7.6.0</li>
@@ -25,7 +26,7 @@ export function Credit() {
                     <li>Node 10.9.2</li>
                 </ul>
                 <Text size={"xl"}>
-                    Our Tools Used:
+                    {t('tools')}
                 </Text>
                 <Center>
                     <Stack gap={imageGap}>

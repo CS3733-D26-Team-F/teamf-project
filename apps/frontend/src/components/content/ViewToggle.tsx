@@ -1,5 +1,6 @@
 import {Group, SegmentedControl} from "@mantine/core";
 import {IconLayoutGrid, IconList} from "@tabler/icons-react";
+import {useTranslation} from "react-i18next";
 
 type ViewToggleProps = {
     viewMode: 'grid' | 'list';
@@ -7,6 +8,7 @@ type ViewToggleProps = {
 }
 
 export function ViewToggle({ viewMode, setViewMode }: ViewToggleProps) {
+    const {t} = useTranslation();
     return (
         <SegmentedControl value={viewMode} onChange={val => setViewMode(val as 'grid' | 'list')}
                           data={[
@@ -14,7 +16,7 @@ export function ViewToggle({ viewMode, setViewMode }: ViewToggleProps) {
                                   label: (
                                       <Group gap={4} wrap="nowrap" justify="center">
                                           <IconLayoutGrid size={16} />
-                                          <span>Grid</span>
+                                          <span>{t('grid')}</span>
                                       </Group>
                                   ),
                                   value: 'grid',
@@ -23,7 +25,7 @@ export function ViewToggle({ viewMode, setViewMode }: ViewToggleProps) {
                                   label: (
                                       <Group gap={4} wrap="nowrap" justify="center">
                                           <IconList size={16} />
-                                          <span>List</span>
+                                          <span>{t('list')}</span>
                                       </Group>
                                   ),
                                   value: 'list',
