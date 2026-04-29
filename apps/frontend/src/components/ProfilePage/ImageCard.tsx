@@ -59,7 +59,7 @@ export function ProfileComponent() {
 
         // Fetch the latest profile image URL so local storage stays in sync
         // with the backend if the user updated their picture elsewhere.
-        fetch(`${DOMAIN}/getEmployee`, {
+        api(`${DOMAIN}/getEmployee`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({username}),
