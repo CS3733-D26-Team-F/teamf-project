@@ -99,8 +99,6 @@
   "employees": "Employees",
   "page_title_home": "Home - Hanover Insurance",
   "page_title_login": "Login - Hanover Insurance",
-  "dashboard_subtitle": "Welcome to your personal dashboard",
-  "welcome": "Welcome",
   "welcome_message": "Welcome to iBank!",
   "welcome_message_subtitle": "We are committed to providing our customers with the best insurance products and services",
   "my_updated_files": "My Updated Files",
@@ -237,7 +235,8 @@
   "activity_today": "My Activity Today",
   "files_added": "Files Added",
   "files_edited": "Files Edited",
-  "files_deleted": "Files Deleted"
+  "files_deleted": "Files Deleted",
+  "statistics": "Statistics"
 
 
 

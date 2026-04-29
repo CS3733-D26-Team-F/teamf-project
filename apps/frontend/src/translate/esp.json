@@ -98,8 +98,6 @@
   "employees": "Empleados",
   "page_title_home": "Inicio - Hanover Insurance",
   "page_title_login": "Iniciar Sesión - Hanover Insurance",
-  "dashboard_subtitle": "Bienvenido a su panel personal",
-  "welcome": "Bienvenido",
   "welcome_message": "¡Bienvenido a iBank!",
   "welcome_message_subtitle": "Estamos comprometidos a proporcionar a nuestros clientes los mejores productos y servicios de seguros",
   "my_updated_files": "Mis Archivos Actualizados",
@@ -236,6 +234,7 @@
   "activity_today": "Mi Actividad Hoy",
   "files_added": "Archivos Agregados",
   "files_edited": "Archivos Editados",
-  "files_deleted": "Archivos Eliminados"
+  "files_deleted": "Archivos Eliminados",
+  "statistics": "Estadística"
 
 }

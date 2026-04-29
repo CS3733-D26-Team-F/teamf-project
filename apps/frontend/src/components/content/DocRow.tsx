@@ -195,7 +195,7 @@ export function DocRow({
 
                                 {canModify && (
                                     <Tooltip
-                                        label={canEdit ? t('edit') : (isAdmin && isSomeoneCheckout ? t('force_checkout') : t('force_checkin_long'))}>
+                                        label={canEdit ? t('edit') : (isAdmin && isSomeoneCheckout ? t('force_checkin_long')  : t('force_checkout'))}>
                                         <ActionIcon
                                             variant="subtle"
                                             onClick={() => canEdit && onEdit(doc)}
