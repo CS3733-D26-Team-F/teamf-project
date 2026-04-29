@@ -3,7 +3,7 @@ import { MainMenu } from './pages/MainMenu';
 // import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
-import {Auth0Provider} from "@auth0/auth0-react";
+import {Auth0Provider, useAuth0} from "@auth0/auth0-react";
 import Documents from "./pages/Documents";
 import { Archive } from './pages/Archive';
 import { Notifications } from './pages/Notifications';
@@ -18,6 +18,8 @@ import { Statistics } from './pages/Statistics.tsx';
 // - wires up client-side routing
 // - maps routes to page components
 export default function App() {
+    const { isAuthenticated } = useAuth0();
+
     return (
         // Auth0Provider makes authentication state and login/logout helpers
         // available to all child components.
@@ -40,9 +42,11 @@ export default function App() {
                 <CommandPalette />
                 {/* Define the app's main navigation routes. */}
                 <Routes>
-                    <Route path="/" element={<MainMenu />}/>
+                    <Route
+                        path="/"
+                        element={isAuthenticated ? <Statistics /> : <MainMenu />}
+                    />
                     <Route path="/statistics" element={<Statistics />}/>
-                    <Route path="/menu" element={<MainMenu />} />
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
