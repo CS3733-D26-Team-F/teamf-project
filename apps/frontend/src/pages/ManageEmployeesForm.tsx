@@ -32,7 +32,7 @@ export function ManageEmployeesForm() {
         return (
             <>
                 <Header />
-                <PageTitle title="Employees"/>
+                <PageTitle title={t('employees')} />
                 <p style={{ textAlign: 'center' }}>Checking access...</p>
             </>
         );
@@ -43,11 +43,11 @@ export function ManageEmployeesForm() {
         return (
             <>
                 <title>
-                    Employees - Hanover Insurance
+                    {t('employees')} - Hanover Insurance
                 </title>
                 <Header />
                 <Group>
-                    <PageTitle title="Employees"/>
+                    <PageTitle title={t('employees')} />
                     <Button
                         variant="default"
                         onClick={() => setOpenHelpModal(true)}
@@ -57,7 +57,7 @@ export function ManageEmployeesForm() {
                 </Group>
 
                 <HelpModal
-                    title="Employee Page"
+                    title={t('employee_page')}
                     opened={openHelpModal}
                     onClose={() => setOpenHelpModal(false)}
                     popupContent={t('emp_help_content')}
