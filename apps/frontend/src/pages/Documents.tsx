@@ -1003,6 +1003,8 @@ export function Documents() {
     }
 
     function openEdit(doc: ContentForm) {
+        const isUrlDocument = getFileType(doc.url) === 'Link';
+
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1018,20 +1020,23 @@ export function Documents() {
                     name: doc.name,
                     owner: doc.owner,
                     persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],
-                    date_modified: today,
+                    date_modified: doc.date_modified?.split('T')[0] ?? today,
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
-                    username: (localStorage.get("username") ?? ""),
+                    username: (localStorage.getItem('username') ?? ''),
                     folder: doc.folder_id !== null ? String(doc.folder_id) : '',
                     jointagscontent: doc.jointagscontent
                 });
+                setEditUploadMode(isUrlDocument ? 'url' : 'file');
+                setEditUrl(isUrlDocument ? doc.url : '');
+                setEditFile(null);
                 setEditOpen(true);
             });
     }
 
-    function closeEdit() {
-        if (editId) {
+    function closeEdit(skipCheckIn = false) {
+        if (editId && !skipCheckIn) {
             api(`${DOMAIN}/contentforms/${editId}/checkin`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1150,7 +1155,7 @@ export function Documents() {
 
         setEditFile(null);
         setConfirmSaveOpen(false);
-        closeEdit();
+        closeEdit(true);
         loadDocuments();
     }
     async function handleDelete() {
@@ -2264,13 +2269,6 @@ export function Documents() {
                                      }))
                                  }
                                  disabled={persona !== 'Admin'}/>
-                    <Group preventGrowOverflow={false}>
-                        <MultiSelect w="75%" label= {t('tags')} value={addData.jointagscontent}
-                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
-                                     data={getArrayTags()}/>
-                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
-                                onClick={() => setAdvancedTagsOpen(true)}> {t('advanced_tags')} </Button>
-                    </Group>
                     <Text fw={600} mt="sm">{t('Lifecycle & Attributes')}</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
@@ -2290,6 +2288,15 @@ export function Documents() {
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
                     </Group>
+                    <Group preventGrowOverflow={false} align="flex-end">
+                        <MultiSelect w="75%" label={t('tags')} value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
+                                     data={getArrayTags()}
+                                     searchable
+                                     clearable/>
+                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                                onClick={() => setAdvancedTagsOpen(true)}> {t('advanced_tags')} </Button>
+                    </Group>
                     <Group justify="flex-end" mt="md">
                         {addError && <ErrorMessage message={addError}/>}
                         <Button className="invert-hover-outline" onClick={() => {
@@ -2302,7 +2309,7 @@ export function Documents() {
             </Modal>
 
             {/* edit modal */}
-            <Modal opened={editOpen} onClose={closeEdit} title={t('edit_doc')} size="lg">
+            <Modal opened={editOpen} onClose={() => closeEdit()} title={t('edit_doc')} size="lg">
                 <Stack>
                     <Text fw={600}>{t('document_details')}</Text>
                     <TextInput label="Name of Document" value={editData.name}
@@ -2381,7 +2388,7 @@ export function Documents() {
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {editError && <ErrorMessage message={editError}/>}
-                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
+                        <Button className="invert-hover-outline" onClick={() => closeEdit()}>✕ Cancel Changes</Button>
                         <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
@@ -2494,9 +2501,9 @@ export function Documents() {
                                         <Table.Th w={150}>{t('persona')}</Table.Th>
                                         <Table.Th w={150}>{t('content_type')}</Table.Th>
                                         <Table.Th w={150}>{t('status')}</Table.Th>
-                                        <Table.Th w={150}>{t('tags')}</Table.Th>
                                         <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
+                                        <Table.Th w={240}>{t('tags')}</Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
                                 <Table.Tbody>
@@ -2550,9 +2557,21 @@ export function Documents() {
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
                                                 </Stack>
                                             </Table.Td>
-                                            <Table.Td><ActionIcon color="var(--color-neutral-red)"
-                                                                  onClick={() => removeStagedFile(staged.id)}><IconTrash
-                                                size={16}/></ActionIcon></Table.Td>
+                                            <Table.Td>
+                                                <ActionIcon color="var(--color-neutral-red)"
+                                                            onClick={() => removeStagedFile(staged.id)}>
+                                                    <IconTrash size={16}/>
+                                                </ActionIcon>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <MultiSelect
+                                                    data={getArrayTags()}
+                                                    value={staged.jointagscontent}
+                                                    onChange={val => updateStagedFile(staged.id, 'jointagscontent', val)}
+                                                    searchable
+                                                    clearable
+                                                />
+                                            </Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>

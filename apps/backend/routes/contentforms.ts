@@ -1953,7 +1953,7 @@ router.get('/grabtaggedforms/:name', checkJWT, async(req, res) => {
     });
 
     if (!tag) {
-        return res.status(400).json('No Tag by This Name');
+        return res.status(200).json({data: []});
     }
 
     try {
@@ -1985,7 +1985,7 @@ router.get('/grabformtags/:name', checkJWT, async(req, res) => {
     });
 
     if (!form) {
-        return res.status(400).json('No Tag by This Name');
+        return res.status(200).json({data: []});
     }
 
     try {
