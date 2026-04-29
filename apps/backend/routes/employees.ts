@@ -47,6 +47,20 @@ router.post('/getEmployee', async (req, res) => {
     }
 });
 
+router.get('/employeenames/:empid', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const empid = parseInt(req.params.empid);
+        const employee = await prisma.employee.findUnique({
+            where: {empid}
+        });
+        if (!employee) return res.status(404).json({error: 'Not found'});
+        res.json(employee.first_name + ' ' + employee.last_name);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 // Update employee fields locally and mirror certain changes back to Auth0.
 router.patch('/updateEmployee', checkJWT, async (req, res) => {
     console.log("updateEmployee hit, body:", req.body);
