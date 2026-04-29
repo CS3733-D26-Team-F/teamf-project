@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useListState } from "@mantine/hooks";
-import { ActionIcon, Badge, Button, Checkbox, Group, Paper, ScrollArea, Stack, Text, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
 import { IconTrash, IconClipboardList } from "@tabler/icons-react";
 import {useTranslation} from "react-i18next";
 import {HelpModal} from "./StatsPopup.tsx";

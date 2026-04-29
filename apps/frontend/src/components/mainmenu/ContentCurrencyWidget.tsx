@@ -113,8 +113,8 @@ export function ContentCurrencyWidget() {
                 position: 'relative'
             }}
         >
-            <HelpModal title="Recently Modified">
-                <Text>Shows documents modified in the last 48 hours, filtered by your ownership or role.</Text>
+            <HelpModal title= {t("recently_modified")}>
+                <Text>{t("recently_modified_tip")}</Text>
             </HelpModal>
             <Group gap={6} mb="xs">
                 <IconClock size={14} color="gray" />
@@ -122,7 +122,7 @@ export function ContentCurrencyWidget() {
             </Group>
 
             {currentPersona === 'Admin' ? (
-                <Text fw={700} size="sm" c="dimmed">View: All Personas</Text>
+                <Text fw={700} size="sm" c="dimmed">{t('view')} All Personas</Text>
             ) : (
                 <Group>
                     <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>

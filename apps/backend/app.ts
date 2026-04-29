@@ -19,7 +19,7 @@ const staticPath = path.join(distPath);
 // Allow the frontend and deployed app to call this backend API.
 // credentials: true supports auth flows that rely on cookies or sessions.
 app.use(cors({
-    origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev"],
+    origin: ["http://localhost:5173", "http://localhost:5175", "https://cs3733.lunarflame.dev", "https://i4.cs3733.lunarflame.dev"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
 }));

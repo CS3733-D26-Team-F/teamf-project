@@ -18,7 +18,15 @@ export function ConfirmModal(props: ConfirmProps) {
             <Text size="sm" mb="md">{props.message}</Text>
             <Group justify="flex-end">
                 <Button className="invert-hover-outline" onClick={props.onCancel}>{t('cancel')}</Button>
-                <Button className="invert-hover" onClick={async () => await props.onConfirm()}>{t('confirm')}</Button>
+                <Button
+                    className="invert-hover"
+                    onClick={async () => {
+                        console.debug('[ConfirmModal] Confirm clicked', { title: props.title });
+                        await props.onConfirm();
+                    }}
+                >
+                    {t('confirm')}
+                </Button>
             </Group>
         </Modal>
     )

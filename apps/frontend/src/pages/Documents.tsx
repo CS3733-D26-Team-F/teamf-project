@@ -282,6 +282,7 @@ export function Documents() {
     }
 
     function openAddDocumentModal() {
+        // Default the Add modal folder to the currently selected folder (if any)
         setAddData(prev => ({
             ...prev,
             folder: selectedFolderId !== null ? String(selectedFolderId) : ''
@@ -557,6 +558,20 @@ export function Documents() {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ids, folderId})
         });
+
+        // Only check in documents that are actually checked out.
+        const moveCheckInIds = ids.filter(id => checkedOutMap[id]);
+        if (moveCheckInIds.length > 0) {
+            try {
+                await Promise.all(moveCheckInIds.map(id => api(`${DOMAIN}/contentforms/${id}/checkin`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username})
+                })));
+            } catch (e) {
+                // ignore checkin failures and continue to refresh
+            }
+        }
 
         await Promise.all([loadDocuments(), loadFolders()]);
     }
@@ -1001,11 +1016,28 @@ export function Documents() {
         const expiration = new Date(editData.expiration_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        const expiredStatus = t('expired');
 
-        if ((expiration < today && editData.status !== 'Expired') || (expiration > today && editData.status === 'Expired')) {
+        console.debug('[Documents] Save clicked', {
+            editId,
+            status: editData.status,
+            expiration: editData.expiration_date,
+            folder: editData.folder,
+            uploadMode: editUploadMode,
+            hasFile: Boolean(editFile),
+            hasUrl: Boolean(editUrl)
+        });
+
+        if ((expiration < today && editData.status !== expiredStatus) || (expiration > today && editData.status === expiredStatus)) {
+            console.warn('[Documents] Save blocked by expiration/status validation', {
+                status: editData.status,
+                expiredStatus,
+                expiration: editData.expiration_date
+            });
             return;
         }
 
+        console.debug('[Documents] Opening confirm save modal');
         setConfirmSaveOpen(true);
     }
 
@@ -1060,8 +1092,18 @@ export function Documents() {
 
     async function handleEdit() {
         if (!editId) return;
+        console.debug('[Documents] Confirmed save starting', {
+            editId,
+            status: editData.status,
+            folder: editData.folder,
+            uploadMode: editUploadMode,
+            hasFile: Boolean(editFile),
+            hasUrl: Boolean(editUrl)
+        });
         try {
+            const folderIdValue = editData.folder === '' ? '' : String(editData.folder);
             if (editFile) {
+                console.debug('[Documents] Saving as file upload', { folderIdValue });
                 const formPayload = new FormData();
                 formPayload.append('name', editData.name);
                 formPayload.append('ownerUsername', editData.owner);
@@ -1072,16 +1114,29 @@ export function Documents() {
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
                 formPayload.append('username', editData.username);
+                formPayload.append('folder_id', folderIdValue);
                 await api(`${UPLOAD_DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
             } else if (editUploadMode === 'url' && editUrl) {
+                console.debug('[Documents] Saving as URL update', { folderIdValue });
+                const payload: any = {...editData, url: normalizeUrl(editUrl)};
+                if (typeof payload.folder !== 'undefined') {
+                    payload.folder_id = payload.folder === '' ? null : Number(payload.folder);
+                    delete payload.folder;
+                }
                 await api(`${DOMAIN}/contentforms/${editId}`, {
                     method: 'PUT', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({...editData, url: normalizeUrl(editUrl)})
+                    body: JSON.stringify(payload)
                 });
             } else {
+                console.debug('[Documents] Saving as metadata-only update', { folderIdValue });
+                const payload: any = {...editData};
+                if (typeof payload.folder !== 'undefined') {
+                    payload.folder_id = payload.folder === '' ? null : Number(payload.folder);
+                    delete payload.folder;
+                }
                 await api(`${DOMAIN}/contentforms/${editId}`, {
                     method: 'PUT', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(editData)
+                    body: JSON.stringify(payload)
                 });
             }
         } catch (err: any) {
@@ -1159,6 +1214,8 @@ export function Documents() {
         await api(`${DOMAIN}/contentforms/${editId}/checkin`, {
             method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username}),
         });
+
+        console.debug('[Documents] Save finished, checked in and reloading documents');
 
         setEditFile(null);
         setConfirmSaveOpen(false);
@@ -1284,6 +1341,16 @@ export function Documents() {
         onDelete: (id: number) => {
             setDeleteId(id);
             setDeleteOpen(true);
+        },
+        onRequestMove: (id: number) => {
+            setSelectedIds([id]);
+            setSelectedFavIds([]);
+            setMoveTargetFolderId(null);
+            setQuickFolderName('');
+            setMoveFolderOpen(true);
+        },
+        onRemoveFromFolder: async (id: number) => {
+            await assignDocumentsToFolder([id], null);
         },
         isFavorited: (id: number) => favoritedIds.has(id),
     };
@@ -1623,10 +1690,10 @@ export function Documents() {
                 {folders.length > 0 && (
                     <Box mb="lg">
                         <Group justify="space-between" mb="xs">
-                            <Text fw={700} size="sm" c="dimmed">Folders</Text>
+                            <Text fw={700} size="sm" c="dimmed">{t('folders')}</Text>
                             {selectedFolderId !== null && (
                                 <Button variant="light" size="xs" onClick={() => setSelectedFolderId(null)}>
-                                    Show all documents
+                                    {t('show_all_doc')}
                                 </Button>
                             )}
                         </Group>
@@ -1697,13 +1764,13 @@ export function Documents() {
                                                             </Menu.Target>
                                                             <Menu.Dropdown>
                                                                 <Menu.Item onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}>
-                                                                    Edit Folder
+                                                                    {t('edit_folder')}
                                                                 </Menu.Item>
                                                                 <Menu.Item onClick={(e) => { e.stopPropagation(); setDeleteFolderId(folder.id); setDeleteFolderOpen(true); }}>
-                                                                    Delete Folder
+                                                                    {t('delete_folder')}
                                                                 </Menu.Item>
                                                                 <Menu.Item onClick={(e) => { e.stopPropagation(); setDuplicateFolderId(folder.id); setDuplicateFolderOpen(true); }}>
-                                                                    Duplicate Folder
+                                                                    {t('duplicate_folder')}
                                                                 </Menu.Item>
                                                             </Menu.Dropdown>
                                                         </Menu>
@@ -1731,15 +1798,15 @@ export function Documents() {
                     <Stack gap="lg">
                         <Group justify="space-between" align="center">
                             <Text size="sm" c="dimmed">
-                                Showing {rowsPerPage} rows per page
+                                {t("showing")} {rowsPerPage}  {t("rows_per_page")}
                             </Text>
                             <Select
                                 value={rowsPerPage}
                                 onChange={(value) => setRowsPerPage((value as '10'|'25' | '50') ?? '25')}
                                 data={[
-                                    {label: '10 rows', value: '10'},
-                                    {label: '25 rows', value: '25'},
-                                    {label: '50 rows', value: '50'}
+                                    {label: `10 ${t('rows')}`, value: '10'},
+                                    {label: `25 ${t('rows')}`, value: '25'},
+                                    {label: `50 ${t('rows')}`, value: '50'}
                                 ]}
                                 w={140}
                                 allowDeselect={false}
@@ -1927,13 +1994,13 @@ export function Documents() {
                 setAddFolderOpen(false);
                 setFolderModalError('');
                 setFolderUsers([]);
-            }} title="Create Folder">
+            }} title={t('Create Folder')}>
                 <Stack>
-                    <TextInput label="Folder Name" placeholder="Enter folder name" value={folderName} onChange={e => setFolderName(e.target.value)} />
-                    <MultiSelect label="Persona" placeholder="Select personas" value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
+                    <TextInput label={t('folder_name')} placeholder={t("folder_place")} value={folderName} onChange={e => setFolderName(e.target.value)} />
+                    <MultiSelect label={t('folder_persona')} placeholder={t('folder_persona_place')}value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
                     <MultiSelect
-                        label="Restricted Users"
-                        placeholder="Select users who can access this folder"
+                        label={t('folder_restrict')}
+                        placeholder={t("folder_restrict_place")}
                         value={folderUsers}
                         onChange={setFolderUsers}
                         data={[...new Set(employees.map(e => e.username))]}
@@ -1952,7 +2019,7 @@ export function Documents() {
                                 setFolderUsers([]);
                                 setFolderModalError('');
                             }
-                        }}>Create</Button>
+                        }}>{t('create')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -2073,7 +2140,7 @@ export function Documents() {
                                  onChange={(val) => setFilterCheckout(val)}
                                  data={[{value: 'available', label: t('available')}, {value: 'checked out', label: t('checked_out')}]}
                                  clearable/>
-                    <MultiSelect label="Content Tags" placeholder="Any Tags" value={filterTags}
+                    <MultiSelect label= {t('content_tags')} placeholder= {t('any_tags')} value={filterTags}
                                  onChange={setFilterTags} data={getArrayTags()}
                                  clearable/>
                     <Group justify="flex-end">
@@ -2136,7 +2203,7 @@ export function Documents() {
                     )}
                     {filteredTrashFolders.length > 0 && (
                         <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">Deleted folders</Text>
+                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('folder_delete')}</Text>
                             <Stack gap="xs">
                                 {filteredTrashFolders.map(folder => {
                                     const folderDocs = Array.isArray(folder.documents) ? folder.documents : [];
@@ -2300,8 +2367,34 @@ export function Documents() {
                     <Text fw={600} mt="sm">{t('Lifecycle & Attributes')}</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
-                        <Text fw={600} size="sm">{selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root'}</Text>
+                        <Text fw={600} size="sm">{(addData.folder && addData.folder !== '') ? (folderMap[Number(addData.folder)]?.name ?? 'Selected folder') : (selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root')}</Text>
                     </Box>
+                    <Group grow mt="sm">
+                        <Select
+                            label={t('folder')}
+                            placeholder="Top level"
+                            value={addData.folder === '' ? 'root' : addData.folder}
+                            onChange={val => setAddData({...addData, folder: (val === 'root' ? '' : (val ?? ''))})}
+                            data={folderParentOptions}
+                            clearable
+                        />
+                        <Group style={{alignItems: 'flex-end'}}>
+                            <TextInput
+                                label="Or create folder"
+                                placeholder="New folder name"
+                                value={quickFolderName}
+                                onChange={e => setQuickFolderName(e.target.value)}
+                            />
+                            <Button mt={20} className="invert-hover-outline" onClick={async () => {
+                                const personas = [persona ?? ''].filter(Boolean);
+                                const created = await createFolder(quickFolderName, personas, [], null);
+                                if (created) {
+                                    setAddData(prev => ({...prev, folder: String(created.id)}));
+                                    setQuickFolderName('');
+                                }
+                            }}>Create</Button>
+                        </Group>
+                    </Group>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
@@ -2382,6 +2475,14 @@ export function Documents() {
                         onChange={val => setEditData({...editData, persona: val})}
                         data={roles.filter(r => r !== 'Admin')}
                         disabled={persona !== 'Admin'}
+                    />
+                    <Select
+                        label={t('folder')}
+                        placeholder="Top level"
+                        value={editData.folder === '' ? 'root' : editData.folder}
+                        onChange={val => setEditData({...editData, folder: (val === 'root' ? '' : (val ?? ''))})}
+                        data={folderParentOptions}
+                        clearable
                     />
                     <Group preventGrowOverflow={false}>
                         <MultiSelect

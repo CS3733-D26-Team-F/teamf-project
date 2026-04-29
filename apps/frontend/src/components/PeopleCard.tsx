@@ -4,10 +4,10 @@ interface PersonaBadgesProps {
     firstName: string;
     lastName: string;
     position: string;
-    photoURL: string;
+    photoID: string;
 }
 
-export function PeopleCard({ firstName, lastName, position, photoURL }: PersonaBadgesProps) {
+export function PeopleCard({ firstName, lastName, position, photoID }: PersonaBadgesProps) {
     return (
         <>
             <Stack>
@@ -15,8 +15,8 @@ export function PeopleCard({ firstName, lastName, position, photoURL }: PersonaB
                     ta="center"
                     w="200px"
                     h="200px"
-                    src={`../../public/people/${photoURL}`}
-                    fallbackSrc = "../../public/people/none.jpg"
+                    src={`/people/${photoID}`}
+                    fallbackSrc = "/people/none.jpg"
                     radius="50%"
                     style={{
                         objectFit: 'cover',

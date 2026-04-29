@@ -73,4 +73,6 @@ export interface RowCallbacks {
     onDelete: (id: number) => void;
     isFavorited: (id: number) => boolean;
     onFolderClick: (folderId: number | null) => void;
+    onRequestMove?: (id: number) => void;
+    onRemoveFromFolder?: (id: number) => void;
 }

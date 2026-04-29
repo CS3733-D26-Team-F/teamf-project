@@ -11,20 +11,10 @@ import { Header } from "../components/Header.tsx";
 import { DOMAIN } from "../const.ts";
 import { useApi } from "../components/api.ts";
 import {useAuth0} from "@auth0/auth0-react";
-import {t} from "i18next";
+import {useTranslation} from "react-i18next";
 import { Transactions } from "../components/mainmenu/Transactions.tsx"
 import { DocStatusWidget } from "../components/statistics/DocStatusWidget.tsx";
 
-const ALL_WIDGETS = {
-    todo: { label: 'To-Do List', component: <ToDoList /> },
-    stats: { label: 'Stats Grid', component: <StatsDashboard /> },
-    areachart: { label: 'Area Chart', component: <AreaChart /> },
-    heatmap: { label: 'Heat Map', component: <HeatMap /> },
-    calendar: { label: 'Calendar', component: <Calendar /> },
-    charts: { label: 'Charts', component: <ChartGrid /> },
-    transactions: { label: 'Transactions', component: <Transactions /> },
-    docstats: { label: 'Document Status', component: <DocStatusWidget /> },
-};
 
 const DEFAULT_LAYOUTS = {
     "Admin": ['docstats', 'stats', 'todo'],
@@ -38,9 +28,21 @@ export function Statistics() {
     const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const api = useApi();
-    const persona = localStorage.getItem('persona');
+    const persona = localStorage.getItem('persona') as keyof typeof DEFAULT_LAYOUTS | null;
     const name = localStorage.getItem('username');
-    const { isAuthenticated, user } = useAuth0();
+    const { user } = useAuth0();
+    const {t} = useTranslation();
+
+    const ALL_WIDGETS = {
+        todo: { labelKey: t('todo_list'), component: <ToDoList /> },
+        stats: { labelKey: t('stats_grid'), component: <StatsDashboard /> },
+        areachart: { labelKey: t('area_chart'), component: <AreaChart /> },
+        heatmap: { labelKey: t('heat_map'), component: <HeatMap /> },
+        calendar: { labelKey: t('calendar'), component: <Calendar /> },
+        charts: { labelKey: t('charts'), component: <ChartGrid /> },
+        transactions: { labelKey: t('transactions'), component: <Transactions /> },
+        docstats: { labelKey: t('document_status'), component: <DocStatusWidget /> },
+    };
 
     useEffect(() => {
         const getStats = async () => {
@@ -118,7 +120,6 @@ export function Statistics() {
                 <h1 style={{
                     fontSize: '3.5rem',
                     fontWeight: 'bold',
-
                 }}>
                     {t('welcome')}, {user?.nickname}</h1>
                 <p>{t('dashboard_subtitle')}</p>
@@ -127,7 +128,6 @@ export function Statistics() {
                 activeWidgets={activeWidgets}
                 onSave={handleSaveLayout}
                 allWidgets={ALL_WIDGETS}
-                isEditing={isEditing}
                 setIsEditing={setIsEditing}
             />
 

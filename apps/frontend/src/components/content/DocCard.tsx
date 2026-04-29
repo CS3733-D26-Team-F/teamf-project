@@ -1,8 +1,8 @@
 import type {ContentForm, RowCallbacks} from "../interfaces/DocumentsInterfaces.tsx";
 import {getFileType} from "./Functions.tsx";
 import {DocThumbnail} from "./DocThumbnail.tsx";
-import {ActionIcon, Badge, Checkbox, Group, Text} from "@mantine/core";
-import {IconDownload, IconEdit, IconFolder, IconStar, IconStarFilled, IconTrash} from "@tabler/icons-react";
+import {ActionIcon, Badge, Checkbox, Group, Text, Menu} from "@mantine/core";
+import {IconDownload, IconEdit, IconFolder, IconStar, IconStarFilled, IconTrash, IconDotsVertical} from "@tabler/icons-react";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
 import {FileTypeBadge} from "../Badges/FileTypeBadge.tsx";
@@ -14,7 +14,7 @@ interface DocCardProps extends RowCallbacks {
     onSelect: (id: number) => void;
 }
 
-export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onDelete, onEdit, isFavorited, onFolderClick }: DocCardProps) {
+export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite, onDownload, onDelete, onEdit, isFavorited, onFolderClick, onRequestMove, onRemoveFromFolder }: DocCardProps) {
     const canModify = persona === 'Admin' || doc.persona.includes(persona ?? '');
     const isUrl = getFileType(doc.url) === 'Link';
     return (
@@ -68,6 +68,23 @@ export function DocCard({ doc, isSelected, persona, onSelect, onView, onFavorite
                     <ActionIcon variant="subtle" size="sm" onClick={() => onDownload(doc.url, doc.name)}><IconDownload size={14} /></ActionIcon>
                     {canModify && <ActionIcon variant="subtle" size="sm" onClick={() => onEdit(doc)}><IconEdit size={14} /></ActionIcon>}
                     {canModify && <ActionIcon variant="subtle" color="var(--color-neutral-red)" size="sm" onClick={() => onDelete(doc.id)}><IconTrash size={14} /></ActionIcon>}
+                    <Menu withinPortal>
+                        <Menu.Target>
+                            <ActionIcon variant="subtle" size="sm" onClick={e => e.stopPropagation()}>
+                                <IconDotsVertical size={14} />
+                            </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            <Menu.Item onClick={(e) => { e.stopPropagation(); onRequestMove && onRequestMove(doc.id); }}>
+                                Move to folder
+                            </Menu.Item>
+                            {doc.folder_id !== null && (
+                                <Menu.Item onClick={(e) => { e.stopPropagation(); onRemoveFromFolder && onRemoveFromFolder(doc.id); }}>
+                                    Remove from folder
+                                </Menu.Item>
+                            )}
+                        </Menu.Dropdown>
+                    </Menu>
                 </Group>
             </div>
         </div>

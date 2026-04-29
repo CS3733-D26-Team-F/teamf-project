@@ -9,9 +9,8 @@ import {
 } from '@mantine/core';
 import {
     IconSend, IconTrash, IconPaperclip, IconX, IconMicrophone,
-    IconSquare, IconStar, IconDownload, IconEdit, IconUser,
-    IconFileText, IconAlertTriangle, IconCheck,
-    IconChartPie, IconRefresh
+    IconSquare, IconStar, IconDownload, IconUser,
+    IconFileText, IconAlertTriangle, IconCheck, IconRefresh
 } from '@tabler/icons-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
