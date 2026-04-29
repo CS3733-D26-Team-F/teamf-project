@@ -2,12 +2,23 @@ import {useEffect, useMemo, useState} from 'react';
 import {Paper, Loader, Center, Text} from '@mantine/core';
 import { Heatmap } from '@mantine/charts';
 import dayjs from 'dayjs';
+import 'dayjs/locale/es';      //spanish
+import 'dayjs/locale/fr';      //french
+import 'dayjs/locale/zh-cn';  //mandarin
+import 'dayjs/locale/ar';     //arabic
+import 'dayjs/locale/hi';     //hindi
+import 'dayjs/locale/bn';     //bengali
+import 'dayjs/locale/ru';      //russian
+import 'dayjs/locale/tr';      //turkish
+import 'dayjs/locale/ga';      //irish
+dayjs.locale('en');
 import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
 import {useTranslation} from "react-i18next";
+import {HelpModal} from "./StatsPopup.tsx";
 
 export function HeatMap() {
-    const {t} = useTranslation();
+    const {t, i18n } = useTranslation();
     const [HeatmapData, setHeatmapData] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const api = useApi();
@@ -17,6 +28,26 @@ export function HeatMap() {
         startDate: dayjs().subtract(6, 'month').toDate(),
         endDate: dayjs().toDate()
     }), []);
+
+    const localeMap: Record <string, string> = {
+        'eng': 'en',
+        'esp': 'es',
+        'french': 'fr',
+        'mandarin': 'zh-cn',
+        'arabic': 'ar',
+        'hindi': 'hi',
+        'bengali': 'bn',
+        'russian': 'ru',
+        'turkish': 'tr',
+        'irish': 'ga',
+    };
+
+    const currentLocale = useMemo(() => {
+        const locale = localeMap[i18n.language] ?? 'en';
+        dayjs.locale(locale);
+        return locale;
+    }, [i18n.language]);
+
 
     useEffect(() => {
         const fetchHeatmapData = async () => {
@@ -50,41 +81,35 @@ export function HeatMap() {
         );
     }
     return (
-        <div style={{
-            width: '100%',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '1rem',
-            boxSizing: 'border-box'
-        }}>
-            <Paper p="md" radius="md" w="100%" >
-                <Text fw={700} size="md" mb="md">
-                    {t('heat_activity')}
-                </Text>
-                <Heatmap
-                    data={HeatmapData}
-                    startDate={startDate}
-                    endDate={endDate}
-                    colors={[
-                        'var(--pale-sky)',
-                        'var(--fresh-sky)',
-                        'var(--sapphire)',
-                        'var(--yale-blue)',
-                    ]}
-                    getRectProps={({ value }) =>
-                        value === null || value === 0
-                            ? { fill: '#D3D3D3' }
-                            : {}
-                    }
-                    rectSize={16}
-                    withTooltip
-                    withMonthLabels
-                    getTooltipLabel={({ date, value }) =>
-                        `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? t('heat_noCont') : `${value} ${t('heat_cont')}${value > 1 ? 's' : ''}`}`
-                    }/>
-            </Paper>
-        </div>
+        <Paper p="md" radius="md" w="100%" h="100%">
+            <HelpModal title="Activity Heatmap">
+                <Text>Shows document modification activity over the last 6 months. Darker colours indicate more changes on that day. Hover over boxes to see dates and details.</Text>
+            </HelpModal>
+            <Text fw={900} size="xl" mb="md">
+                {t('heat_activity')}
+            </Text>
+            <Heatmap
+                key = {currentLocale}
+                data={HeatmapData}
+                startDate={startDate}
+                endDate={endDate}
+                colors={[
+                    'var(--pale-sky)',
+                    'var(--fresh-sky)',
+                    'var(--sapphire)',
+                    'var(--yale-blue)',
+                ]}
+                getRectProps={({ value }) =>
+                    value === null || value === 0
+                        ? { fill: '#D3D3D3' }
+                        : {}
+                }
+                rectSize={18}
+                withTooltip
+                withMonthLabels
+                getTooltipLabel={({ date, value }) =>
+                    `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? t('heat_noCont') : `${value} ${t('heat_cont')}${value > 1 ? 's' : ''}`}`
+                }/>
+        </Paper>
     );
 }

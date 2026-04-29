@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useListState } from "@mantine/hooks";
-import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Badge, Button, Checkbox, Group, Paper, ScrollArea, Stack, Text, TextInput, Title } from "@mantine/core";
 import { IconTrash, IconClipboardList } from "@tabler/icons-react";
 import {useTranslation} from "react-i18next";
+import {HelpModal} from "./StatsPopup.tsx";
 
 interface ToDoItem {
     id: string;
@@ -46,6 +47,10 @@ export function ToDoList() {
     const done = items.filter(i => i.checked).length;
 
     return (
+        <div>
+        <HelpModal title="To-Do List">
+            <Text>Add your personal tasks and check them off once you finish them.</Text>
+        </HelpModal>
         <Stack gap="md" h="100%" style={{ padding: '1.25rem' }}>
             <Group justify="space-between" align="center">
                 <Group gap="xs">
@@ -121,5 +126,6 @@ export function ToDoList() {
                 ))}
             </Stack>
         </Stack>
+        </div>
     );
 }

@@ -7,6 +7,85 @@ import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
+function isAdminPersona(persona: string | null | undefined) {
+    return (persona ?? '').toLowerCase() === 'admin';
+}
+
+function getSingleParam(value: string | string[] | undefined): string {
+    return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function parseIntegerParam(value: string | string[] | undefined): number {
+    return Number.parseInt(getSingleParam(value), 10);
+}
+
+function hasFolderAccess(
+    employee: { empid: number; persona: string | null; username: string },
+    folder: { owner_empid: number; persona: string[]; allowed_users: string[] }
+) {
+    const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+    const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+    return isAdminPersona(employee.persona) || folder.owner_empid === employee.empid || hasPersonaAccess || hasUserAccess;
+}
+
+function canSeeFolder(
+    employee: { empid: number; persona: string | null; username: string },
+    folder: { owner_empid: number; persona: string[]; allowed_users: string[] }
+) {
+    const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+    const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+    return folder.owner_empid === employee.empid || hasPersonaAccess || hasUserAccess;
+}
+
+function formatFolder(folders: {
+    id: number;
+    name: string;
+    parent_folder_id?: number | null;
+    persona: string[];
+    allowed_users: string[];
+    url: string | null;
+    updated_at: Date;
+    employee: { username: string };
+    contentform: Array<{ id: number }>;
+}) {
+    return {
+        id: folders.id,
+        name: folders.name,
+        parent_folder_id: folders.parent_folder_id ?? null,
+        owner: folders.employee.username,
+        persona: folders.persona,
+        allowed_users: folders.allowed_users,
+        associated_docsIDs: folders.contentform.map((doc) => doc.id),
+        date_modified: folders.updated_at.toISOString(),
+        url: folders.url ?? ''
+    };
+}
+
+function formatContentFormWithFolder(
+    contentForm: Record<string, unknown> & { folder?: { name: string } | null }
+) {
+    return {
+        ...contentForm,
+        folder: contentForm.folder?.name ?? ''
+    };
+}
+
+async function resolveRequestUsername(req: any): Promise<string | null> {
+    const bodyUsername = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    if (bodyUsername && bodyUsername !== 'null' && bodyUsername !== 'undefined') return bodyUsername;
+
+    const auth0Id = req.auth?.payload?.sub as string | undefined;
+    if (!auth0Id) return null;
+
+    const employee = await prisma.employee.findUnique({
+        where: { auth0Id },
+        select: { username: true }
+    });
+
+    return employee?.username ?? null;
+}
 router.get('/api/auth/me', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const employee = await prisma.employee.findUnique({where: {auth0Id}});
@@ -18,9 +97,14 @@ router.get('/api/auth/me', checkJWT, async (req, res) => {
 router.get('/contentforms', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     const contentForms = await prisma.contentform.findMany({
-        where: {is_deleted: false}
+        where: {is_deleted: false},
+        include: {
+            folder: {
+                select: {name: true}
+            }
+        }
     });
-    res.json(contentForms);
+    res.json(contentForms.map(formatContentFormWithFolder));
 });
 
 router.post('/updateContentForm', checkJWT, async (req, res) => {
@@ -36,7 +120,8 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         expiration_date,
         content_type,
         status,
-        review_date
+        review_date,
+        username
     } = req.body;
 
     const expiration = new Date(req.body.expiration_date);
@@ -96,13 +181,13 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         if (sender && contentForm.persona && contentForm.persona.length > 0) {
             const recipients = await prisma.employee.findMany({
                 where: {
-                    persona: { hasSome: contentForm.persona }
+                    persona: { in: contentForm.persona }
                 },
                 select: { empid: true }
             });
             const recipientEmpids = recipients.map(e => e.empid);
             console.log('[updateContentForm] Recipients found:', recipientEmpids);
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Updated',
@@ -112,6 +197,25 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
                 );
             }
         }
+
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        });
+
+        if (!employee1) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const transaction = await prisma.changes.create({
+            data: {
+                id: contentForm.id,
+                empid: employee1.empid,
+                change: "Updated Document",
+                date: new Date().toISOString()
+            }
+        });
+
+        console.log(transaction);
 
         return res.status(200).json({
             message: 'Content form updated successfully',
@@ -142,6 +246,10 @@ router.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res
 
         const persona = employee.persona;
 
+        if (!persona) {
+            return res.status(400).json({error: 'Employee persona is required to determine a storage bucket'});
+        }
+
         const {data, error} = await supabase.storage
             .from(persona)
             .upload(file.originalname, file.buffer, {
@@ -169,29 +277,34 @@ router.post('/addFileToBucket', upload.single('file'), checkJWT, async (req, res
     }
 });
 
-
 router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
     try {
         console.log('backend received', req.body);
         const {
-            filename,
+            name,
             ownerUsername,
             date_modified,
             expiration_date,
-            review_date,
             content_type,
-            status
+            status,
+            username
         } = req.body;
+        const rawFolderId = req.body.folder_id ?? req.body.folderId;
+        const folderId = rawFolderId !== undefined && rawFolderId !== '' ? Number(rawFolderId) : null;
         const file = req.file;
         const rawUrl = req.body.url;
+
+        if (folderId !== null && Number.isNaN(folderId)) {
+            return res.status(400).json({error: 'Invalid folder id'});
+        }
 
         if (!file && !rawUrl) {
             return res.status(400).json({error: 'File or URL is required'});
         }
 
-        if (!filename || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
+        if (!name || !ownerUsername || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).send({error: "Make sure all fields are filled in"});
         }
 
@@ -255,7 +368,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
         // Create the content form record with the supabase URL
         const content = await prisma.contentform.create({
             data: {
-                name: filename,
+                name: name,
                 url: contentUrl,
                 owner: ownerUsername,
                 persona : persona,
@@ -266,14 +379,38 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                //Date can be invalid so just date instead of review_date
-                review_date: new Date()
+                review_date: new Date(),
+                ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
+            },
+            include: {
+                folder: {
+                    select: {name: true}
+                }
             }
         });
 
+        const employee1 = username
+            ? await prisma.employee.findUnique({
+                where: {username: username}
+            })
+            : null;
+
+        if (employee1) {
+            await prisma.changes.create({
+                data: {
+                    id: content.id,
+                    empid: employee1.empid,
+                    change: "Added Document",
+                    date: new Date(date_modified).toISOString()
+                }
+            })
+        } else {
+            console.warn('[contentforms] Skipping add-document audit log because username was not resolved');
+        }
+
         return res.status(200).json({
             message: 'Content form created successfully',
-            data: content,
+            data: formatContentFormWithFolder(content),
             url: contentUrl
         });
 
@@ -286,7 +423,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
 router.delete('/deleteContentForm/:id', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
-    const id = parseInt(req.params.id);
+    const id = parseIntegerParam(req.params.id);
 
     const contentform1 = await prisma.contentform.findUnique({
         where: {id: id}
@@ -313,7 +450,7 @@ router.delete('/deleteContentForm/:id', checkJWT, async (req, res) => {
 router.get('/contentforms/persona/:persona', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
-    const {persona} = req.params;
+    const persona = getSingleParam(req.params.persona);
     try {
         const contentForms = await prisma.contentform.findMany({
             where: {persona: {has: persona}}
@@ -348,21 +485,27 @@ router.get('/contentforms/admin', checkJWT, async (req, res) => {
 router.get('/contentforms/persona/:persona/:field', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
-    const {persona, field} = req.params;
+    const persona = getSingleParam(req.params.persona);
+    const field = getSingleParam(req.params.field);
+
+    if (!field) {
+        return res.status(400).json({error: 'Field is required'});
+    }
+
     try {
         if (persona === 'Admin') {
             const contentForm = await prisma.contentform.findMany({
                 where: {persona: {hasSome: ['Underwriter', 'Business Analyst', 'Actuarial Analyst', 'EXL Operations']}},
-                select: {[field]: true}
+                select: {[field]: true} as any
             });
-            const links = contentForm.map(item => item[field])
+            const links = contentForm.map(item => (item as Record<string, unknown>)[field]);
             res.json(links);
         } else {
             const contentForms = await prisma.contentform.findMany({
                 where: {persona: {has: persona}},
-                select: {[field]: true}
+                select: {[field]: true} as any
             });
-            const links = contentForms.map(item => item[field])
+            const links = contentForms.map(item => (item as Record<string, unknown>)[field]);
             res.json(links);
         }
     } catch (error) {
@@ -395,20 +538,66 @@ router.get('/contentforms/filter/:persona/:file_type', checkJWT, async (req, res
 router.get('/contentforms/trash', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const trashed = await prisma.contentform.findMany({
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const trashedDocuments = await prisma.contentform.findMany({
             where: {is_deleted: true}
         });
-        res.json(trashed);
+
+        const trashedFolders = await prisma.folders.findMany({
+            where: {
+                is_deleted: true,
+                ...(isAdminPersona(employee.persona)
+                    ? {}
+                    : {
+                        OR: [
+                            {owner_empid: employee.empid},
+                            {persona: {has: employee.persona ?? ''}},
+                            {allowed_users: {has: employee.username}}
+                        ]
+                    })
+            },
+            include: {
+                employee: {select: {username: true}},
+                contentform: {
+                    where: {is_deleted: true},
+                    include: {
+                        folder: {select: {name: true}}
+                    },
+                    orderBy: {deleted_at: 'desc'}
+                }
+            },
+            orderBy: {deleted_at: 'desc'}
+        });
+
+        res.json({
+            documents: trashedDocuments,
+            folders: trashedFolders.filter(folder => canSeeFolder(employee, folder)).map(folder => ({
+                ...formatFolder(folder),
+                is_deleted: folder.is_deleted,
+                deleted_at: folder.deleted_at,
+                documents: folder.contentform.map(formatContentFormWithFolder)
+            }))
+        });
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
 
 // Soft delete - sets is_deleted flag instead of removing from DB
-router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
+router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
+    const usernameParam = getSingleParam(req.params.username);
+    console.log(usernameParam);
     try {
-        const id = parseInt(req.params.id);
+        const id = parseIntegerParam(req.params.id);
         const updated = await prisma.contentform.update({
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
@@ -431,7 +620,7 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             const adminEmpids = admins.map(a => a.adid);
 
             const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Deleted',
@@ -442,6 +631,22 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
             }
         }
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: usernameParam}
+        });
+
+        if (!employee1) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const transaction = await prisma.changes.create({
+            data: {
+                id: updated.id,
+                empid: employee1.empid,
+                change: "Deleted Document",
+                date: new Date().toISOString()
+            }
+        });
         res.json(updated);
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -452,10 +657,31 @@ router.patch('/contentforms/:id/softdelete', checkJWT, async (req, res) => {
 router.patch('/contentforms/:id/restore', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const id = parseInt(req.params.id);
+        const id = parseIntegerParam(req.params.id);
+        const existing = await prisma.contentform.findUnique({
+            where: {id},
+            select: {folder_id: true}
+        });
+
+        if (!existing) {
+            return res.status(404).json({error: 'Document not found'});
+        }
+
+        let folderIdForRestore: number | null = existing.folder_id;
+        if (existing.folder_id !== null) {
+            const parentFolder = await prisma.folders.findUnique({
+                where: {id: existing.folder_id},
+                select: {is_deleted: true}
+            });
+            if (parentFolder?.is_deleted) {
+                // If folder is still in trash, restore document outside folder.
+                folderIdForRestore = null;
+            }
+        }
+
         const restored = await prisma.contentform.update({
             where: {id},
-            data: {is_deleted: false, deleted_at: null}
+            data: {is_deleted: false, deleted_at: null, folder_id: folderIdForRestore}
         });
         res.json(restored);
     } catch (error) {
@@ -467,7 +693,7 @@ router.patch('/contentforms/:id/restore', checkJWT, async (req, res) => {
 router.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const id = parseInt(req.params.id);
+        const id = parseIntegerParam(req.params.id);
         const deleted = await prisma.contentform.delete({where: {id}});
         res.json(deleted);
     } catch (error) {
@@ -500,9 +726,14 @@ router.get('/contentforms/archived', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
         const archived = await prisma.contentform.findMany({
-            where: {status: 'Archived', is_deleted: false}
+            where: {status: 'Archived', is_deleted: false},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
-        res.json(archived);
+        res.json(archived.map(formatContentFormWithFolder));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -514,22 +745,14 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
         const expired = await prisma.contentform.findMany({
-            where: {status: 'Expired', is_deleted: false}
+            where: {status: 'Expired', is_deleted: false},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
-        res.json(expired);
-    } catch (error) {
-        res.status(500).json({error: 'Something went wrong'});
-    }
-});
-
-// Trash - get all soft deleted (admin only)
-// NOTE: must stay above GET /contentforms/:id
-router.get('/contentforms/trash', async (req, res) => {
-    try {
-        const trashed = await prisma.contentform.findMany({
-            where: {is_deleted: true}
-        });
-        res.json(trashed);
+        res.json(expired.map(formatContentFormWithFolder));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -538,28 +761,730 @@ router.get('/contentforms/trash', async (req, res) => {
 // Patch just the status field — used by Archive page restore
 router.patch('/contentforms/:id/status', async (req, res) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseIntegerParam(req.params.id);
         const {status} = req.body;
         if (!status) return res.status(400).json({error: 'status is required'});
         const updated = await prisma.contentform.update({
             where: {id},
-            data: {status, expiration_date: new Date()}
+            data: {status, expiration_date: new Date()},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
-        res.json(updated);
+        res.json(formatContentFormWithFolder(updated));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.get('/folders', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folders = await prisma.folders.findMany({
+            where: {
+                is_deleted: false,
+                ...(isAdminPersona(employee.persona)
+                    ? {}
+                    : {
+                        OR: [
+                            {owner_empid: employee.empid},
+                            {persona: {has: employee.persona ?? ''}},
+                            {allowed_users: {has: employee.username}}
+                        ]
+                    })
+            },
+            include: {
+                employee: {select: {username: true}},
+                contentform: {select: {id: true}}
+            },
+            orderBy: {updated_at: 'desc'}
+        });
+
+        return res.json(folders.filter(folder => canSeeFolder(employee, folder)).map(formatFolder));
+    } catch (error) {
+        console.error('folders fetch error:', error);
+        return res.status(500).json({error: 'Could not fetch folders'});
+    }
+});
+
+router.post('/folders', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {name, persona, allowedUsers, parentFolderId} = req.body as {
+        name?: string;
+        persona?: string[];
+        allowedUsers?: string[];
+        parentFolderId?: number | null;
+    };
+
+    if (!name || !name.trim()) {
+        return res.status(400).json({error: 'Folder name is required'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const normalizedParentFolderId = parentFolderId === null || parentFolderId === undefined
+            ? null
+            : Number(parentFolderId);
+
+        if (normalizedParentFolderId !== null && Number.isNaN(normalizedParentFolderId)) {
+            return res.status(400).json({error: 'Invalid parent folder id'});
+        }
+
+        if (normalizedParentFolderId !== null) {
+            const parentFolder = await prisma.folders.findUnique({
+                where: {id: normalizedParentFolderId},
+                select: {
+                    id: true,
+                    owner_empid: true,
+                    persona: true,
+                    allowed_users: true,
+                    is_deleted: true
+                }
+            });
+
+            if (!parentFolder) {
+                return res.status(404).json({error: 'Parent folder not found'});
+            }
+
+            if (parentFolder.is_deleted) {
+                return res.status(409).json({error: 'Parent folder is in trash'});
+            }
+
+            if (!hasFolderAccess(employee, parentFolder)) {
+                return res.status(403).json({error: 'Not allowed to create inside this parent folder'});
+            }
+        }
+
+        const folder = await prisma.folders.create({
+            data: {
+                name: name.trim(),
+                owner_empid: employee.empid,
+                parent_folder_id: normalizedParentFolderId,
+                persona: Array.isArray(persona) && persona.length > 0
+                    ? persona
+                    : [employee.persona ?? ''].filter(Boolean),
+                allowed_users: Array.isArray(allowedUsers)
+                    ? Array.from(new Set(allowedUsers.filter(Boolean)))
+                    : [],
+                    updated_at: new Date()
+            },
+            include: {
+                employee: {select: {username: true}},
+                contentform: {select: {id: true}}
+            }
+        });
+
+        return res.status(201).json(formatFolder(folder));
+    } catch (error: unknown) {
+        if ((error as { code?: string }).code === 'P2002') {
+            return res.status(409).json({error: 'Folder name already exists'});
+        }
+        if ((error as { code?: string }).code === 'P2022') {
+            return res.status(500).json({error: 'Database schema is out of date. Run prisma db push.'});
+        }
+        console.error('folders create error:', error);
+        return res.status(500).json({error: 'Could not create folder'});
+    }
+});
+
+router.patch('/folders/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseIntegerParam(req.params.id);
+    const {name, persona, allowedUsers, parentFolderId} = req.body as {
+        name?: string;
+        persona?: string[];
+        allowedUsers?: string[];
+        parentFolderId?: number | null;
+    };
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const existingFolder = await prisma.folders.findUnique({
+            where: {id},
+            select: {owner_empid: true, parent_folder_id: true}
+        });
+
+        if (!existingFolder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (!isAdminPersona(employee.persona) && existingFolder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to edit this folder'});
+        }
+
+        const updateData: {
+            name?: string;
+            persona?: string[];
+            allowed_users?: string[];
+            parent_folder_id?: number | null;
+        } = {};
+
+        if (name !== undefined) {
+            const trimmedName = name.trim();
+            if (!trimmedName) {
+                return res.status(400).json({error: 'Folder name is required'});
+            }
+            updateData.name = trimmedName;
+        }
+
+        if (Array.isArray(persona)) {
+            updateData.persona = persona.filter(Boolean);
+        }
+
+        if (Array.isArray(allowedUsers)) {
+            updateData.allowed_users = Array.from(new Set(allowedUsers.filter(Boolean)));
+        }
+
+        if (parentFolderId !== undefined) {
+            const normalizedParentFolderId = parentFolderId === null ? null : Number(parentFolderId);
+
+            if (normalizedParentFolderId !== null && Number.isNaN(normalizedParentFolderId)) {
+                return res.status(400).json({error: 'Invalid parent folder id'});
+            }
+
+            if (normalizedParentFolderId === id) {
+                return res.status(400).json({error: 'Folder cannot be its own parent'});
+            }
+
+            if (normalizedParentFolderId !== null) {
+                const parentFolder = await prisma.folders.findUnique({
+                    where: {id: normalizedParentFolderId},
+                    select: {
+                        id: true,
+                        parent_folder_id: true,
+                        owner_empid: true,
+                        persona: true,
+                        allowed_users: true,
+                        is_deleted: true
+                    }
+                });
+
+                if (!parentFolder) {
+                    return res.status(404).json({error: 'Parent folder not found'});
+                }
+
+                if (parentFolder.is_deleted) {
+                    return res.status(409).json({error: 'Parent folder is in trash'});
+                }
+
+                if (!hasFolderAccess(employee, parentFolder)) {
+                    return res.status(403).json({error: 'Not allowed to move folder into this parent'});
+                }
+
+                let cursor: number | null = parentFolder.id;
+                while (cursor !== null) {
+                    if (cursor === id) {
+                        return res.status(400).json({error: 'Cannot move folder into its own descendant'});
+                    }
+
+                    const nextFolder: any = await prisma.folders.findUnique({
+                        where: {id: cursor}
+                    });
+
+                    cursor = (nextFolder as any)?.parent_folder_id ?? null;
+                }
+            }
+
+            updateData.parent_folder_id = normalizedParentFolderId;
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({error: 'No changes provided'});
+        }
+
+        const updatedFolder = await prisma.folders.update({
+            where: {id},
+            data: updateData,
+            include: {
+                employee: {select: {username: true}},
+                contentform: {select: {id: true}}
+            }
+        });
+
+        return res.json(formatFolder(updatedFolder));
+    } catch (error: unknown) {
+        if ((error as { code?: string }).code === 'P2002') {
+            return res.status(409).json({error: 'Folder name already exists'});
+        }
+        if ((error as { code?: string }).code === 'P2022') {
+            return res.status(500).json({error: 'Database schema is out of date. Run prisma db push.'});
+        }
+        console.error('folders update error:', error);
+        return res.status(500).json({error: 'Could not update folder'});
+    }
+});
+
+router.delete('/folders/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseIntegerParam(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.findUnique({
+            where: {id},
+            select: {id: true, name: true, owner_empid: true, is_deleted: true}
+        });
+
+        if (!folder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (folder.is_deleted) {
+            return res.status(409).json({error: 'Folder is already in trash'});
+        }
+
+        if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to delete this folder'});
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const softDeleted = await tx.contentform.updateMany({
+                where: {
+                    folder_id: id,
+                    is_deleted: false
+                },
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date()
+                }
+            });
+
+            await tx.folders.update({
+                where: {id},
+                data: {
+                    is_deleted: true,
+                    deleted_at: new Date(),
+                    updated_at: new Date()
+                }
+            });
+
+            return {
+                softDeletedCount: softDeleted.count,
+                folderName: folder.name
+            };
+        });
+
+        return res.json({
+            message: 'Folder deleted and contents moved to trash',
+            ...result
+        });
+    } catch (error: unknown) {
+        console.error('folders delete error:', error);
+        return res.status(500).json({error: 'Could not delete folder'});
+    }
+});
+
+router.patch('/folders/:id/restore', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseIntegerParam(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.findUnique({
+            where: {id},
+            select: {owner_empid: true, is_deleted: true}
+        });
+
+        if (!folder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to restore this folder'});
+        }
+
+        if (!folder.is_deleted) {
+            return res.status(409).json({error: 'Folder is not in trash'});
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            await tx.folders.update({
+                where: {id},
+                data: {
+                    is_deleted: false,
+                    deleted_at: null,
+                    updated_at: new Date()
+                }
+            });
+
+            const restoredDocs = await tx.contentform.updateMany({
+                where: {folder_id: id, is_deleted: true},
+                data: {is_deleted: false, deleted_at: null}
+            });
+
+            return {restoredDocsCount: restoredDocs.count};
+        });
+
+        return res.json({message: 'Folder restored', ...result});
+    } catch (error) {
+        return res.status(500).json({error: 'Could not restore folder'});
+    }
+});
+
+router.delete('/folders/:id/permanent', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseIntegerParam(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folder = await prisma.folders.findUnique({
+            where: {id},
+            select: {owner_empid: true, is_deleted: true}
+        });
+
+        if (!folder) {
+            return res.status(404).json({error: 'Folder not found'});
+        }
+
+        if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid) {
+            return res.status(403).json({error: 'Not allowed to permanently delete this folder'});
+        }
+
+        if (!folder.is_deleted) {
+            return res.status(409).json({error: 'Folder must be in trash before permanent delete'});
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const deletedDocs = await tx.contentform.deleteMany({where: {folder_id: id}});
+            await tx.folders.delete({where: {id}});
+            return {deletedDocsCount: deletedDocs.count};
+        });
+
+        return res.json({message: 'Folder permanently deleted', ...result});
+    } catch (error) {
+        return res.status(500).json({error: 'Could not permanently delete folder'});
+    }
+});
+
+router.post('/folders/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseIntegerParam(req.params.id);
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const folderToCopy = await prisma.folders.findUnique({
+            where: {id},
+            include: {contentform: true}
+        });
+
+        if (!folderToCopy) {
+            return res.status(404).json({error: 'Folder to copy not found'});
+        }
+
+        if (folderToCopy.is_deleted) {
+            return res.status(409).json({error: 'Cannot duplicate a folder in trash'});
+        }
+
+        const hasPersonaAccess = !!employee.persona && folderToCopy.persona.includes(employee.persona);
+        const hasUserAccess = folderToCopy.allowed_users.includes(employee.username);
+
+        if (!isAdminPersona(employee.persona) && folderToCopy.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+            return res.status(403).json({error: 'Not allowed to duplicate this folder'});
+        }
+
+        const buildCopyFolderName = async () => {
+            const baseName = folderToCopy.name;
+            let counter = 1;
+            let candidate = `${baseName} (Copy)`;
+
+            while (await prisma.folders.findFirst({
+                where: {
+                    owner_empid: employee.empid,
+                    name: candidate
+                },
+                select: {id: true}
+            })) {
+                counter++;
+                candidate = `${baseName} (Copy ${counter})`;
+            }
+
+            return candidate;
+        };
+
+        const buildCopyContentName = async (baseName: string) => {
+            let counter = 1;
+            let candidate = `${baseName} (Copy)`;
+
+            while (await prisma.contentform.findUnique({where: {name: candidate}, select: {id: true}})) {
+                counter++;
+                candidate = `${baseName} (Copy ${counter})`;
+            }
+
+            return candidate;
+        };
+
+        const buildCopyUrl = async (sourceUrl: string) => {
+            let counter = 1;
+            let candidate = sourceUrl;
+
+            while (await prisma.contentform.findUnique({where: {url: candidate}, select: {id: true}})) {
+                try {
+                    const parsed = new URL(sourceUrl);
+                    parsed.searchParams.set('copy', String(counter));
+                    candidate = parsed.toString();
+                } catch {
+                    const separator = sourceUrl.includes('?') ? '&' : '?';
+                    candidate = `${sourceUrl}${separator}copy=${counter}`;
+                }
+                counter++;
+            }
+
+            return candidate;
+        };
+
+        const newFolderName = await buildCopyFolderName();
+
+        const newFolder = await prisma.folders.create({
+            data: {
+                name: newFolderName,
+                owner_empid: employee.empid,
+                parent_folder_id: (folderToCopy as any).parent_folder_id ?? null,
+                persona: folderToCopy.persona,
+                allowed_users: folderToCopy.allowed_users,
+                updated_at: new Date()
+            },
+            include: {
+                employee: {select: {username: true}}
+            }
+        });
+
+        const copiedContentForms = await Promise.all(folderToCopy.contentform.map(async (content) => {
+            const copiedName = await buildCopyContentName(content.name);
+            const copiedUrl = await buildCopyUrl(content.url);
+
+            const newContent = await prisma.contentform.create({
+                data: {
+                    name: copiedName,
+                    url: copiedUrl,
+                    owner: content.owner,
+                    persona: content.persona,
+                    date_modified: content.date_modified,
+                    expiration_date: content.expiration_date,
+                    content_type: content.content_type,
+                    status: content.status,
+                    review_date: content.review_date,
+                    empid: content.empid,
+                    folder_id: newFolder.id
+                }
+            });
+            return newContent;
+        }));
+
+        return res.json({
+            message: 'Folder copied successfully',
+            folder: formatFolder({
+                ...newFolder,
+                contentform: copiedContentForms.map((content) => ({id: content.id}))
+            }),
+            contentForms: copiedContentForms.map(formatContentFormWithFolder)
+        });
+    } catch (error) {
+        console.error('folders copy error:', error);
+        return res.status(500).json({error: 'Could not copy folder'});
+    }
+    
+});
+
+router.patch('/contentforms/folder/bulk', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const {ids, folderId} = req.body as { ids?: number[]; folderId?: number | null };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({error: 'Document ids are required'});
+    }
+
+    if (folderId !== null && folderId !== undefined && Number.isNaN(Number(folderId))) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const normalizedFolderId = folderId === null || folderId === undefined ? null : Number(folderId);
+
+        if (normalizedFolderId !== null) {
+            const folder = await prisma.folders.findUnique({
+                where: {id: normalizedFolderId},
+                select: {id: true, owner_empid: true, persona: true, allowed_users: true}
+            });
+
+            if (!folder) {
+                return res.status(404).json({error: 'Folder not found'});
+            }
+
+            const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+            const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+            if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+                return res.status(403).json({error: 'Not allowed to use this folder'});
+            }
+        }
+
+        const updated = await prisma.contentform.updateMany({
+            where: {id: {in: ids}},
+            data: {folder_id: normalizedFolderId}
+        });
+
+        return res.json({updated: updated.count});
+    } catch (error) {
+        return res.status(500).json({error: 'Could not move documents'});
+    }
+});
+
+router.patch('/contentforms/:id/folder', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const id = parseIntegerParam(req.params.id);
+    const {folderId} = req.body as { folderId?: number | null };
+
+    if (Number.isNaN(id)) {
+        return res.status(400).json({error: 'Invalid document id'});
+    }
+
+    if (folderId !== null && folderId !== undefined && Number.isNaN(Number(folderId))) {
+        return res.status(400).json({error: 'Invalid folder id'});
+    }
+
+    try {
+        const employee = await prisma.employee.findUnique({
+            where: {auth0Id},
+            select: {empid: true, persona: true, username: true}
+        });
+
+        if (!employee) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const normalizedFolderId = folderId === null || folderId === undefined ? null : Number(folderId);
+
+        if (normalizedFolderId !== null) {
+            const folder = await prisma.folders.findUnique({
+                where: {id: normalizedFolderId},
+                select: {owner_empid: true, persona: true, allowed_users: true}
+            });
+
+            if (!folder) {
+                return res.status(404).json({error: 'Folder not found'});
+            }
+
+            const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+            const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+            if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+                return res.status(403).json({error: 'Not allowed to use this folder'});
+            }
+        }
+
+        const updated = await prisma.contentform.update({
+            where: {id},
+            data: {folder_id: normalizedFolderId}
+        });
+
+        return res.json(formatContentFormWithFolder(updated));
+    } catch (error) {
+        return res.status(500).json({error: 'Could not move document'});
     }
 });
 
 router.get('/contentforms/:id', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const id = parseInt(req.params.id);
+        const id = parseIntegerParam(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
-            where: {id}
+            where: {id},
+            include: {
+                folder: {
+                    select: {name: true}
+                }
+            }
         });
         if (!contentForm) return res.status(404).json({error: 'Not found'});
-        res.json(contentForm);
+        res.json(formatContentFormWithFolder(contentForm));
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -567,12 +1492,12 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
 
 router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const id = parseInt(req.params.id);
-    const {username} = req.body;
+    const id = parseIntegerParam(req.params.id);
+    const username = await resolveRequestUsername(req);
     console.log('checkout hit', {id, username});
 
     if (!username) {
-        return res.status(400).send('Requires username');
+        return res.status(400).json({error: 'Requires username'});
     }
 
     try {
@@ -610,7 +1535,31 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {id},
                 data: {checkout_username: username, checkout_date: new Date()}
             });
-            return res.status(200).json({message: 'Document checked out successfully'});
+
+            const employee1 = await prisma.employee.findUnique({
+                where: {username: username}
+            })
+
+            if (employee1) {
+                const transaction = await prisma.changes.create({
+                    data: {
+                        id: updated.id,
+                        empid: employee1.empid,
+                        change: "Checked Out Document",
+                        date: new Date().toISOString()
+                    }
+                });
+
+                console.log(transaction);
+            } else {
+                console.warn('[contentforms] Skipping checkout audit log because username was not resolved');
+            }
+
+            return res.status(200).json({
+                message: 'Document checked out successfully',
+                checkedOutBy: username,
+                checkedOutAt: updated.checkout_date
+            });
         } catch (error) {
             res.status(500).json({error: 'Something went wrong writing the checkout to the database'});
         }
@@ -623,8 +1572,12 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
 
 router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const id = parseInt(req.params.id);
-    const {username} = req.body;
+    const id = parseIntegerParam(req.params.id);
+    const username = await resolveRequestUsername(req);
+
+    if (!username) {
+        return res.status(400).json({error: 'Requires username'});
+    }
 
     try {
         const user = await prisma.employee.findUnique({
@@ -663,7 +1616,29 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                 data: {checkout_username: null, checkout_date: null}
             });
 
-            return res.status(200).json({message: 'Document checked in successfully'});
+            const employee1 = await prisma.employee.findUnique({
+                where: {username: username}
+            })
+
+            if (employee1) {
+                const transaction = await prisma.changes.create({
+                    data: {
+                        id: updated.id,
+                        empid: employee1.empid,
+                        change: "Checked In Document",
+                        date: new Date().toISOString()
+                    }
+                });
+
+                console.log(transaction);
+            } else {
+                console.warn('[contentforms] Skipping checkin audit log because username was not resolved');
+            }
+
+            return res.status(200).json({
+                message: 'Document checked in successfully',
+                checkedInBy: username
+            });
         } catch (error) {
             res.status(500).json({error: 'Something went wrong writing the checkin to the database'});
         }
@@ -675,7 +1650,7 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
 
 router.get('/contentforms/:id/checkout_status', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const id = parseInt(req.params.id);
+    const id = parseIntegerParam(req.params.id);
 
     try {
         const current = await prisma.contentform.findUnique({
@@ -727,7 +1702,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
     console.log('PUT file:', req.file?.originalname);
 
     try {
-        const id = parseInt(req.params.id.toString());
+        const id = parseIntegerParam(req.params.id);
         const {
             name,
             ownerUsername,
@@ -736,12 +1711,14 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             expiration_date,
             review_date,
             content_type,
-            status
+            status,
+            username
         } = req.body;
         const resolvedOwner = ownerUsername ?? owner;
         console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
+
 
         if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
             return res.status(406).json({ error: 'Make sure all fields are filled in' });
@@ -766,7 +1743,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         //}
 
         const updateData: any = {
-            name,
+            name: name,
             owner: resolvedOwner,
             persona,  // now correctly set
             date_modified: new Date(date_modified),
@@ -791,6 +1768,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             }
 
             const bucket = employee.persona;
+
+            if (!bucket) {
+                return res.status(400).json({error: 'Employee persona is required to determine a storage bucket'});
+            }
 
             const {error} = await supabase.storage
                 .from(bucket)
@@ -839,7 +1820,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             const adminEmpids = admins.map(a => a.adid);
 
             const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
-            
+
             if (recipientEmpids.length > 0) {
                 await sendNotificationToUsers(
                     'Document Updated',
@@ -850,9 +1831,40 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             }
         }
 
+        const employee1 = await prisma.employee.findUnique({
+            where: {username: username}
+        });
+
+        if (!employee1) {
+            return res.status(404).json({error: 'Employee not found'});
+        }
+
+        const transaction = await prisma.changes.create({
+            data: {
+                id: updated.id,
+                empid: employee1.empid,
+                change: "Updated Document",
+                date: new Date().toISOString()
+            }
+        })
+
         res.json(updated);
     } catch (error) {
         console.error('Error updating document:', error);
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.get('/contentnames/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const id = parseIntegerParam(req.params.id);
+        const contentForm = await prisma.contentform.findUnique({
+            where: {id}
+        });
+        if (!contentForm) return res.status(404).json({error: 'Not found'});
+        res.json(contentForm.name);
+    } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
@@ -861,7 +1873,7 @@ router.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
     try {
-        const empid = parseInt(req.params.empid);
+        const empid = parseIntegerParam(req.params.empid);
         const contentForms = await prisma.contentform.findMany({
             where: {empid}
         });
@@ -934,14 +1946,14 @@ router.post('/assigntag', checkJWT, async(req, res) => {
 
 router.get('/grabtaggedforms/:name', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const name = req.params.name;
+    const name = getSingleParam(req.params.name);
 
     const tag = await prisma.metatags.findFirst({
         where: { tag_name: name }
     });
 
     if (!tag) {
-        return res.status(400).json('No Tag by This Name');
+        return res.status(200).json({data: []});
     }
 
     try {
@@ -966,14 +1978,14 @@ router.get('/grabtaggedforms/:name', checkJWT, async(req, res) => {
 
 router.get('/grabformtags/:name', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const name = req.params.name;
+    const name = getSingleParam(req.params.name);
 
     const form = await prisma.contentform.findFirst({
         where: { name: name }
     });
 
     if (!form) {
-        return res.status(400).json('No Tag by This Name');
+        return res.status(200).json({data: []});
     }
 
     try {
@@ -1132,5 +2144,48 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
         return res.status(500).json({error: 'Could not remove document from favorites'});
     }
 })
+
+router.post('/transactionDates', checkJWT, async(req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const today = new Date();
+
+    const transactions = await prisma.changes.findMany({
+        where: {date: today}
+    })
+
+    return(transactions);
+})
+
+router.post('/changes', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const username = await resolveRequestUsername(req);
+
+    if (!username) {
+        return res.json([]);
+    }
+
+    try {
+        const emp1 = await prisma.employee.findUnique({
+            where: { username }
+        });
+
+        if (!emp1) {
+            return res.json([]); // no employee found
+        }
+
+        if (emp1.persona === 'Admin') {
+            const changes = await prisma.changes.findMany();
+            return res.json(changes);
+        }
+
+        const changes = await prisma.changes.findMany({
+            where: {empid: emp1.empid}
+        });
+        res.json(changes);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 
 export default router;

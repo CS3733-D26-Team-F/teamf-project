@@ -6,6 +6,7 @@ import { prisma } from '../setup/prisma.js';
 import { supabase } from '../setup/supabase.js';
 import { upload } from '../setup/upload.js';
 import { getManagementToken } from '../setup/auth0.js';
+import { sendNotificationToUsers } from './notifications.js';
 
 const router = Router();
 
@@ -59,8 +60,10 @@ CRITICAL — ALWAYS ENFORCE THESE:
 <Tool_Usage_Guide>
 When adding documents:
 - Extract: name, owner (username), status, content_type, url (if provided in message)
-- If the message contains an https:// URL, ALWAYS pass it as the url parameter.
+- If the message contains a https:// URL, ALWAYS pass it as the url parameter.
 - Never use a pending-upload placeholder if a real URL exists in the message.
+- Available Status Types: 'In Progress', 'Internal Review', 'Client Review', 'Approved'.
+- Available Content Types: 'Workflow', 'Reference'.
 
 When deleting documents:
 - Always confirm before executing unless the user explicitly confirmed in the same message.
@@ -82,6 +85,10 @@ When creating notifications:
 - Use recipientMode: "all" only when the user clearly asks to notify all employees. Only admins can send a notification to all employees. When an employee that is not an admin asks to create a notification, only ask them for the name of the recipient, do not ask them if they want to send it to all employees.
 - Use recipientMode: "users" with recipientUsernames or recipientEmpids when the user names specific employees.
 - Ask for missing title, message, or recipients before calling the tool.
+
+When a tool returns success: false:
+- Do not retry the same tool call with the same arguments.
+- Tell the user the returned message and ask for corrected details only if needed.
 </Tool_Usage_Guide>
 `;
 
@@ -94,6 +101,29 @@ function getLastUserText(modelMessages: any[]): string {
         return t?.text ?? '';
     }
     return '';
+}
+
+function getPrismaErrorCode(error: unknown): string | undefined {
+    return typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as any).code)
+        : undefined;
+}
+
+function getPrismaErrorTarget(error: unknown): string {
+    if (typeof error !== 'object' || error === null || !('meta' in error)) return '';
+    const target = (error as any).meta?.target;
+    if (Array.isArray(target)) return target.join(', ');
+    return typeof target === 'string' ? target : '';
+}
+
+function normalizeDocumentName(name: string): string {
+    return name
+        .toLowerCase()
+        .replace(/\.[a-z0-9]+$/i, '')
+        .replace(/["'`]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
 }
 
 router.post('/api/chat', async (req, res) => {
@@ -471,7 +501,7 @@ router.post('/api/chat', async (req, res) => {
 
             // Favorite Document
             favoriteDocument: tool({
-                description: 'Star or unstar a document.',
+                description: 'Star or unstar a document. Use isFavorite: false when the user says unfavorite, unstar, remove from favorites, or no longer favorite.',
                 parameters: z.object({
                     name: z.string().describe('The name of the document.'),
                     isFavorite: z.boolean().optional().describe('True to favorite, false to unfavorite. Defaults to true.')
@@ -485,15 +515,72 @@ router.post('/api/chat', async (req, res) => {
 
                     if (!doc) return { success: false, message: `No document named "${args.name}" found.` };
 
-                    const isFav = args.isFavorite !== undefined ? args.isFavorite : true;
-                    await prisma.contentform.update({ where: { id: doc.id }, data: { is_favorite: isFav } });
+                    const employee = await prisma.employee.findUnique({
+                        where: { username }
+                    });
+
+                    if (!employee) return { success: false, message: `Employee "${username}" not found.` };
+
+                    const lastText = getLastUserText(modelMessages).toLowerCase();
+                    const requestedUnfavorite = /\b(unfavorite|un-favorite|unstar|un-star)\b/.test(lastText)
+                        || /(remove|delete|take)\b.*\b(favorites?|stars?)\b/.test(lastText)
+                        || /\b(no longer|not)\b.*\bfavorites?\b/.test(lastText);
+                    const isFav = args.isFavorite !== undefined ? args.isFavorite : !requestedUnfavorite;
+                    let removedCount = 0;
+
+                    try {
+                        if (isFav) {
+                            const existingFavorite = await prisma.joinedfavorites.findUnique({
+                                where: {
+                                    empid_id: {
+                                        empid: employee.empid,
+                                        id: doc.id
+                                    }
+                                }
+                            });
+
+                            if (!existingFavorite) {
+                                await prisma.joinedfavorites.create({
+                                    data: {
+                                        empid: employee.empid,
+                                        id: doc.id
+                                    }
+                                });
+                            }
+                        } else {
+                            const removed = await prisma.joinedfavorites.deleteMany({
+                                where: {
+                                    empid: employee.empid,
+                                    id: doc.id
+                                }
+                            });
+                            removedCount = removed.count;
+                        }
+                    } catch (error: any) {
+                        console.error('favoriteDocument tool error:', error);
+                        const code = getPrismaErrorCode(error);
+                        if (code === 'P2002') {
+                            return {
+                                success: true,
+                                type: 'document_favorited',
+                                docName: doc.name,
+                                isFavorite: true,
+                                message: `"${doc.name}" is already in your favorites.`
+                            };
+                        }
+                        return { success: false, message: `Could not update favorites for "${doc.name}". Please try again from the Documents page.` };
+                    }
 
                     return {
                         success: true,
                         type: 'document_favorited',
                         docName: doc.name,
                         isFavorite: isFav,
-                        message: `"${doc.name}" has been ${isFav ? 'added to' : 'removed from'} your favorites.`
+                        message: isFav
+                            ? `"${doc.name}" has been added to your favorites.`
+                            : removedCount > 0
+                                ? `"${doc.name}" has been removed from your favorites.`
+                                : `"${doc.name}" was not in your favorites.`
                     };
                 }
             }),
@@ -585,7 +672,8 @@ router.post('/api/chat', async (req, res) => {
                     status: z.enum(['In Progress', 'Internal Review', 'Client Review', 'Approved', 'Expired', 'Archived']).optional(),
                     content_type: z.enum(['Reference', 'Workflow']).optional(),
                     owner: z.string().optional().describe('New owner username.'),
-                    expiration_date: z.string().optional().describe('New expiration date in YYYY-MM-DD format.')
+                    expiration_date: z.string().optional().describe('New expiration date in YYYY-MM-DD format.'),
+                    persona: z.array(z.enum(['Underwriter', 'Business Analyst', 'Actuarial Analyst', 'EXL Operations'])).optional().describe('Job positions allowed to access this document.')
                 }),
                 execute: async (args) => {
                     if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
@@ -596,23 +684,128 @@ router.post('/api/chat', async (req, res) => {
                     if (userRole !== 'Admin' && !doc.persona.includes(userRole)) {
                         return { success: false, message: `You do not have permission to edit "${args.name}".` };
                     }
-                    const updateData: any = { date_modified: new Date() };
-                    if (args.newName) updateData.name = args.newName;
-                    if (args.status) updateData.status = args.status;
-                    if (args.content_type) updateData.content_type = args.content_type;
-                    if (args.expiration_date) updateData.expiration_date = new Date(args.expiration_date);
-                    if (args.owner) {
-                        const ownerRecord = await prisma.employee.findUnique({ where: { username: args.owner } });
-                        if (!ownerRecord) return { success: false, message: `Employee "${args.owner}" not found.` };
-                        updateData.owner = args.owner;
-                        updateData.employee = { connect: { username: args.owner } };
+
+                    const owner = args.owner ?? doc.owner;
+                    if (!owner) return { success: false, message: `"${doc.name}" does not have an owner to preserve.` };
+
+                    const ownerRecord = await prisma.employee.findUnique({ where: { username: owner } });
+                    if (!ownerRecord) return { success: false, message: `Employee "${owner}" not found.` };
+
+                    const persona = args.persona ?? doc.persona;
+                    if (!Array.isArray(persona) || persona.length === 0) {
+                        return { success: false, message: 'At least one job position is required.' };
                     }
-                    const updated = await prisma.contentform.update({ where: { id: doc.id }, data: updateData });
+
+                    const status = args.status ?? doc.status;
+                    const expiration = args.expiration_date ? new Date(args.expiration_date) : doc.expiration_date;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (Number.isNaN(expiration.getTime())) {
+                        return { success: false, message: 'Expiration date is invalid.' };
+                    }
+
+                    if (expiration < today && status !== 'Expired') {
+                        return { success: false, message: 'Document is expired.' };
+                    }
+
+                    const nextName = args.newName?.trim() || doc.name;
+                    const isRenaming = nextName.toLowerCase() !== doc.name.toLowerCase();
+                    if (isRenaming) {
+                        const nameConflict = await prisma.contentform.findFirst({
+                            where: {
+                                name: { equals: nextName, mode: 'insensitive' },
+                                NOT: { id: doc.id }
+                            },
+                            select: { id: true, name: true, is_deleted: true }
+                        });
+
+                        if (nameConflict) {
+                            const location = nameConflict.is_deleted ? 'in Trash' : 'in the active library';
+                            return {
+                                success: false,
+                                message: `The name "${nextName}" is already used by another document ${location}. Choose a different name or resolve that document first.`
+                            };
+                        }
+                    }
+
+                    const updateData: any = {
+                        name: nextName,
+                        owner,
+                        persona,
+                        date_modified: new Date(),
+                        expiration_date: expiration,
+                        content_type: args.content_type ?? doc.content_type,
+                        status,
+                        employee: { connect: { username: owner } },
+                        review_date: null
+                    };
+
+                    let updated;
+                    try {
+                        updated = await prisma.contentform.update({ where: { id: doc.id }, data: updateData });
+                    } catch (error: any) {
+                        console.error('editDocument tool error:', error);
+                        const code = getPrismaErrorCode(error);
+                        if (code === 'P2002') {
+                            const target = getPrismaErrorTarget(error);
+                            const field = target.includes('url') ? 'URL' : 'name';
+                            return { success: false, message: `That document ${field} is already in use by another record, including possible Trash records.` };
+                        }
+                        if (code === 'P2003' && isRenaming) {
+                            return { success: false, message: `Could not rename "${doc.name}" because related history records still reference the old name.` };
+                        }
+                        return { success: false, message: `Could not update "${doc.name}". Please try again from the Documents page.` };
+                    }
+
+                    try {
+                        const sender = await prisma.employee.findUnique({ where: { username } });
+                        if (sender && updated.persona && updated.persona.length > 0) {
+                            const allRecipients = [];
+                            for (const p of updated.persona) {
+                                const recipients = await prisma.employee.findMany({
+                                    where: { persona: p },
+                                    select: { empid: true }
+                                });
+                                allRecipients.push(...recipients);
+                            }
+
+                            const admins = await prisma.admin.findMany({
+                                select: { adid: true }
+                            });
+                            const adminEmpids = admins.map(a => a.adid);
+                            const recipientEmpids = [...new Set([...allRecipients.map(e => e.empid), ...adminEmpids])];
+
+                            if (recipientEmpids.length > 0) {
+                                await sendNotificationToUsers(
+                                    'Document Updated',
+                                    `Document "${updated.name}" has been updated.`,
+                                    recipientEmpids,
+                                    sender.empid
+                                );
+                            }
+                        }
+                    } catch (error) {
+                        console.error('editDocument notification error:', error);
+                    }
+
                     const changes = Object.keys(updateData)
-                        .filter(k => k !== 'date_modified' && k !== 'employee')
+                        .filter(k => k !== 'date_modified' && k !== 'employee' && k !== 'review_date')
+                        .filter(k => {
+                            if (k === 'name') return updateData[k] !== doc.name;
+                            if (k === 'owner') return updateData[k] !== doc.owner;
+                            if (k === 'persona') return JSON.stringify(updateData[k]) !== JSON.stringify(doc.persona);
+                            if (k === 'expiration_date') return updateData[k].getTime() !== doc.expiration_date.getTime();
+                            return updateData[k] !== (doc as any)[k];
+                        })
                         .map(k => `${k}: "${updateData[k]}"`)
                         .join(', ');
-                    return { success: true, type: 'document_edited', document: updated, message: `"${doc.name}" updated. Changes: ${changes}.` };
+                    return {
+                        success: true,
+                        type: 'document_edited',
+                        document: updated,
+                        message: changes ? `"${doc.name}" updated. Changes: ${changes}.` : `"${doc.name}" updated.`
+                    };
                 }
             }),
 
@@ -670,17 +863,86 @@ router.post('/api/chat', async (req, res) => {
 
             // Restore Document (Admin Only)
             restoreDocument: tool({
-                description: 'Restore a soft-deleted document from Trash back to the active library. Admin only.',
+                description: 'Restore a soft-deleted document from Trash back to the active library. Admin only. Prefer id when available; otherwise use the exact document name.',
                 parameters: z.object({
-                    name: z.string().describe('The name of the document to restore.')
+                    name: z.string().optional().describe('The name of the document to restore.'),
+                    id: z.number().int().optional().describe('The document ID to restore, if known.')
                 }),
                 execute: async (args) => {
                     if (userRole !== 'Admin') return { success: false, message: 'Only Admins can restore documents from Trash.' };
-                    const doc = await prisma.contentform.findFirst({
-                        where: { name: { equals: args.name.trim(), mode: 'insensitive' }, is_deleted: true }
-                    });
-                    if (!doc) return { success: false, message: `No deleted document named "${args.name}" found in Trash.` };
-                    await prisma.contentform.update({ where: { id: doc.id }, data: { is_deleted: false, deleted_at: null } });
+
+                    if (!args.id && !args.name?.trim()) {
+                        return { success: false, message: 'Please provide a document name or ID to restore.' };
+                    }
+
+                    const searchName = args.name?.trim();
+                    const parsedId = !args.id && searchName && /^\d+$/.test(searchName) ? Number(searchName) : undefined;
+                    const restoreId = args.id ?? parsedId;
+                    let doc = restoreId
+                        ? await prisma.contentform.findUnique({ where: { id: restoreId } })
+                        : null;
+
+                    if (!doc && searchName) {
+                        doc = await prisma.contentform.findFirst({
+                            where: { name: { equals: searchName, mode: 'insensitive' }, is_deleted: true }
+                        });
+                    }
+
+                    if (!doc && searchName) {
+                        const deletedDocs = await prisma.contentform.findMany({
+                            where: { is_deleted: true },
+                            select: { id: true, name: true },
+                            take: 200
+                        });
+                        const normalizedSearch = normalizeDocumentName(searchName);
+                        const fuzzyMatches = deletedDocs
+                            .map(d => ({ ...d, normalizedName: normalizeDocumentName(d.name) }))
+                            .filter(d => normalizedSearch && (d.normalizedName.includes(normalizedSearch) || normalizedSearch.includes(d.normalizedName)))
+                            .slice(0, 5);
+
+                        if (fuzzyMatches.length === 1) {
+                            doc = await prisma.contentform.findUnique({ where: { id: fuzzyMatches[0].id } });
+                        } else if (fuzzyMatches.length > 1) {
+                            return {
+                                success: false,
+                                type: 'document_restore_suggestions',
+                                documents: fuzzyMatches.map(({ normalizedName, ...d }) => d),
+                                message: `I found ${fuzzyMatches.length} similar deleted documents for "${searchName}". Try restoring by ID.`
+                            };
+                        }
+
+                        if (!doc && deletedDocs.length === 0) {
+                            return { success: false, message: 'Trash is empty. No soft-deleted documents are available to restore.' };
+                        }
+                    }
+
+                    if (!doc) {
+                        const activeMatch = searchName
+                            ? await prisma.contentform.findFirst({
+                                where: { name: { equals: searchName, mode: 'insensitive' }, is_deleted: false },
+                                select: { id: true, name: true }
+                            })
+                            : null;
+
+                        if (activeMatch) {
+                            return { success: true, type: 'document_restored', docName: activeMatch.name, message: `"${activeMatch.name}" is already in the active document library.` };
+                        }
+
+                        const label = restoreId ? `ID ${restoreId}` : `"${searchName}"`;
+                        return { success: false, message: `No soft-deleted document matching ${label} was found in Trash.` };
+                    }
+
+                    if (!doc.is_deleted) {
+                        return { success: true, type: 'document_restored', docName: doc.name, message: `"${doc.name}" is already in the active document library.` };
+                    }
+
+                    try {
+                        await prisma.contentform.update({ where: { id: doc.id }, data: { is_deleted: false, deleted_at: null } });
+                    } catch (error: any) {
+                        console.error('restoreDocument tool error:', error);
+                        return { success: false, message: `Could not restore "${doc.name}". Please try again from the Trash page.` };
+                    }
+
                     return { success: true, type: 'document_restored', docName: doc.name, message: `"${doc.name}" has been restored to the active document library.` };
                 }
             }),
@@ -730,7 +992,7 @@ router.post('/api/chat', async (req, res) => {
 
             // Portal Activity Summary
             summarizePortalActivity: tool({
-                description: 'Generate a high-level executive summary of portal activity. Use when user asks for a briefing, overview, or dashboard summary.',
+                description: 'Generate a high-level executive summary of portal activity. Use when user asks for a briefing, overview, or statistics summary.',
                 parameters: z.object({}),
                 execute: async () => {
                     if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };

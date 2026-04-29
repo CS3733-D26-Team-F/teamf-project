@@ -5,7 +5,7 @@ import { usePersona } from "../hooks/usePersona";
 import { IconBell, IconCircleFilled } from "@tabler/icons-react";
 import { Chatbot } from "./Chatbot.tsx";
 import { Text } from '@mantine/core';
-import { useTranslation } from "react-i18next";
+import {useTranslation} from "react-i18next";
 import { useApi } from "./api.ts";
 import { DOMAIN } from "../const";
 import { useEffect, useState } from "react";
@@ -48,49 +48,51 @@ export function Header() {
                         <img src={hanoverLogo} id="logo" alt="Hanover Insurance Logo" />
                     </Link>
                 </div>
-                <nav className="menu-links">
-                    <Link to="/menu">{t('home')}</Link>
-                    {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
-                    {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
-                        <Link to="/documents">{t('documents')}</Link>
-                    )}
-                    {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
-                        <Link to="/archive">{t('archive')}</Link>
-                    )}
-                    <Profile />
-                    <Link to="/notifications">
-                        <IconBell size={32} />
-                        {unreadCount > 0 && (
-                            <div style={{ position: 'relative' }}>
-                                <IconCircleFilled 
-                                    size={28}
-                                    style={{
-                                        color: 'var(--color-neutral-red)',
-                                        position: 'absolute',
-                                        top: '-2.5rem',
-                                        right: '-0.5rem',
-                                    }}
-                                />
-                                <p
-                                    style={{
-                                        position: 'absolute',
-                                        top: '-2.5rem',
-                                        right: '-0.5rem',
-                                        width: '28px',
-                                        height: '28px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: "0.9rem",
-                                        margin: 0,
-                                    }}
-                                >{displayCount}</p>
-                            </div>
+                    <nav className="menu-links">
+                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
+                            <Link to="/statistics">{t('statistics')}</Link>
                         )}
-                    </Link>
-                </nav>
-                <Chatbot />
-            </div>
+                        {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
+                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
+                            <Link to="/documents">{t('documents')}</Link>
+                        )}
+                        {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
+                            <Link to="/archive">{t('archive')}</Link>
+                        )}
+                  <Profile />
+                        <Link to="/notifications">
+                            <IconBell size={32} />
+                            {unreadCount > 0 && (
+                                <div style={{ position: 'relative' }}>
+                                    <IconCircleFilled
+                                        size={28}
+                                        style={{
+                                            color: 'var(--color-neutral-red)',
+                                            position: 'absolute',
+                                            top: '-2.5rem',
+                                            right: '-0.5rem',
+                                        }}
+                                    />
+                                    <p
+                                        style={{
+                                            position: 'absolute',
+                                            top: '-2.5rem',
+                                            right: '-0.5rem',
+                                            width: '28px',
+                                            height: '28px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: "0.9rem",
+                                            margin: 0,
+                                        }}
+                                    >{displayCount}</p>
+                                </div>
+                                )}
+                            </Link>
+                        </nav>
+                    <Chatbot />
+                </div>
             <Text size="sm" c="white" ta="center">
                 {t('disclaimer')}
             </Text>

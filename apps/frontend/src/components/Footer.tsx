@@ -73,9 +73,9 @@ import {Link} from "react-router-dom";
                     <div className={classes.groups}>
                         {groups}
                         <div className={classes.footerGroup}>
-                            <Text className={classes.title}>CS 3733 Credentials</Text>
-                            <Link to="/about" className={classes.link}>About</Link>
-                            <Link to="/credit" className={classes.link}>Credits</Link>
+                            <Text className={classes.title}>CS 3733 {t("credentials")}</Text>
+                            <Link to="/about" className={classes.link}>{t("about")}</Link>
+                            <Link to="/credit" className={classes.link}>{t("credits")}</Link>
                         </div>
                     </div>
                 </Container>

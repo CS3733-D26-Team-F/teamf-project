@@ -21,7 +21,7 @@ export function CommandPalette() {
         {
             id: 'home',
             label: 'Home',
-            description: 'Return to the main dashboard',
+            description: 'Return to the main statistics',
             onClick: () => navigate('/'),
             leftSection: <IconHome size={20} stroke={1.5} />,
         },

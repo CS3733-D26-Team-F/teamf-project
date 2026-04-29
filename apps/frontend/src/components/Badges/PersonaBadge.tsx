@@ -5,6 +5,10 @@ interface PersonaBadgesProps {
 }
 
 export function PersonaBadges({ personas }: PersonaBadgesProps) {
+    if (!Array.isArray(personas) || personas.length === 0) {
+        return null;
+    }
+
     return (
         <Group gap={4}>
             {personas.map(p => (

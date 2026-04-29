@@ -10,6 +10,7 @@ import { useEffect, useState} from "react";
 import { useApi } from "../api.ts";
 import { DOMAIN } from '../../const';
 import {useTranslation} from "react-i18next";
+import {HelpModal} from "./StatsPopup.tsx";
 const icons = {
     user: IconUserPlus,
     clock: IconClock,
@@ -176,7 +177,10 @@ export function StatsDashboard() {
         const Icon = icons[stat.icon];
 
         return (
-            <Paper withBorder p="md" radius="md" key={stat.title}>
+            <Paper withBorder p="md" radius="md" key={stat.title} style={{position: 'relative' }}>
+                <HelpModal title={stat.title}>
+                    <Text>Shows the number of files {stat.title.toLowerCase()} as a proportion of all files.</Text>
+                </HelpModal>
                 <Group justify="space-between">
                     <Text size="xs" c="dimmed" className={classes.title}>
                         {stat.title}
@@ -205,7 +209,10 @@ export function StatsDashboard() {
     return (
         <div className={classes.root}>
             <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
-                <Paper withBorder p="md" radius="md" style={{ height: '100%' }}>
+                <Paper withBorder p="md" radius="md" style={{ height: '100%' , position: 'relative' }}>
+                    <HelpModal title="Files by Persona">
+                        <Text>Breakdown of files split by persona.</Text>
+                    </HelpModal>
                     <Text size="xs" c="dimmed" fw='bold'>
                         {t('my_files')}
                     </Text>
@@ -238,7 +245,10 @@ export function StatsDashboard() {
                 </Paper>
                 {stats}</SimpleGrid>
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="xl">
-                <Paper withBorder p="md" radius="md"  style={{ height: '100%'}} >
+                <Paper withBorder p="md" radius="md"  style={{ height: '100%', position: 'relative' }} >
+                    <HelpModal title="Content Types">
+                        <Text>Breakdown of files split by content type.</Text>
+                    </HelpModal>
                     <Text fw={700} size="lg" mb="md">
                         {t('content_types')}
                     </Text>
@@ -267,7 +277,10 @@ export function StatsDashboard() {
                         </div>
                     </Group>
                 </Paper>
-                <Paper withBorder p="md" radius="md" style={{ height: '100%' }} >
+                <Paper withBorder p="md" radius="md" style={{ height: '100%', position: 'relative' }} >
+                    <HelpModal title="Document Statuses">
+                        <Text>Breakdown of files split by their current status.</Text>
+                    </HelpModal>
                     <Text fw={700} size="lg" mb="md">
                         {t('document_statuses')}
                     </Text>

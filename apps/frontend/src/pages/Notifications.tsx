@@ -8,6 +8,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { FilledButton } from "../components/Buttons/FilledButton.tsx";
 import { DOMAIN } from "../const";
 import { useApi } from "../components/api.ts";
+import {useTranslation} from "react-i18next";
 
 interface NotificationProps {
     title: string;
@@ -21,17 +22,18 @@ interface NotificationProps {
 }
 
 function Notification({ title, message, send_date, importance: _importance, read, notid, onToggleRead, onDelete }: NotificationProps) {
+    const {t} = useTranslation();
     const [opened, { open, close }] = useDisclosure(false);
     const [confirmed, { open: confirmOpen, close: confirmClose }] = useDisclosure(false);
     return (
         <Box
             mb="lg"
             style={{
-                opacity: read ? 0.7 : 1 ,
+                opacity: read ? 0.5 : 1 ,
                 border: '1px solid #dee2e6',
                 borderRadius: 8,
                 padding: 16,
-                background: read ? 'grey' : 'white'
+                background: 'white'
             }}
         >
             {/* Notification Title */}
@@ -61,15 +63,15 @@ function Notification({ title, message, send_date, importance: _importance, read
 
                 <Group>
                     <FilledButton onClick={open}>
-                        View Notification
+                        {t('view_noti')}
                     </FilledButton>
 
                     <Button variant="default" onClick={() => onToggleRead(notid, !read)}>
-                        {read ? 'Mark Unread' : 'Mark as Read'}
+                        {read ? t('noti_unmark') : t('noti_mark')}
                     </Button>
 
                     <Button variant="default" onClick={confirmOpen} className="invert-hover-red">
-                        Delete
+                        {t('delete')}
                     </Button>
 
                 </Group>
@@ -102,25 +104,25 @@ function Notification({ title, message, send_date, importance: _importance, read
                 size="xl"
                 title={
                     <Text fw={700} size="lg" c="var(--color-yale-blue)">
-                        Confirm Deletion
+                        {t('delete')}
                     </Text>
                 }
                 centered
             >
                 <Stack>
-                    <Text>Are you sure you want to delete this notification?</Text>
+                    <Text>{t('not_delete_confirm_two')}</Text>
                     <Group justify="center" mt="md">
-                        <Button variant="default" onClick={confirmClose}>Cancel</Button>
-                        <Button color="red" onClick={() => {
+                        <Button variant="default" onClick={confirmClose}>{t("cancel")}</Button>
+                        <Button className="invert-hover-red" onClick={() => {
                             confirmClose();
                             onDelete(notid);
-                        }}>Delete</Button>
+                        }}>{t('delete')}</Button>
                     </Group>
                 </Stack>
             </Modal>
 
             <Text style={{
-               background: read ? 'var(--color-light-gray)' : '#f8f9fa',
+               background: '#f8f9fa',
                borderRadius: 6,
                padding: '8px 12px'
             }}>
@@ -136,6 +138,7 @@ export function Notifications() {
     const [loading, setLoading] = useState(true);
     const api = useApi();
     const fetched = useRef(false);
+    const {t} = useTranslation();
 
     useEffect(() => {
         if (fetched.current) return;
@@ -159,10 +162,46 @@ export function Notifications() {
         fetchNotifications();
     }, [api]);
 
-    const filteredNotifications = notifications.filter(n =>
+    const filteredNotifications = notifications.filter(n => 
         n.title.toLowerCase().includes(search.toLowerCase()) ||
         n.message.toLowerCase().includes(search.toLowerCase())
     );
+
+    const [markAllReadModalOpened, { open: openMarkAllRead, close: closeMarkAllRead }] = useDisclosure(false);
+    const [clearAllModalOpened, { open: openClearAll, close: closeClearAll }] = useDisclosure(false);
+
+    const handleMarkAllRead = async () => {
+        try {
+            const unreadNotifications = notifications.filter(n => !n.read);
+            const promises = unreadNotifications.map(n => 
+                api(`${DOMAIN}/notifications/${n.notid}/read`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ read: true }),
+                })
+            );
+            await Promise.all(promises);
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            closeMarkAllRead();
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+        }
+    };
+
+    const handleClearAll = async () => {
+        try {
+            const promises = notifications.map(n => 
+                api(`${DOMAIN}/notifications/${n.notid}`, {
+                    method: 'DELETE',
+                })
+            );
+            await Promise.all(promises);
+            setNotifications([]);
+            closeClearAll();
+        } catch (error) {
+            console.error('Failed to clear all notifications:', error);
+        }
+    };
 
     const formatDate = (date: string | Date) => {
         const d = new Date(date);
@@ -171,11 +210,14 @@ export function Notifications() {
 
     const handleToggleRead = async (notid: number, read: boolean) => {
         try {
+            console.log('[handleToggleRead] notid:', notid, 'read:', read);
             const response = await api(`${DOMAIN}/notifications/${notid}/read`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ read }),
             });
+
+            console.log('[handleToggleRead] response ok:', response.ok);
 
             if (response.ok) {
                 setNotifications(prev => prev.map(n => 
@@ -183,7 +225,7 @@ export function Notifications() {
                 ));
             }
         } catch (error) {
-            console.error('Failed to toggle read status:', error);
+            console.error(t('noti_fail_read'), error);
         }
     };
 
@@ -197,17 +239,72 @@ export function Notifications() {
                 setNotifications(prev => prev.filter(n => n.notid !== notid));
             }
         } catch (error) {
-            console.error('Failed to delete notification:', error);
+            console.error(t('noti_fail_delete'), error);
         }
     };
 
     return (
         <>
             <Header />
-            <PageTitle title="Notifications" />
+            <PageTitle title={t("notifications")} />
+            <Group justify="flex-end" p="md">
+                <Button variant="default" onClick={openMarkAllRead}>
+                    Mark All as Read
+                </Button>
+                <Button variant="default" className="invert-hover-red" onClick={openClearAll}>
+                    Clear All
+                </Button>
+            </Group>
+
+            <Modal
+                opened={markAllReadModalOpened}
+                onClose={closeMarkAllRead}
+                size="xl"
+                title={
+                    <Text fw={700} size="lg" c="var(--color-yale-blue)">
+                        Mark All as Read
+                    </Text>
+                }
+                centered
+            >
+                <Stack>
+                    <Text>Are you sure you want to mark all notifications as read?</Text>
+                    <Group justify="center" mt="md">
+                        <Button variant="default" onClick={closeMarkAllRead}>Cancel</Button>
+                        <Button onClick={() => {
+                            closeMarkAllRead();
+                            handleMarkAllRead();
+                        }}>Confirm</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
+            <Modal
+                opened={clearAllModalOpened}
+                onClose={closeClearAll}
+                size="xl"
+                title={
+                    <Text fw={700} size="lg" c="var(--color-yale-blue)">
+                        Clear All Notifications
+                    </Text>
+                }
+                centered
+            >
+                <Stack>
+                    <Text>Are you sure you want to delete all notifications? This action cannot be undone.</Text>
+                    <Group justify="center" mt="md">
+                        <Button variant="default" onClick={closeClearAll}>Cancel</Button>
+                        <Button className="invert-hover-red" onClick={() => {
+                            closeClearAll();
+                            handleClearAll();
+                        }}>Delete All</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+
             <Box p="md">
                 <TextInput 
-                    placeholder="Search for notification..." 
+                    placeholder= {t('noti_search')}
                     leftSection={<IconSearch size={16} />} 
                     value={search} 
                     onChange={e => setSearch(e.target.value)} 
@@ -216,9 +313,9 @@ export function Notifications() {
 
                 <Stack>
                     {loading 
-                        ? (<Text>Loading notifications...</Text>)
+                        ? (<Text>{t("noti_load")}</Text>)
                         : filteredNotifications.length === 0 
-                            ? (<Text>No notifications found.</Text>) 
+                            ? (<Text>{t('no_noti_found')}</Text>)
                             : (filteredNotifications.map((notification) => (
                                 <Notification
                                     key={notification.notid}

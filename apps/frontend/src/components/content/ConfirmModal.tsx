@@ -7,7 +7,7 @@ type ConfirmProps = {
     onClose: () => void;
     title: string;
     message: React.ReactNode;
-    onConfirm: () => Promise<void> | void;
+    onConfirm: () => void;
     onCancel: () => void;
 }
 

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import {prisma} from '../setup/prisma.js';
 import {supabase} from '../setup/supabase.js';
-import {upload} from '../setup/upload.js';
 import {checkJWT, management, getManagementToken} from '../setup/auth0.js';
+import { upload } from '../setup/upload.js';
 
 const router = Router();
 
@@ -47,8 +47,23 @@ router.post('/getEmployee', async (req, res) => {
     }
 });
 
+router.get('/employeenames/:empid', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const empid = parseInt(req.params.empid);
+        const employee = await prisma.employee.findUnique({
+            where: {empid}
+        });
+        if (!employee) return res.status(404).json({error: 'Not found'});
+        res.json(employee.first_name + ' ' + employee.last_name);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 // Update employee fields locally and mirror certain changes back to Auth0.
 router.patch('/updateEmployee', checkJWT, async (req, res) => {
+    console.log("updateEmployee hit, body:", req.body);
     const auth0Id = req.auth!.payload.sub as string;
     const token = await getManagementToken();
     const {username, newUsername, password, persona, first_name, last_name, pfp_URL} = req.body;
@@ -448,5 +463,89 @@ router.post('/updateTheme', checkJWT, async (req, res) => {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
+
+router.get('/getWidgets', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const username = req.query.username as string;
+
+    if (!username) {
+        return res.status(400).json({ error: 'Persona query parameter is required' });
+    }
+
+    try {
+        const empl = await prisma.employee.findUnique(
+            { where: {username : username}}
+        );
+
+        if (!empl) {
+            return res.status(404).json('Employee Not Found');
+        }
+
+        console.log('Employee Widgets:', empl.widgets);
+        res.json(empl.widgets);
+
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.post('/addWidgets', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body is missing" });
+    }
+
+    const { username, widgets } = req.body || {};
+
+    const employee = await prisma.employee.findUnique(
+        {where: {username : username}}
+    );
+
+    if (!employee) {
+        return res.status(404).json({error: 'Employee not found'});
+    }
+    try {
+        const newWidgets = [...employee.widgets, ...widgets];
+
+        const updated = await prisma.employee.update({
+            where: {username: username},
+            data: {widgets: newWidgets}
+        })
+        console.log('Employee Widgets Updated:', newWidgets);
+        res.json(updated.widgets);
+    } catch (error) {
+        res.status(500).json({error: 'Widgets could not update'});
+    }
+});
+
+router.post('/removeWidgets', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body is missing" });
+    }
+    const { username, widgets } = req.body || {};
+
+    const employee = await prisma.employee.findUnique(
+        {where: {username : username}}
+    );
+
+    if (!employee) {
+        return res.status(404).json({error: 'Employee not found'});
+    }
+    try {
+        const newWidgets = employee.widgets.filter(w => !widgets.includes(w));
+        const updated = await prisma.employee.update({
+            where: {username: username},
+            data: {widgets: newWidgets}
+        })
+        console.log('Employee Widgets Updated:', newWidgets);
+        res.json(updated.widgets);
+    } catch (error) {
+        res.status(500).json({error: 'Widgets already not in the list'});
+    }
+});
+
 
 export default router;
