@@ -4,6 +4,7 @@ import { EmployeeListView } from "../components/ManageEmployees/ListView.tsx"
 import { PageTitle } from "../components/Title.tsx";
 import { usePersona } from "../hooks/usePersona";
 import { useAuth0 } from "@auth0/auth0-react";
+import {useTranslation} from "react-i18next";
 
 export function ManageEmployeesForm() {
     // Persona from the auth/session layer determines whether the user is an Admin.
@@ -11,6 +12,7 @@ export function ManageEmployeesForm() {
     // Auth0 loading state is used so we can show a brief access-check message
     // before deciding whether to render the page or deny access.
     const { isLoading } = useAuth0();
+    const {t} = useTranslation();
 
     // Allow access if the current persona is Admin; localStorage is used as a fallback
     // for cases where the session state is still being resolved.
@@ -36,7 +38,7 @@ export function ManageEmployeesForm() {
                     Employees - Hanover Insurance
                 </title>
                 <Header />
-                <PageTitle title="Employees"/>
+                <PageTitle title={t('employees')}/>
                 <EmployeeListView />
             </>
         );

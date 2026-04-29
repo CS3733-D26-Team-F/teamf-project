@@ -48,8 +48,8 @@ export function ToDoList() {
 
     return (
         <div>
-        <HelpModal title="To-Do List">
-            <Text>Add your personal tasks and check them off once you finish them.</Text>
+        <HelpModal title= {t("todo_list")}>
+            <Text>{t("todo_list_tip")}</Text>
         </HelpModal>
         <Stack gap="md" h="100%" style={{ padding: '1.25rem' }}>
             <Group justify="space-between" align="center">
