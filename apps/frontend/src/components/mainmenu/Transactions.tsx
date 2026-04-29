@@ -56,7 +56,7 @@ export function Transactions() {
             const res = await api(`${DOMAIN}/changes`, {
                 method: "POST",
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(localStorage.getItem('empid'))
+                body: JSON.stringify({ empid: Number(localStorage.getItem('empid')) })
             });
             const data: Change[] = await res.json();
 
