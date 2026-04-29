@@ -30,6 +30,7 @@ function LoginModal() {
 
         const payload = await inputToken.json();
         const employee = payload?.employee;
+
         if (!employee) {
             return;
         }
@@ -52,7 +53,6 @@ function LoginModal() {
 
     useEffect(()=> {
         if(isAuthenticated){
-            console.log("User: ", user);
             if(first){
                 sendToBackend();
             }
@@ -71,7 +71,7 @@ function LoginModal() {
                             await loginWithPopup({
                                 authorizationParams: {
                                     audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                                    scope: "openid profile email read:profile read:data read:api"
+                                    scope: "openid profile email read:profile read:data read:api offline_access"
                                 }
                             });
 

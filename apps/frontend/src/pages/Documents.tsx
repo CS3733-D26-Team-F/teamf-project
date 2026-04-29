@@ -532,7 +532,7 @@ export function Documents() {
         formPayload.append('expiration_date', addData.expiration_date);
         formPayload.append('content_type', addData.content_type);
         formPayload.append('status', addData.status);
-        formPayload.append('username', addData.username);
+        formPayload.append('username', localStorage.getItem('username'));
         console.log("add data", addData);
         if (addFile) {
             formPayload.append('file', addFile);
