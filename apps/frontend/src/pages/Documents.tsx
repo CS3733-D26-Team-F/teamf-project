@@ -38,6 +38,8 @@ import {useTranslation} from "react-i18next";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+const UPLOAD_DOMAIN = import.meta.env.DEV ? '' : DOMAIN;
+
 type DocumentFormData = {
     name: string;
     owner: string;
@@ -865,23 +867,15 @@ export function Documents() {
             formPayload.append('url', normalizeUrl(addUrl));
         }
         try {
-            await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            const createdResponse = await api(`${UPLOAD_DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+            const createdPayload = await createdResponse.json() as { data?: ContentForm };
+            const createdDocument = createdPayload.data;
+
             setAddOpen(false);
             setAddFile(null);
             setAddUrl('');
 
-            const flat = await api(`${DOMAIN}/contentforms`)
-                .then(res => res.json())
-                .then(data => {
-                    const newFlat: ContentForm[] = Array.isArray(data) ? data :
-                        [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
-                    return newFlat;
-                });
-
-            const createdDoc = flat.find(doc => doc.name === addData.name);
-            const docID = createdDoc?.id ?? 0;
-
-            if (addData.jointagscontent.length > 0 && docID) {
+            if (addData.jointagscontent.length > 0 && createdDocument?.id) {
                 for (const tagToAdd of addData.jointagscontent) {
                     let tagID = 0;
                     for (const tag of createdTags) {
@@ -892,7 +886,7 @@ export function Documents() {
                     await api(`${DOMAIN}/assigntag`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({id: docID, metid: tagID})
+                        body: JSON.stringify({id: createdDocument.id, metid: tagID})
                     });
                 }
             }
@@ -954,28 +948,29 @@ export function Documents() {
                 if (sf.uploadType === 'file' && sf.file) {
                     formPayload.append('file', sf.file);
                 } else {
+                    if (!sf.url.trim()) {
+                        setAddError(`Missing URL for ${sf.name || 'one of the staged documents'}.`);
+                        return;
+                    }
                     formPayload.append('url', normalizeUrl(sf.url));
                 }
 
-                await api(`${DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                const createdResponse = await api(`${UPLOAD_DOMAIN}/contentforms`, {method: 'POST', body: formPayload});
+                const createdPayload = await createdResponse.json() as { data?: ContentForm };
+                const createdDocument = createdPayload.data;
+
+                if (!createdDocument?.id) {
+                    throw new Error('Bulk upload did not return the created document id.');
+                }
 
                 if (sf.jointagscontent.length > 0) {
-                    const flat = await api(`${DOMAIN}/contentforms`)
-                        .then(res => res.json())
-                        .then(data => {
-                            const newFlat: ContentForm[] = Array.isArray(data) ? data :
-                                [...(data.Underwriter ?? []), ...(data.BusinessAnalyst ?? []), ...(data.ActuarialAnalyst ?? []), ...(data.EXLOperations ?? [])];
-                            return newFlat;
-                        });
-                    const docID = flat.find(d => d.name === sf.name)?.id ?? 0;
-
                     for (const tagToAdd of sf.jointagscontent) {
                         const tagID = createdTags.find(t => t.tag_name === tagToAdd)?.metid ?? 0;
-                        if (!tagID || !docID) continue;
+                        if (!tagID) continue;
                         await api(`${DOMAIN}/assigntag`, {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({id: docID, metid: tagID})
+                            body: JSON.stringify({id: createdDocument.id, metid: tagID})
                         });
                     }
                 }
@@ -1065,7 +1060,7 @@ export function Documents() {
                 formPayload.append('status', editData.status);
                 formPayload.append('file', editFile);
                 formPayload.append('username', editData.username);
-                await api(`${DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
+                await api(`${UPLOAD_DOMAIN}/contentforms/${editId}`, {method: 'PUT', body: formPayload});
             } else if (editUploadMode === 'url' && editUrl) {
                 await api(`${DOMAIN}/contentforms/${editId}`, {
                     method: 'PUT', headers: {'Content-Type': 'application/json'},
@@ -2507,8 +2502,28 @@ export function Documents() {
                                 <Table.Tbody>
                                     {stagedFiles.map(staged => (
                                         <Table.Tr key={staged.id}>
-                                            <Table.Td><TextInput value={staged.name}
-                                                                 onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}/></Table.Td>
+                                            <Table.Td>
+                                                {staged.uploadType === 'url' ? (
+                                                    <Stack gap={4}>
+                                                        <TextInput
+                                                            placeholder="Name"
+                                                            value={staged.name}
+                                                            onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}
+                                                        />
+                                                        <TextInput
+                                                            placeholder="URL"
+                                                            value={staged.url}
+                                                            onChange={e => updateStagedFile(staged.id, 'url', e.target.value)}
+                                                        />
+                                                    </Stack>
+                                                ) : (
+                                                    <TextInput
+                                                        placeholder="File name"
+                                                        value={staged.name}
+                                                        onChange={e => updateStagedFile(staged.id, 'name', e.target.value)}
+                                                    />
+                                                )}
+                                            </Table.Td>
                                             <Table.Td>
                                                 {persona === 'Admin'
                                                     ? <Select data={employees.filter(e => e.persona !== 'Admin').map(e => e.username)} value={staged.owner} onChange={val => updateStagedFile(staged.id, 'owner', val ?? '')} />

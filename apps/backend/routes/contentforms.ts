@@ -389,22 +389,24 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             }
         });
 
-        const employee1 = await prisma.employee.findUnique({
-            where: {username: username}
-        });
+        const employee1 = username
+            ? await prisma.employee.findUnique({
+                where: {username: username}
+            })
+            : null;
 
-        if (!employee1) {
-            return res.status(404).json({error: 'Employee not found'});
+        if (employee1) {
+            await prisma.changes.create({
+                data: {
+                    id: content.id,
+                    empid: employee1.empid,
+                    change: "Added Document",
+                    date: new Date(date_modified).toISOString()
+                }
+            })
+        } else {
+            console.warn('[contentforms] Skipping add-document audit log because username was not resolved');
         }
-
-        const transaction = await prisma.changes.create({
-            data: {
-                id: content.id,
-                empid: employee1.empid,
-                change: "Added Document",
-                date: new Date(date_modified).toISOString()
-            }
-        })
 
         return res.status(200).json({
             message: 'Content form created successfully',
@@ -1538,14 +1540,20 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {username: username}
             })
 
-            const transaction = await prisma.changes.create({
-                data: {
-                    id: updated.id,
-                    empid: employee1.empid,
-                    change: "Checked Out Document",
-                    date: new Date().toISOString()
-                }
-            });
+            if (employee1) {
+                const transaction = await prisma.changes.create({
+                    data: {
+                        id: updated.id,
+                        empid: employee1.empid,
+                        change: "Checked Out Document",
+                        date: new Date().toISOString()
+                    }
+                });
+
+                console.log(transaction);
+            } else {
+                console.warn('[contentforms] Skipping checkout audit log because username was not resolved');
+            }
 
             return res.status(200).json({
                 message: 'Document checked out successfully',
@@ -1612,14 +1620,20 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                 where: {username: username}
             })
 
-            const transaction = await prisma.changes.create({
-                data: {
-                    id: updated.id,
-                    empid: employee1.empid,
-                    change: "Checked In Document",
-                    date: new Date().toISOString()
-                }
-            });
+            if (employee1) {
+                const transaction = await prisma.changes.create({
+                    data: {
+                        id: updated.id,
+                        empid: employee1.empid,
+                        change: "Checked In Document",
+                        date: new Date().toISOString()
+                    }
+                });
+
+                console.log(transaction);
+            } else {
+                console.warn('[contentforms] Skipping checkin audit log because username was not resolved');
+            }
 
             return res.status(200).json({
                 message: 'Document checked in successfully',
@@ -1844,7 +1858,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
 router.get('/contentnames/:id', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const id = parseInt(req.params.id);
+        const id = parseIntegerParam(req.params.id);
         const contentForm = await prisma.contentform.findUnique({
             where: {id}
         });
