@@ -129,7 +129,7 @@ export function Transactions() {
                 <Text>Number of transactions of documents added, edited, and deleted today.</Text>
             </HelpModal>
 
-            <Group justify="space-between" mb="md">
+            <Group justify="space-between" mb="md" mt="xl">
                 <Text fw={700} size="lg">
                     {adminView ? "Employee Activity" : isAdmin ? "Activity Today": "My Activity Today"}
                 </Text>

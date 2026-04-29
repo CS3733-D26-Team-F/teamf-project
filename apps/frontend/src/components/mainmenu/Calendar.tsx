@@ -70,7 +70,7 @@ export function Calendar() {
         <DatesProvider settings={{locale: dayjsLocale}}>
             <div style={{width: 1200, margin: "0 auto"}}>
                 <div style={{ display: 'absolute', top: 12, right: 12, zIndex: 10 }}>
-                    <HelpModal title="Calendar">
+                    <HelpModal title="Calendar" position="top">
                         <Text>Shows expiration dates for all documents.</Text>
                     </HelpModal>
                 </div>
