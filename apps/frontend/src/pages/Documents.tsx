@@ -2341,7 +2341,7 @@ export function Documents() {
                         <Text size="xs" c="dimmed">Upload destination</Text>
                         <Text fw={600} size="sm">{(addData.folder && addData.folder !== '') ? (folderMap[Number(addData.folder)]?.name ?? 'Selected folder') : (selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root')}</Text>
                     </Box>
-                    <Group grow mt="sm">
+                    <Group align="flex-end" mt="sm">
                         <Select
                             label={t('folder')}
                             placeholder="Top level"
@@ -2349,15 +2349,16 @@ export function Documents() {
                             onChange={val => setAddData({...addData, folder: (val === 'root' ? '' : (val ?? ''))})}
                             data={folderParentOptions}
                             clearable
+                            style = {{ flex: 3 }}
                         />
-                        <Group style={{alignItems: 'flex-end'}}>
                             <TextInput
-                                label="Or create folder"
+                                label="Or Create Folder"
                                 placeholder="New folder name"
                                 value={quickFolderName}
+                                style = {{ flex: 3 }}
                                 onChange={e => setQuickFolderName(e.target.value)}
                             />
-                            <Button mt={20} className="invert-hover-outline" onClick={async () => {
+                            <Button mt={20} className="invert-hover" style = {{ flex: 1 }} onClick={async () => {
                                 const personas = [persona ?? ''].filter(Boolean);
                                 const created = await createFolder(quickFolderName, personas, [], null);
                                 if (created) {
@@ -2365,7 +2366,6 @@ export function Documents() {
                                     setQuickFolderName('');
                                 }
                             }}>Create</Button>
-                        </Group>
                     </Group>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
