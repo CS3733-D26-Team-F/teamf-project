@@ -1,7 +1,7 @@
 import type {ContentForm, RowCallbacks} from "../interfaces/DocumentsInterfaces.tsx";
 import {getFileType} from "./Functions.tsx";
 import React from 'react';
-import {ActionIcon, Badge, Box, Checkbox, Group, Table, Tooltip} from "@mantine/core";
+import {ActionIcon, Badge, Box, Checkbox, Group, Table, Tooltip, Menu} from "@mantine/core";
 import {PersonaBadges} from "../Badges/PersonaBadge.tsx";
 import {StatusBadge} from "../Badges/StatusBadge.tsx";
 import {TagBadges} from "../Badges/TagBadges.tsx";
@@ -15,6 +15,7 @@ import {
     IconTrash,
     IconLock,
     IconFolder
+    ,IconDotsVertical
 } from "@tabler/icons-react";
 import {useTranslation} from "react-i18next";
 
@@ -59,8 +60,10 @@ export function DocRow({
                            onFolderClick,
                            isFavorited,
                            onDownload,
-                           onEdit,
-                           onDelete,
+                        onEdit,
+                        onDelete,
+                        onRequestMove,
+                        onRemoveFromFolder,
                            isCheckedOut,
                            checkedOutBy,
                            currentUsername,
@@ -246,6 +249,24 @@ export function DocRow({
                                 )}
                             </>
                         )}
+                                {/* 3-dots menu for move actions */}
+                                <Menu withinPortal>
+                                    <Menu.Target>
+                                        <ActionIcon variant="subtle" onClick={e => e.stopPropagation()}>
+                                            <IconDotsVertical size={16} />
+                                        </ActionIcon>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                        <Menu.Item onClick={(e) => { e.stopPropagation(); onRequestMove && onRequestMove(doc.id); }}>
+                                            {t('move_to_folder')}
+                                        </Menu.Item>
+                                        {doc.folder_id !== null && (
+                                            <Menu.Item onClick={(e) => { e.stopPropagation(); onRemoveFromFolder && onRemoveFromFolder(doc.id); }}>
+                                                {t('remove_from_folder')}
+                                            </Menu.Item>
+                                        )}
+                                    </Menu.Dropdown>
+                                </Menu>
                     </Group>
                 </Table.Td>
             </Table.Tr>
