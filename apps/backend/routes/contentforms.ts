@@ -292,7 +292,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             username
         } = req.body;
         const rawFolderId = req.body.folder_id ?? req.body.folderId;
-        const folderId = rawFolderId !== undefined && rawFolderId !== '' ? Number(rawFolderId) : null;
+        const folderId = rawFolderId !== undefined && rawFolderId !== null && rawFolderId !== '' ? Number(rawFolderId) : null;
         const file = req.file;
         const rawUrl = req.body.url;
 
@@ -1719,7 +1719,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
         const rawFolderId = req.body.folder_id ?? req.body.folderId;
-        const folderId = rawFolderId !== undefined && rawFolderId !== '' ? Number(rawFolderId) : null;
+        const folderId = rawFolderId !== undefined && rawFolderId !== null && rawFolderId !== '' ? Number(rawFolderId) : null;
 
         if (folderId !== null && Number.isNaN(folderId)) {
             return res.status(400).json({ error: 'Invalid folder id' });

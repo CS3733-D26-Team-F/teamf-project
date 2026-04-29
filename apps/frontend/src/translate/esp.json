@@ -105,6 +105,7 @@
   "add_doc": "Añadir documento",
   "add_folder": "Añadir carpeta",
   "move_to_folder": "Mover a carpeta",
+    "remove_from_folder": "Sacar de la Carpeta",
   "bulk_doc": "Carga masiva",
   "filter_doc": "Filtrar por",
   "filter_documents": "Filtrar Documentos",

@@ -40,6 +40,7 @@
   "favorite_all": "Tümünü Favorilere Ekle",
   "unfavorite_all": "Tümünü Favorilerden Çıkar",
   "move_to_folder": "Klasöre Taşı",
+  "remove_from_folder": "Klasörden Çıkar",
   "delete_selected": "Seçilenleri Sil",
   "checkout_selected": "Seçilenleri Ödünç Al",
   "checkin_selected": "Seçilenleri İade Et",
