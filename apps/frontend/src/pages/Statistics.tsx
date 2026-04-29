@@ -129,6 +129,7 @@ export function Statistics() {
                 activeWidgets={activeWidgets}
                 onSave={handleSaveLayout}
                 allWidgets={ALL_WIDGETS}
+                setIsEditing={setIsEditing}
             />
 
                 {activeWidgets.map((key) => {

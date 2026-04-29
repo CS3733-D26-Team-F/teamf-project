@@ -6,7 +6,7 @@ import {useTranslation} from "react-i18next";
 interface EditButtonProps {
     activeWidgets: string[];
     onSave: (newLayout: string[]) => void;
-    allWidgets: Record<string, { labelKey: string }>;
+    allWidgets: Record<string, { label: string; component?: React.ReactNode }>;
     setIsEditing?: (value: boolean) => void;
 }
 
@@ -29,7 +29,7 @@ export function EditButton({ activeWidgets=[], onSave, allWidgets={}, setIsEditi
 
     const selectData = Object.entries(allWidgets).map(([key, value]) => ({
         value: key,
-        label: value.labelKey,
+        label: value.label,
     }));
 
     return(
