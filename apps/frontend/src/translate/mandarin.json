@@ -106,6 +106,7 @@
   "add_doc": "添加文档",
   "add_folder": "添加文件夹",
   "move_to_folder": "移动到文件夹",
+  "remove_from_folder": "从文件夹移除",
   "bulk_doc": "批量上传",
   "filter_doc": "筛选方式",
   "filter_documents": "筛选文档",

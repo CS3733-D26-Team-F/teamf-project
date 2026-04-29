@@ -121,6 +121,7 @@
   "all_type": "Tous les types",
   "all_owner": "Tous les propriétaires",
   "move_to_folder": "Déplacer vers le dossier",
+    "remove_from_folder": "Retirer du dossier",
   "document_details": "Détails du document",
   "name_document": "Nom du document",
   "add_new_doc": "Ajouter un nouveau document",

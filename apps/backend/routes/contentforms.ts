@@ -292,7 +292,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             username
         } = req.body;
         const rawFolderId = req.body.folder_id ?? req.body.folderId;
-        const folderId = rawFolderId !== undefined && rawFolderId !== '' ? Number(rawFolderId) : null;
+        const folderId = rawFolderId !== undefined && rawFolderId !== null && rawFolderId !== '' ? Number(rawFolderId) : null;
         const file = req.file;
         const rawUrl = req.body.url;
 
@@ -1718,6 +1718,12 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         console.log('ownerUsername:', ownerUsername, 'owner:', owner, 'resolvedOwner:', resolvedOwner);
         const rawPersona = req.body.persona;
         const persona = typeof rawPersona === 'string' ? JSON.parse(rawPersona) : (rawPersona ?? []);
+        const rawFolderId = req.body.folder_id ?? req.body.folderId;
+        const folderId = rawFolderId !== undefined && rawFolderId !== null && rawFolderId !== '' ? Number(rawFolderId) : null;
+
+        if (folderId !== null && Number.isNaN(folderId)) {
+            return res.status(400).json({ error: 'Invalid folder id' });
+        }
 
 
         if (!name || !resolvedOwner || !date_modified || !expiration_date || !content_type || !status) {
@@ -1726,6 +1732,33 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
 
         if (!Array.isArray(persona) || persona.length === 0) {
             return res.status(406).json({ error: 'At least one job position is required' });
+        }
+
+        if (folderId !== null) {
+            const employee = await prisma.employee.findUnique({
+                where: {auth0Id},
+                select: {empid: true, persona: true, username: true}
+            });
+
+            if (!employee) {
+                return res.status(404).json({error: 'Employee not found'});
+            }
+
+            const folder = await prisma.folders.findUnique({
+                where: {id: folderId},
+                select: {owner_empid: true, persona: true, allowed_users: true}
+            });
+
+            if (!folder) {
+                return res.status(404).json({error: 'Folder not found'});
+            }
+
+            const hasPersonaAccess = !!employee.persona && folder.persona.includes(employee.persona);
+            const hasUserAccess = folder.allowed_users.includes(employee.username);
+
+            if (!isAdminPersona(employee.persona) && folder.owner_empid !== employee.empid && !hasPersonaAccess && !hasUserAccess) {
+                return res.status(403).json({error: 'Not allowed to use this folder'});
+            }
         }
 
         const expiration = new Date(expiration_date);
@@ -1756,6 +1789,10 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             //review_date: review_date ? new Date(review_date) : null
             review_date : null
         };
+
+        if (folderId !== null || rawFolderId === '' || rawFolderId === null) {
+            updateData.folder = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
+        }
 
         if (req.file) {
             // look up the employee to get their persona/bucket
