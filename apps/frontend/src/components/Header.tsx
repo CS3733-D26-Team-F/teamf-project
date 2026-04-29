@@ -50,7 +50,7 @@ export function Header() {
                 </div>
                     <nav className="menu-links">
                         {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
-                            <Link to="/statistics">{t('statistics')}</Link>
+                            <Link to="/statistics">{t('dashboard')}</Link>
                         )}
                         {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
                         {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
@@ -60,6 +60,7 @@ export function Header() {
                             <Link to="/archive">{t('archive')}</Link>
                         )}
                   <Profile />
+                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
                         <Link to="/notifications">
                             <IconBell size={32} />
                             {unreadCount > 0 && (
@@ -90,6 +91,7 @@ export function Header() {
                                 </div>
                                 )}
                             </Link>
+                            )}
                         </nav>
                     <Chatbot />
                 </div>

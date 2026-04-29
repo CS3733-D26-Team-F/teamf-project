@@ -124,7 +124,7 @@ export function Transactions() {
     };
 
     return (
-        <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative" }}>
+        <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative", marginLeft: 20 }}>
             <HelpModal title={t('transactions')} position ="top">
                 <Text>{t('transactions_tip')}</Text>
             </HelpModal>

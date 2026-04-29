@@ -51,7 +51,7 @@ export function Hero() {
                     </div>
 
                     {isAuthenticated ? (
-                        <Navigate to="/statistics" replace />
+                        <Navigate to="/dashboard" replace />
                     ) : (
                         <div className="content">
                             <h1>{t('welcome_message')}</h1>
