@@ -145,7 +145,7 @@ model changes {
   id          Int?
   empid       Int?
   change      String?      @db.VarChar(50)
-  date        DateTime?    @db.Date
+  date        DateTime?    @db.Timestamptz(6)
   employee    employee?    @relation(fields: [empid], references: [empid], onDelete: Cascade)
   contentform contentform? @relation(fields: [id], references: [id], onDelete: Cascade)
 }
