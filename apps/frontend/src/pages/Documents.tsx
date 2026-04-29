@@ -1003,6 +1003,8 @@ export function Documents() {
     }
 
     function openEdit(doc: ContentForm) {
+        const isUrlDocument = getFileType(doc.url) === 'Link';
+
         api(`${DOMAIN}/contentforms/${doc.id}/checkout`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1022,10 +1024,13 @@ export function Documents() {
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
-                    username: (localStorage.get("username") ?? ""),
+                    username: (localStorage.getItem('username') ?? ''),
                     folder: doc.folder_id !== null ? String(doc.folder_id) : '',
                     jointagscontent: doc.jointagscontent
                 });
+                setEditUploadMode(isUrlDocument ? 'url' : 'file');
+                setEditUrl(isUrlDocument ? doc.url : '');
+                setEditFile(null);
                 setEditOpen(true);
             });
     }
@@ -2264,13 +2269,6 @@ export function Documents() {
                                      }))
                                  }
                                  disabled={persona !== 'Admin'}/>
-                    <Group preventGrowOverflow={false}>
-                        <MultiSelect w="75%" label= {t('tags')} value={addData.jointagscontent}
-                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
-                                     data={getArrayTags()}/>
-                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
-                                onClick={() => setAdvancedTagsOpen(true)}> {t('advanced_tags')} </Button>
-                    </Group>
                     <Text fw={600} mt="sm">{t('Lifecycle & Attributes')}</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
@@ -2289,6 +2287,15 @@ export function Documents() {
                                    onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
+                    </Group>
+                    <Group preventGrowOverflow={false} align="flex-end">
+                        <MultiSelect w="75%" label={t('tags')} value={addData.jointagscontent}
+                                     onChange={val => setAddData({...addData, jointagscontent: (val ?? [])})}
+                                     data={getArrayTags()}
+                                     searchable
+                                     clearable/>
+                        <Button className="invert-hover" style={{width: '20%', padding: '0 0px'}}
+                                onClick={() => setAdvancedTagsOpen(true)}> {t('advanced_tags')} </Button>
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {addError && <ErrorMessage message={addError}/>}
@@ -2494,9 +2501,9 @@ export function Documents() {
                                         <Table.Th w={150}>{t('persona')}</Table.Th>
                                         <Table.Th w={150}>{t('content_type')}</Table.Th>
                                         <Table.Th w={150}>{t('status')}</Table.Th>
-                                        <Table.Th w={150}>{t('tags')}</Table.Th>
                                         <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
+                                        <Table.Th w={240}>{t('tags')}</Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
                                 <Table.Tbody>
@@ -2550,9 +2557,21 @@ export function Documents() {
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>
                                                 </Stack>
                                             </Table.Td>
-                                            <Table.Td><ActionIcon color="var(--color-neutral-red)"
-                                                                  onClick={() => removeStagedFile(staged.id)}><IconTrash
-                                                size={16}/></ActionIcon></Table.Td>
+                                            <Table.Td>
+                                                <ActionIcon color="var(--color-neutral-red)"
+                                                            onClick={() => removeStagedFile(staged.id)}>
+                                                    <IconTrash size={16}/>
+                                                </ActionIcon>
+                                            </Table.Td>
+                                            <Table.Td>
+                                                <MultiSelect
+                                                    data={getArrayTags()}
+                                                    value={staged.jointagscontent}
+                                                    onChange={val => updateStagedFile(staged.id, 'jointagscontent', val)}
+                                                    searchable
+                                                    clearable
+                                                />
+                                            </Table.Td>
                                         </Table.Tr>
                                     ))}
                                 </Table.Tbody>
