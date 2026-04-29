@@ -7,6 +7,7 @@ import { supabase } from '../setup/supabase.js';
 import { upload } from '../setup/upload.js';
 import { getManagementToken } from '../setup/auth0.js';
 import { sendNotificationToUsers } from './notifications.js';
+import { semanticSearch } from './indexer.js';
 
 const router = Router();
 
@@ -1147,7 +1148,116 @@ router.post('/api/chat', async (req, res) => {
                             : 'Theme reset to Default.'
                     };
                 }
-            })
+            }),
+
+            // Search Document Contents
+            searchDocumentContents: tool({
+                description: 'Search inside the actual text content of documents. Use when the user asks what a document says, wants to find a specific passage, clause, or topic within documents, or asks about document contents rather than just names.',
+                parameters: z.object({
+                    query: z.string().describe('The text, topic, or phrase to search for inside documents.'),
+                    documentName: z.string().optional().describe('Optionally limit search to a specific document by name.')
+                }),
+                execute: async (args) => {
+                    if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
+
+                    const results = await semanticSearch(args.query, userRole, 6);
+
+                    if (results.length === 0) {
+                        return {
+                            success: false,
+                            message: `No document content found matching "${args.query}". The documents may not be indexed yet, or may be non-text files (audio, video, images).`
+                        };
+                    }
+
+                    const filtered = args.documentName
+                        ? results.filter(r => r.docName.toLowerCase().includes(args.documentName!.toLowerCase()))
+                        : results;
+
+                    if (filtered.length === 0) {
+                        return {
+                            success: false,
+                            message: `No content matching "${args.query}" found in "${args.documentName}".`
+                        };
+                    }
+
+                    const byDoc = new Map<number, typeof filtered>();
+                    filtered.forEach(r => {
+                        if (!byDoc.has(r.contentformId)) byDoc.set(r.contentformId, []);
+                        byDoc.get(r.contentformId)!.push(r);
+                    });
+
+                    const docSummaries = Array.from(byDoc.entries()).map(([id, chunks]) => ({
+                        docName: chunks[0].docName,
+                        docUrl: chunks[0].docUrl,
+                        relevantPassages: chunks.map(c => c.content.slice(0, 300) + (c.content.length > 300 ? '...' : '')),
+                        topSimilarity: Math.max(...chunks.map(c => c.similarity))
+                    }));
+
+                    return {
+                        success: true,
+                        type: 'rag_results',
+                        query: args.query,
+                        results: docSummaries,
+                        message: `Found relevant content in ${docSummaries.length} document(s).`
+                    };
+                }
+            }),
+
+            // TOOL: Summarize Document
+            summarizeDocument: tool({
+                description: 'Read and summarize the contents of a specific document. Use when the user asks to summarize, explain, or read a document.',
+                parameters: z.object({
+                    name: z.string().describe('The name of the document to summarize.')
+                }),
+                execute: async (args) => {
+                    if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
+
+                    const doc = await prisma.contentform.findFirst({
+                        where: {
+                            name: { contains: args.name.trim(), mode: 'insensitive' },
+                            is_deleted: false
+                        },
+                        select: { id: true, name: true, url: true, persona: true }
+                    });
+
+                    if (!doc) return { success: false, message: `No document named "${args.name}" found.` };
+
+                    if (userRole !== 'Admin' && !doc.persona.includes(userRole)) {
+                        return { success: false, message: `You do not have permission to read "${args.name}".` };
+                    }
+
+                    const chunks: any[] = await prisma.$queryRawUnsafe(
+                        `SELECT content, chunk_index FROM document_chunks 
+             WHERE contentform_id = $1 
+             ORDER BY chunk_index ASC`,
+                        doc.id
+                    );
+
+                    if (chunks.length === 0) {
+                        return {
+                            success: false,
+                            message: `"${doc.name}" has not been indexed yet or contains no extractable text. It may be an audio, video, or scanned image file.`
+                        };
+                    }
+
+                    const fullText = chunks
+                        .map(c => c.content)
+                        .join('\n\n')
+                        .split(/\s+/)
+                        .slice(0, 3000)
+                        .join(' ');
+
+                    return {
+                        success: true,
+                        type: 'document_content',
+                        docName: doc.name,
+                        docUrl: doc.url,
+                        chunkCount: chunks.length,
+                        content: fullText,
+                        message: `Retrieved ${chunks.length} sections from "${doc.name}". Please summarize the content below for the user.`
+                    };
+                }
+            }),
         };
 
         const result = streamText({
