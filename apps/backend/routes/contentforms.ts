@@ -99,7 +99,7 @@ router.get('/contentforms', checkJWT, async (req, res) => {
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false},
         include: {
-            folder: {
+            folders: {
                 select: {name: true}
             }
         }
@@ -383,7 +383,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
             },
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -569,7 +569,7 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
                 contentform: {
                     where: {is_deleted: true},
                     include: {
-                        folder: {select: {name: true}}
+                        folders: {select: {name: true}}
                     },
                     orderBy: {deleted_at: 'desc'}
                 }
@@ -728,7 +728,7 @@ router.get('/contentforms/archived', checkJWT, async (req, res) => {
         const archived = await prisma.contentform.findMany({
             where: {status: 'Archived', is_deleted: false},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -747,7 +747,7 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
         const expired = await prisma.contentform.findMany({
             where: {status: 'Expired', is_deleted: false},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -768,7 +768,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
             where: {id},
             data: {status, expiration_date: new Date()},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -1478,7 +1478,7 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
         const contentForm = await prisma.contentform.findUnique({
             where: {id},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
