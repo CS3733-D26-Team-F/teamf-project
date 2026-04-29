@@ -127,7 +127,7 @@ export function ProfileComponent() {
 
             // Avoid sending an update when the user hasn't changed anything.
             if (!hasAccountChanges && !hasPictureChange) {
-                setEditError('No changes to save.');
+                setEditError(t('no_changes_save'));
                 return;
             }
 
@@ -144,7 +144,7 @@ export function ProfileComponent() {
                 });
 
                 if (!updateResponse.ok) {
-                    setEditError('Could not save account changes. Please try again.');
+                    setEditError(t('couldnt_change_save'));
                     return;
                 }
 
@@ -164,7 +164,7 @@ export function ProfileComponent() {
                 });
 
                 if (!uploadResponse.ok) {
-                    setEditError('Profile picture upload failed.');
+                    setEditError(t('profile_fail'));
                     return;
                 }
 
@@ -194,7 +194,7 @@ export function ProfileComponent() {
                         <Group gap="xs">
                             <IconUser size={25} color="var(--color-yale-blue, #00356b)"/>
                             <Text fw={700} size="md" style={{ letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--color-yale-blue, #00356b)' }}>
-                                Employee Profile
+                                {t('employee_profile')}
                             </Text>
                         </Group>
                         <Button
@@ -243,7 +243,7 @@ export function ProfileComponent() {
                                 </Group>
                                 <Group gap={6}>
                                     <IconCalendar size={14} color="gray" />
-                                    <Text size="sm" c="dimmed">Joined:</Text>
+                                    <Text size="sm" c="dimmed">{t("joined")}:</Text>
                                     <Text size="sm" fw={500}>{new Date(creationDate).getFullYear()}</Text>
                                 </Group>
                             </Group>

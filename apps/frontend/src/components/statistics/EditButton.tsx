@@ -6,7 +6,7 @@ import {useTranslation} from "react-i18next";
 interface EditButtonProps {
     activeWidgets: string[];
     onSave: (newLayout: string[]) => void;
-    allWidgets: Record<string, { label: string }>;
+    allWidgets: Record<string, { labelKey: string }>;
     setIsEditing?: (value: boolean) => void;
 }
 
@@ -29,25 +29,25 @@ export function EditButton({ activeWidgets=[], onSave, allWidgets={}, setIsEditi
 
     const selectData = Object.entries(allWidgets).map(([key, value]) => ({
         value: key,
-        label: value.label,
+        label: value.labelKey,
     }));
 
     return(
         <div style={{ textAlign: 'right', margin: '24px' }}>
-            <Drawer opened={opened} onClose={close} title="Edit Statistics">
+            <Drawer opened={opened} onClose={close} title={t('edit_stats')}>
                 <Stack>
                     <MultiSelect
-                        label="Widgets"
+                        label={t('widgets')}
                         data={selectData}
                         value={selected}
                         onChange={setSelected}
                     />
                     <Button style={{ backgroundColor: 'var(--yale-blue)' }} onClick={() => {
-                        console.log("Saving these keys:", selected);
+                        console.log(t('save_keys'), selected);
                         onSave(selected);
                         close();
                     }}>
-                        Save Changes
+                        {t('save_change')}
                     </Button>
                 </Stack>
             </Drawer>

@@ -122,8 +122,8 @@ export function ExpirationWidget() {
                     position: 'relative'
                 }}
             >
-                <HelpModal title="Expiring Soon">
-                    <Text>Shows documents expiring in the next 48 hours, filtered by your ownership or role.</Text>
+                <HelpModal title= {t('expiring_soon')}>
+                    <Text>{t('expiring_soon_tip')}</Text>
                 </HelpModal>
                 <Group gap={6} mb="xs">
                     <IconClock size={14} color="gray" />

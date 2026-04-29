@@ -40,7 +40,7 @@ function DocTable({ docs, userPersona, onRestore, onTrash }: DocTableProps) {
     // Show a friendly empty state instead of rendering an empty table body.
     const {t} = useTranslation();
     if (docs.length === 0) {
-        return <Text c="dimmed" ta="center" py="xl">No documents here.</Text>;
+        return <Text c="dimmed" ta="center" py="xl">{t("no_doc_here")}</Text>;
     }
 
     return (

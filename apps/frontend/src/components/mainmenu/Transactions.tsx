@@ -125,17 +125,17 @@ export function Transactions() {
 
     return (
         <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative" }}>
-            <HelpModal title="Transactions" position ="top">
-                <Text>Number of transactions of documents added, edited, and deleted today.</Text>
+            <HelpModal title={t('transactions')} position ="top">
+                <Text>{t('transactions_tip')}</Text>
             </HelpModal>
 
             <Group justify="space-between" mb="md" mt="xl">
                 <Text fw={700} size="lg">
-                    {adminView ? "Employee Activity" : isAdmin ? "Activity Today": "My Activity Today"}
+                    {adminView ? t('admin-activity_today'): isAdmin ? t('two_activity_today'): t('activity_today')}
                 </Text>
                 {isAdmin && (
                     <Group gap={4}>
-                        <Text size="xs" c="dimmed">Admin View</Text>
+                        <Text size="xs" c="dimmed">{t('admin_view')}</Text>
                         <Switch
                             checked={adminView}
                             onChange={(e) => setAdminView(e.currentTarget.checked)}
@@ -190,12 +190,12 @@ export function Transactions() {
                         size="sm"
                     />
                     <Text fw={600} size="sm" mb="xs" c="dimmed">
-                        Check In / Out History (Past Week)
+                        {t("check_history")}
                     </Text>
                     <ScrollArea h={200}>
                         <Stack gap="xs">
                             {checkoutHistory.length === 0 ? (
-                                <Text c="dimmed" size="sm">No checkout activity this week.</Text>
+                                <Text c="dimmed" size="sm">{t('no_checkout_activity')}</Text>
                             ) : (
                                 checkoutHistory.map((c, i) => (
                                     <Paper withBorder p="xs" radius="sm" key={i}>

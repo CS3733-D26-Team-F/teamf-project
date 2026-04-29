@@ -1595,10 +1595,10 @@ export function Documents() {
                 {folders.length > 0 && (
                     <Box mb="lg">
                         <Group justify="space-between" mb="xs">
-                            <Text fw={700} size="sm" c="dimmed">Folders</Text>
+                            <Text fw={700} size="sm" c="dimmed">{t('folders')}</Text>
                             {selectedFolderId !== null && (
                                 <Button variant="light" size="xs" onClick={() => setSelectedFolderId(null)}>
-                                    Show all documents
+                                    {t('show_all_doc')}
                                 </Button>
                             )}
                         </Group>
@@ -1669,13 +1669,13 @@ export function Documents() {
                                                             </Menu.Target>
                                                             <Menu.Dropdown>
                                                                 <Menu.Item onClick={(e) => { e.stopPropagation(); openEditFolder(folder); }}>
-                                                                    Edit Folder
+                                                                    {t('edit_folder')}
                                                                 </Menu.Item>
                                                                 <Menu.Item onClick={(e) => { e.stopPropagation(); setDeleteFolderId(folder.id); setDeleteFolderOpen(true); }}>
-                                                                    Delete Folder
+                                                                    {t('delete_folder')}
                                                                 </Menu.Item>
                                                                 <Menu.Item onClick={(e) => { e.stopPropagation(); setDuplicateFolderId(folder.id); setDuplicateFolderOpen(true); }}>
-                                                                    Duplicate Folder
+                                                                    {t('duplicate_folder')}
                                                                 </Menu.Item>
                                                             </Menu.Dropdown>
                                                         </Menu>
@@ -1703,15 +1703,15 @@ export function Documents() {
                     <Stack gap="lg">
                         <Group justify="space-between" align="center">
                             <Text size="sm" c="dimmed">
-                                Showing {rowsPerPage} rows per page
+                                {t("showing")} {rowsPerPage}  {t("rows_per_page")}
                             </Text>
                             <Select
                                 value={rowsPerPage}
                                 onChange={(value) => setRowsPerPage((value as '10'|'25' | '50') ?? '25')}
                                 data={[
-                                    {label: '10 rows', value: '10'},
-                                    {label: '25 rows', value: '25'},
-                                    {label: '50 rows', value: '50'}
+                                    {label: `10 ${t('rows')}`, value: '10'},
+                                    {label: `25 ${t('rows')}`, value: '25'},
+                                    {label: `50 ${t('rows')}`, value: '50'}
                                 ]}
                                 w={140}
                                 allowDeselect={false}
@@ -1899,13 +1899,13 @@ export function Documents() {
                 setAddFolderOpen(false);
                 setFolderModalError('');
                 setFolderUsers([]);
-            }} title="Create Folder">
+            }} title={t('Create Folder')}>
                 <Stack>
-                    <TextInput label="Folder Name" placeholder="Enter folder name" value={folderName} onChange={e => setFolderName(e.target.value)} />
-                    <MultiSelect label="Persona" placeholder="Select personas" value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
+                    <TextInput label={t('folder_name')} placeholder={t("folder_place")} value={folderName} onChange={e => setFolderName(e.target.value)} />
+                    <MultiSelect label={t('folder_persona')} placeholder={t('folder_persona_place')}value={folderPersona} onChange={setFolderPersona} data={roles} clearable />
                     <MultiSelect
-                        label="Restricted Users"
-                        placeholder="Select users who can access this folder"
+                        label={t('folder_restrict')}
+                        placeholder={t("folder_restrict_place")}
                         value={folderUsers}
                         onChange={setFolderUsers}
                         data={[...new Set(employees.map(e => e.username))]}
@@ -1924,7 +1924,7 @@ export function Documents() {
                                 setFolderUsers([]);
                                 setFolderModalError('');
                             }
-                        }}>Create</Button>
+                        }}>{t('create')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -2045,7 +2045,7 @@ export function Documents() {
                                  onChange={(val) => setFilterCheckout(val)}
                                  data={[{value: 'available', label: t('available')}, {value: 'checked out', label: t('checked_out')}]}
                                  clearable/>
-                    <MultiSelect label="Content Tags" placeholder="Any Tags" value={filterTags}
+                    <MultiSelect label= {t('content_tags')} placeholder= {t('any_tags')} value={filterTags}
                                  onChange={setFilterTags} data={getArrayTags()}
                                  clearable/>
                     <Group justify="flex-end">
@@ -2108,7 +2108,7 @@ export function Documents() {
                     )}
                     {filteredTrashFolders.length > 0 && (
                         <Box>
-                            <Text fw={700} size="sm" c="dimmed" mb="xs">Deleted folders</Text>
+                            <Text fw={700} size="sm" c="dimmed" mb="xs">{t('folder_delete')}</Text>
                             <Stack gap="xs">
                                 {filteredTrashFolders.map(folder => {
                                     const folderDocs = Array.isArray(folder.documents) ? folder.documents : [];

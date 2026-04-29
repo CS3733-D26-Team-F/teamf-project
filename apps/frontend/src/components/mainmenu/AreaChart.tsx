@@ -60,8 +60,8 @@ export function AreaChart() {
 
     return (
         <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
-            <HelpModal title="Recently Modified" position ="top">
-                <Text>Shows number of Updated Documents in the Past week.</Text>
+            <HelpModal title={t("recently_modified")} position ="top">
+                <Text>{t("recently_modified_tip")}</Text>
             </HelpModal>
             <Text fw={700} size="lg" mb="md">
                 {t('chart_update')}
