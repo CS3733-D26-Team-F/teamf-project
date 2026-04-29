@@ -181,7 +181,7 @@ export function ProfileComponent() {
 
             setEditOpen(false);
         } catch {
-            setEditError('Could not save changes. Please try again.');
+            setEditError(t('admin_cant_save_two'));
         } finally {
             setEditSaving(false);
         }
@@ -258,7 +258,7 @@ export function ProfileComponent() {
                     title={
                         <Group>
                             <IconUser size={20}/>
-                            <Text fw={600}>Edit Employee Account</Text>
+                            <Text fw={600}>{t('edit_employee')}</Text>
                         </Group>
                     }
                 >
@@ -266,20 +266,20 @@ export function ProfileComponent() {
                         <Stack>
                             {/* Show current values so admins can compare before saving changes. */}
                             <Box style={{background: '#f8f9fa', borderRadius: 6, padding: 12}}>
-                                <Text fw={600} mb={4}>Current Details</Text>
-                                <Text size="sm">Current Username: {editTarget.username}</Text>
-                                <Text size="sm">Current Persona: {editTarget.persona}</Text>
+                                <Text fw={600} mb={4}>{t('current_details')}</Text>
+                                <Text size="sm">{t('current_username')} {editTarget.username}</Text>
+                                <Text size="sm">{t('current_persona')} {editTarget.persona}</Text>
                             </Box>
-                            <Text fw={600}>New Details</Text>
+                            <Text fw={600}>{t('edit_details')}</Text>
                             <TextInput
-                                label="New Username (Optional)"
+                                label={t('new_username_optional')}
                                 value={editData.newUsername}
                                 onChange={e => setEditData({...editData, newUsername: e.target.value})}
                             />
                             <Box>
-                                <Text size="sm" fw={500} mb={4}>New Profile Picture (Optional)</Text>
+                                <Text size="sm" fw={500} mb={4}>{t('pfp_optional')}</Text>
                                 <FileInput
-                                    placeholder="Upload a new profile picture"
+                                    placeholder= {t('pfp_upload')}
                                     accept="image/*"
                                     value={editData.newPfp_URL}
                                     onChange={file => setEditData({
@@ -290,7 +290,7 @@ export function ProfileComponent() {
 
                             </Box>
                             <PasswordInput
-                                label="New Password (Optional)"
+                                label={t('password_optional')}
                                 autoComplete="new-password"
                                 value={editData.password}
                                 onChange={e => setEditData({...editData, password: e.target.value})}
@@ -300,23 +300,23 @@ export function ProfileComponent() {
                             )}
                             {/* Show audit-style metadata for the selected employee. */}
                             <Box style={{background: '#f8f9fa', borderRadius: 6, padding: 12}}>
-                                <Text fw={600} mb={4}>Account History</Text>
+                                <Text fw={600} mb={4}>{t('account_history')}</Text>
                                 <Group>
                                     <Text size="sm">{editTarget.first_name} {editTarget.last_name}</Text>
-                                    <Text size="sm" c="dimmed">Creation
-                                        Date: {new Date(editTarget.created_at).toISOString().split('T')[0]}</Text>
+                                    <Text size="sm" c="dimmed">{t('creation')}
+                                        {t('date')}: {new Date(editTarget.created_at).toISOString().split('T')[0]}</Text>
                                 </Group>
                             </Box>
                             <Group justify="flex-end" mt="md">
                                 <Button variant="outline" onClick={() => setEditOpen(false)}
-                                        className="invert-hover-outline" disabled={editSaving}>Cancel</Button>
+                                        className="invert-hover-outline" disabled={editSaving}>{t('cancel')}</Button>
                                 <FilledButton
                                     onClick={handleEdit}
                                     leftSection="plus"
                                     loading={editSaving}
                                     disabled={editSaving}
                                 >
-                                    Save Account
+                                    {t('save_account')}
                                 </FilledButton>
                             </Group>
                         </Stack>

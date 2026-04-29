@@ -1875,7 +1875,7 @@ export function Documents() {
                                         await new Promise(resolve => setTimeout(resolve, 500));
                                     }
                                 }
-                            }}>{t('download_all')}</Button>
+                            }}>{t('download_selected')}</Button>
                             <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {

@@ -323,7 +323,7 @@
   "new_detail": "New Details",
   "new_username_optional": "New Username (Optional)",
   "pfp_upload": "Upload a new profile picture",
-  "pasword_optional": "New Password (Optional)",
+  "password_optional": "New Password (Optional)",
   "persona_optional": "New Persona (Optional",
   "account_history": "Account History",
   "creation_date": "Create Date:",
@@ -333,6 +333,10 @@
   "employee_account": "Employee Account",
   "year_joined": "Year Joined",
   "account": "Account",
-  "current_details": "Current Details"
+  "current_details": "Current Details",
+  "edit_employee": "Edit Employee Account",
+  "pfp_optional": "New Profile Picture (Optional)",
+  "creation": "Creation",
+  "edit_details": "Edit Details"
 
 }
