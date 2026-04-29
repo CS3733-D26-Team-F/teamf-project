@@ -104,6 +104,8 @@
   "my_updated_files": "ملفاتي المحدثة",
   "doc_title": "المستندات - Hanover Insurance",
   "add_doc": "إضافة مستند",
+  "add_folder": "إضافة مجلد",
+  "move_to_folder": "نقل إلى مجلد",
   "bulk_doc": "رفع مجمع",
   "filter_doc": "تصفية حسب",
   "filter_documents": "تصفية المستندات",
