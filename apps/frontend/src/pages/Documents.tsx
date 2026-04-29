@@ -1428,26 +1428,27 @@ export function Documents() {
 
             <Box p="md">
                 <Group justify="space-between" align="left" w="100%">
-                    <PageTitle title={titleProp}/>
-                    <Button
-                        variant="default"
-                        onClick={() => setOpenHelpModal(true)}
-                        
-                    >
-                        <IconHelp />
-                    </Button>
+                    <Group>
+                        <PageTitle title={titleProp}/>
+                        <Button
+                            variant="default"
+                            onClick={() => setOpenHelpModal(true)}
+                        >
+                            <IconHelp />
+                        </Button>
+                    </Group>
                     <HelpModal
-                                        title={titleProp}
-                                        opened={openHelpModal}
-                                        onClose={() => setOpenHelpModal(false)}
-                                        popupContent={
-                                            <div>
-                                                <Text size="sm" mb="md">This is the content page. Here you can view and manage the content for your website.</Text>
-                                                <Text size="sm" mb="md">To add new content, click the "Add Content" button and follow the prompts.</Text>
-                                                <Text size="sm" mb="md">Make sure to save any changes you make before navigating away from the page.</Text>
-                                            </div>
-                                        }
-                                    />
+                        title={titleProp}
+                        opened={openHelpModal}
+                        onClose={() => setOpenHelpModal(false)}
+                        popupContent={
+                            <div>
+                                <Text size="sm" mb="md">This is the content page. Here you can view and manage the content for your website.</Text>
+                                <Text size="sm" mb="md">To add new content, click the "Add Content" button and follow the prompts.</Text>
+                                <Text size="sm" mb="md">Make sure to save any changes you make before navigating away from the page.</Text>
+                            </div>
+                        }
+                    />
                     
                     <Group gap="s">
                         <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
