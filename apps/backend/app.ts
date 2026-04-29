@@ -9,6 +9,7 @@ import contentRoutes from './routes/contentforms.js';
 import loginRoutes from './routes/login.js';
 import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/notifications.js';
+import workflowRoutes from './routes/workflow.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -41,6 +42,7 @@ app.use('/', chatRoutes);
 app.use('/', notificationRoutes);
 app.use('/', loginRoutes);  // loginRoutes before contentRoutes!
 app.use('/', contentRoutes);
+app.use('/', workflowRoutes);
 
 app.use((req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
