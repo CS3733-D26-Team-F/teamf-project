@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import LoginModal from '../login/LoginModal';
 import {useAuth0} from "@auth0/auth0-react";
 import {useTranslation} from "react-i18next";
+import {Navigate, useNavigate} from "react-router-dom";
 
 // Preload the hero carousel images from the public folder so the slideshow can rotate smoothly.
 const modules = import.meta.glob<{ default : string }>(
@@ -49,10 +50,7 @@ export function Hero() {
                     </div>
 
                     {isAuthenticated ? (
-                        <div className="content">
-                            <h1>{t('welcome')}, {user?.nickname}!</h1>
-                            <p>{t('dashboard_subtitle')}</p>
-                        </div>
+                        <Navigate to="/statistics" replace />
                     ) : (
                         <div className="content">
                             <h1>{t('welcome_message')}</h1>

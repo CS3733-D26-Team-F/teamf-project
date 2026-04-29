@@ -1533,6 +1533,20 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                 where: {id},
                 data: {checkout_username: username, checkout_date: new Date()}
             });
+
+            const employee1 = await prisma.employee.findUnique({
+                where: {username: username}
+            })
+
+            const transaction = await prisma.changes.create({
+                data: {
+                    id: updated.id,
+                    empid: employee1.empid,
+                    change: "Checked Out Document",
+                    date: new Date().toISOString()
+                }
+            });
+
             return res.status(200).json({
                 message: 'Document checked out successfully',
                 checkedOutBy: username,
@@ -1592,6 +1606,19 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
             const updated = await prisma.contentform.update({
                 where: {id},
                 data: {checkout_username: null, checkout_date: null}
+            });
+
+            const employee1 = await prisma.employee.findUnique({
+                where: {username: username}
+            })
+
+            const transaction = await prisma.changes.create({
+                data: {
+                    id: updated.id,
+                    empid: employee1.empid,
+                    change: "Checked In Document",
+                    date: new Date().toISOString()
+                }
             });
 
             return res.status(200).json({
@@ -1810,6 +1837,20 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         res.json(updated);
     } catch (error) {
         console.error('Error updating document:', error);
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.get('/contentnames/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const id = parseInt(req.params.id);
+        const contentForm = await prisma.contentform.findUnique({
+            where: {id}
+        });
+        if (!contentForm) return res.status(404).json({error: 'Not found'});
+        res.json(contentForm.name);
+    } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
 });
@@ -2117,6 +2158,12 @@ router.post('/changes', checkJWT, async (req, res) => {
         if (!emp1) {
             return res.json([]); // no employee found
         }
+
+        if (emp1.persona === 'Admin') {
+            const changes = await prisma.changes.findMany();
+            return res.json(changes);
+        }
+
         const changes = await prisma.changes.findMany({
             where: {empid: emp1.empid}
         });

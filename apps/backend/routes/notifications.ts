@@ -5,16 +5,7 @@ import {checkJWT} from '../setup/auth0.js';
 const router = Router();
 
 export async function sendNotificationToUsers(title: string, message: string, recipientEmpids: number[], senderEmpId: number) {
-    console.log('[sendNotificationToUsers] Starting...');
-    console.log('[sendNotificationToUsers] title:', title);
-    console.log('[sendNotificationToUsers] message:', message);
-    console.log('[sendNotificationToUsers] recipients:', recipientEmpids);
-    console.log('[sendNotificationToUsers] sender:', senderEmpId);
-    
-    if (!recipientEmpids || recipientEmpids.length === 0) {
-        console.log('[sendNotificationToUsers] No recipients, returning early');
-        return;
-    }
+    if (!recipientEmpids || recipientEmpids.length === 0) return;
 
     const notification = await prisma.notifications.create({
         data: {
@@ -25,7 +16,6 @@ export async function sendNotificationToUsers(title: string, message: string, re
             sender: senderEmpId,
         }
     });
-    console.log('[sendNotificationToUsers] Created notification:', notification.notid);
 
     await prisma.joinednotice.createMany({
         data: recipientEmpids.map(empid => ({
@@ -34,7 +24,6 @@ export async function sendNotificationToUsers(title: string, message: string, re
             read: false,
         })),
     });
-    console.log('[sendNotificationToUsers] Done');
 }
 
 export async function checkExpiringDocuments(senderEmpId: number) {
@@ -141,7 +130,7 @@ router.get('/notifications', checkJWT, async (req, res) => {
             message: jn.notifications.message,
             send_date: jn.notifications.send_date,
             importance: jn.notifications.importance,
-            read: jn.notifications.read
+            read: jn.read,
         }));
 
         res.json(result);

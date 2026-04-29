@@ -57,7 +57,7 @@ export function Calendar() {
                 id: `expiration-${doc.id}`,
                 title: `${doc.name} ${t('expires')}`,
                 start: date.toDate(),
-                end: date.toDate(),
+                end: date.endOf("day").toDate(),
                 allDay: true,
                 color: 'var(--neutral-red)'
             };
