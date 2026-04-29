@@ -6,7 +6,8 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
-    Tooltip, SegmentedControl, Pagination, Accordion
+    Tooltip, SegmentedControl, Pagination, Accordion,
+    useProps
 } from '@mantine/core';
 import {
     IconFolder, IconDotsVertical, IconChevronDown, 
@@ -215,6 +216,7 @@ export function Documents() {
     const [viewerLabel, setViewerLabel] = useState('');
     const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
     const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
+    const [HelpPopupSessionId,setHelpPopupSessionId] = useState<string | null>(null);
 
     const personaMap: Record<string, string> = {
         'Underwriter': 'underwriter',
@@ -1508,13 +1510,7 @@ export function Documents() {
                         title={titleProp}
                         opened={openHelpModal}
                         onClose={() => setOpenHelpModal(false)}
-                        popupContent={
-                            <div>
-                                <Text size="sm" mb="md">This is the content page. Here you can view and manage the content for your website.</Text>
-                                <Text size="sm" mb="md">To add new content, click the "Add Content" button and follow the prompts.</Text>
-                                <Text size="sm" mb="md">Make sure to save any changes you make before navigating away from the page.</Text>
-                            </div>
-                        }
+                        popupContent={t('doc_help_content')}
                     />
                     
                     <Group gap="s">

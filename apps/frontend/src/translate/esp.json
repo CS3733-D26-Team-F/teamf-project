@@ -218,6 +218,11 @@
   "about": "Acerca de",
   "about_us": "Sobre Nosotros",
   "credits": "Créditos",
+  
+  "folder_persona": "Persona de la carpeta",
+  "doc_help_content": "Esta es la página de documentos. Esta página permite a los usuarios ver y administrar sus documentos. Para ver un documento, haga clic en su nombre. Para editar o eliminar un documento, haga clic en los tres puntos junto al documento y seleccione la opción apropiada. Asegúrese de guardar cualquier cambio que realice antes de navegar fuera de la página.",
+  "download_all": "Descargar todo",
+  "emp_help_content": "Esta es la página de perfil del empleado. Esta página permite a los administradores ver y editar la información del perfil del empleado, incluyendo su nombre de usuario, correo electrónico, roles y foto de perfil.",
   "pern": "Utilizamos el stack PERN para este proyecto. Empleamos Prisma y el Editor de PostgreSQL en Supabase, Express, React y Node.js para construir y ejecutar nuestro programa.",
   "tools": "Herramientas utilizadas:",
   "view_noti": "Ver Notificación",

@@ -7,10 +7,12 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Button, Group } from "@mantine/core";
 import { HelpModal } from "../components/helpModal.tsx";
 import { Text } from "@mantine/core";
+import {useTranslation} from "react-i18next";
 import { IconHelp } from "@tabler/icons-react";
 import { useState } from "react";
 
 export function ManageEmployeesForm() {
+    const { t } = useTranslation();
 
     const [ openHelpModal, setOpenHelpModal ] = useState(false);
 
@@ -58,14 +60,8 @@ export function ManageEmployeesForm() {
                     title="Employee Page"
                     opened={openHelpModal}
                     onClose={() => setOpenHelpModal(false)}
-                    popupContent={
-                        <div>
-                            <Text size="sm" mb="md">This is the employee page. Here you can view and edit your profile information, including your profile picture and personal details.</Text>
-                            <Text size="sm" mb="md">To update your profile picture, click on the current picture and follow the prompts to upload a new image.</Text>
-                            <Text size="sm" mb="md">Make sure to save any changes you make to your profile before navigating away from the page.</Text>
-                        </div>
-                    }
-                />
+                    popupContent={t('emp_help_content')}
+                                  />
                 <EmployeeListView />
             </>
         );
