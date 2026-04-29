@@ -38,9 +38,9 @@ export function Statistics() {
     const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const api = useApi();
-    const persona = localStorage.getItem('persona');
+    const persona = localStorage.getItem('persona') as keyof typeof DEFAULT_LAYOUTS | null;
     const name = localStorage.getItem('username');
-    const { isAuthenticated, user } = useAuth0();
+    const { user } = useAuth0();
 
     useEffect(() => {
         const getStats = async () => {
@@ -127,8 +127,6 @@ export function Statistics() {
                 activeWidgets={activeWidgets}
                 onSave={handleSaveLayout}
                 allWidgets={ALL_WIDGETS}
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
             />
 
                 {activeWidgets.map((key) => {

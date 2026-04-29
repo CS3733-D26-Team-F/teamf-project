@@ -5,8 +5,6 @@ import { useApi } from "../api.ts";
 import {Paper, Text} from '@mantine/core';
 import {useTranslation} from "react-i18next";
 import {HelpModal} from "./StatsPopup.tsx";
-import * as React from "react";
-
 
 export function AreaChart() {
     const [chartData, setChartData] = useState<any[]>([]);

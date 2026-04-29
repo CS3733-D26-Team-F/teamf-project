@@ -7,11 +7,18 @@ interface EditButtonProps {
     activeWidgets: string[];
     onSave: (newLayout: string[]) => void;
     allWidgets: Record<string, { label: string }>;
+    setIsEditing?: (value: boolean) => void;
 }
 
-export function EditButton({ activeWidgets=[], onSave, allWidgets={} }: EditButtonProps) {
+export function EditButton({ activeWidgets=[], onSave, allWidgets={}, setIsEditing }: EditButtonProps) {
     const {t} = useTranslation();
     const [opened, { open, close }] = useDisclosure(false);
+
+    useEffect(() => {
+        if (setIsEditing) {
+            setIsEditing(opened);
+        }
+    }, [opened, setIsEditing]);
     const [selected, setSelected] = useState<string[]>(activeWidgets);
 
     useEffect(() => {

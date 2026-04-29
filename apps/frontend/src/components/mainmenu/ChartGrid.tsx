@@ -1,4 +1,4 @@
-import { Container, Grid, Stack } from '@mantine/core';
+import { Grid, Stack } from '@mantine/core';
 import { AreaChart } from './AreaChart.tsx';
 import { HeatMap } from './HeatMap.tsx';
 import { ToDoList } from './ToDoList.tsx';

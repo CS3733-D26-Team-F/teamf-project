@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import LoginModal from '../login/LoginModal';
 import {useAuth0} from "@auth0/auth0-react";
 import {useTranslation} from "react-i18next";
-import {Navigate, useNavigate} from "react-router-dom";
+import {Navigate} from "react-router-dom";
 
 // Preload the hero carousel images from the public folder so the slideshow can rotate smoothly.
 const modules = import.meta.glob<{ default : string }>(
@@ -18,6 +18,7 @@ export function Hero() {
 
     // Auth state determines whether to show the login prompt or the personalized greeting.
     const { isAuthenticated, user } = useAuth0();
+    console.log(user);
 
     useEffect(() => {
         // Skip the timer entirely if no hero images are available.
