@@ -1020,7 +1020,7 @@ export function Documents() {
                     name: doc.name,
                     owner: doc.owner,
                     persona: Array.isArray(doc.persona) ? doc.persona : [doc.persona],
-                    date_modified: today,
+                    date_modified: doc.date_modified?.split('T')[0] ?? today,
                     expiration_date: doc.expiration_date?.split('T')[0] ?? '',
                     content_type: doc.content_type,
                     status: doc.status,
@@ -1035,8 +1035,8 @@ export function Documents() {
             });
     }
 
-    function closeEdit() {
-        if (editId) {
+    function closeEdit(skipCheckIn = false) {
+        if (editId && !skipCheckIn) {
             api(`${DOMAIN}/contentforms/${editId}/checkin`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -1155,7 +1155,7 @@ export function Documents() {
 
         setEditFile(null);
         setConfirmSaveOpen(false);
-        closeEdit();
+        closeEdit(true);
         loadDocuments();
     }
     async function handleDelete() {
@@ -2309,7 +2309,7 @@ export function Documents() {
             </Modal>
 
             {/* edit modal */}
-            <Modal opened={editOpen} onClose={closeEdit} title={t('edit_doc')} size="lg">
+            <Modal opened={editOpen} onClose={() => closeEdit()} title={t('edit_doc')} size="lg">
                 <Stack>
                     <Text fw={600}>{t('document_details')}</Text>
                     <TextInput label="Name of Document" value={editData.name}
@@ -2388,7 +2388,7 @@ export function Documents() {
                     </Group>
                     <Group justify="flex-end" mt="md">
                         {editError && <ErrorMessage message={editError}/>}
-                        <Button className="invert-hover-outline" onClick={closeEdit}>✕ Cancel Changes</Button>
+                        <Button className="invert-hover-outline" onClick={() => closeEdit()}>✕ Cancel Changes</Button>
                         <Button onClick={handleSaveClick} className="invert-hover">✓ Save Changes</Button>
                     </Group>
                 </Stack>
