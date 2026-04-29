@@ -2501,9 +2501,9 @@ export function Documents() {
                                         <Table.Th w={150}>{t('persona')}</Table.Th>
                                         <Table.Th w={150}>{t('content_type')}</Table.Th>
                                         <Table.Th w={150}>{t('status')}</Table.Th>
+                                        <Table.Th w={240}>{t('tags')}</Table.Th>
                                         <Table.Th w={150}>{t('date')}</Table.Th>
                                         <Table.Th w={50}></Table.Th>
-                                        <Table.Th w={240}>{t('tags')}</Table.Th>
                                     </Table.Tr>
                                 </Table.Thead>
                                 <Table.Tbody>
@@ -2548,6 +2548,15 @@ export function Documents() {
                                                 value={staged.status}
                                                 onChange={val => updateStagedFile(staged.id, 'status', val ?? '')}/></Table.Td>
                                             <Table.Td>
+                                                <MultiSelect
+                                                    data={getArrayTags()}
+                                                    value={staged.jointagscontent}
+                                                    onChange={val => updateStagedFile(staged.id, 'jointagscontent', val)}
+                                                    searchable
+                                                    clearable
+                                                />
+                                            </Table.Td>
+                                            <Table.Td>
                                                 <Stack gap={4}>
                                                     <TextInput type="date" label={t('modified')} size="xs"
                                                                value={staged.date_modified}
@@ -2562,15 +2571,6 @@ export function Documents() {
                                                             onClick={() => removeStagedFile(staged.id)}>
                                                     <IconTrash size={16}/>
                                                 </ActionIcon>
-                                            </Table.Td>
-                                            <Table.Td>
-                                                <MultiSelect
-                                                    data={getArrayTags()}
-                                                    value={staged.jointagscontent}
-                                                    onChange={val => updateStagedFile(staged.id, 'jointagscontent', val)}
-                                                    searchable
-                                                    clearable
-                                                />
                                             </Table.Td>
                                         </Table.Tr>
                                     ))}
