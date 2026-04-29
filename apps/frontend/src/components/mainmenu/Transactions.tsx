@@ -10,7 +10,7 @@ import Switch from "@mui/material/Switch";
 
 type Change = {
     chad: number;
-    name: string;
+    id: number;
     empid: number;
     change: string;
     date: string;
@@ -21,6 +21,8 @@ export function Transactions() {
     const [allChanges, setAllChanges] = useState<Change[]>([]);
     const [selectedUser, setSelectedUser] = useState<string | null>(null); // just a string, not Auth0 User
     const [adminView, setAdminView] = useState(false);
+    const [empNames, setEmpNames] = useState<Record<number, string>>({});
+    const [docNames, setDocNames] = useState<Record<number, string>>({});
 
     const api = useApi();
     const isAdmin = localStorage.getItem('persona') === 'Admin';
@@ -43,7 +45,6 @@ export function Transactions() {
     const todaysChanges = changes.filter((c) => {
         const itemDate = dayjs.utc(c.date).format("YYYY-MM-DD");
         const today = dayjs().format("YYYY-MM-DD");
-        console.log(today);
         return itemDate === today;
     });
 
@@ -57,12 +58,6 @@ export function Transactions() {
             });
             const data: Change[] = await res.json();
 
-            console.log("ALL CHANGES:", data);                                    // is data coming back?
-            console.log("UNIQUE USERS:", [...new Set(data.map(c => c.empid))]); // are there users?
-            console.log("CHECKOUT EVENTS:", data.filter(c =>                       // any checkout events?
-                c.change === "Checked Out Document" || c.change === "Checked In Document"
-            ));
-
             setAllChanges(data);
             const uniqueEmps = [...new Set(data.map(c => c.empid))];
             setSelectedUser(uniqueEmps[0]?.toString() ?? null);
@@ -70,8 +65,39 @@ export function Transactions() {
         void fetchAllData();
     }, [adminView]);
 
+    useEffect(() => {
+        if (!isAdmin || !adminView || allChanges.length === 0) return;
+        const fetchEmpNames = async () => {
+            const uniqueEmpIds = [...new Set(allChanges.map(c => c.empid))];
+            const results = await Promise.all(
+                uniqueEmpIds.map(id =>
+                    api(`${DOMAIN}/employeenames/${id}`).then(r => r.json()).then(name => ({ id, name }))
+                )
+            );
+            const map: Record<number, string> = {};
+            results.forEach(({ id, name }) => { map[id] = name; });
+            setEmpNames(map);
+        };
+        void fetchEmpNames();
+    }, [adminView, allChanges]);
 
-    //const accessedToday = todaysChanges.filter(c => c.change === "access").length;
+    useEffect(() => {
+        if (!isAdmin || !adminView || allChanges.length === 0) return;
+        const fetchDocNames = async () => {
+            const uniqueDocIds = [...new Set(allChanges.map(c => c.id))];
+            const results = await Promise.all(
+                uniqueDocIds.map(id =>
+                    api(`${DOMAIN}/contentnames/${id}`).then(r => r.json()).then(name => ({ id, name }))
+                )
+            );
+            const map: Record<number, string> = {};
+            results.forEach(({ id, name }) => { map[id] = name; });
+            setDocNames(map);
+        };
+        void fetchDocNames();
+    }, [adminView, allChanges]);
+
+
     const addedToday = todaysChanges.filter(c => c.change === "Added Document").length;
     const editedToday = todaysChanges.filter(c => c.change === "Updated Document").length;
     const deletedToday = todaysChanges.filter(c => c.change === "Deleted Document").length;
@@ -80,7 +106,7 @@ export function Transactions() {
     const oneWeekAgo = dayjs().subtract(7, 'day');
     const users = [...new Set(allChanges.map(c => c.empid).filter(Boolean))].map(id => ({
         value: id.toString(),
-        label: `Employee ${id}`  // or just the id if you don't have names
+        label: empNames[id] ?? `Employee ${id}`
     }));
     const filteredChanges = allChanges.filter(c =>
         dayjs.utc(c.date).isAfter(oneWeekAgo) && c.empid.toString() === selectedUser
@@ -90,25 +116,20 @@ export function Transactions() {
     );
 
     const getBadgeColor = (action: string) => {
-        if (action === "Checked Out Document") return "orange";
-        if (action === "Checked In Document") return "green";
+        if (action === "Checked Out Document") return "var(--pacific-blue)";
+        if (action === "Checked In Document") return "var(--yale-blue)";
         return "gray";
     };
-    console.log("isAdmin:", isAdmin);
-    console.log("adminView:", adminView);
-    console.log("selectedUser:", selectedUser);
-    console.log("filteredChanges:", filteredChanges);
-    console.log("checkoutHistory:", checkoutHistory);
 
     return (
-        <Paper withBorder p="md" radius="md" style={{ width: 300, position: "relative" }}>
-            <HelpModal title="Transactions">
+        <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative" }}>
+            <HelpModal title="Transactions" position ="top">
                 <Text>Number of transactions of documents added, edited, and deleted today.</Text>
             </HelpModal>
 
             <Group justify="space-between" mb="md">
                 <Text fw={700} size="lg">
-                    {adminView ? "Employee Activity" : "My Activity Today"}
+                    {adminView ? "Employee Activity" : isAdmin ? "Activity Today": "My Activity Today"}
                 </Text>
                 {isAdmin && (
                     <Group gap={4}>
@@ -117,6 +138,14 @@ export function Transactions() {
                             checked={adminView}
                             onChange={(e) => setAdminView(e.currentTarget.checked)}
                             size="small"
+                            sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                    color: 'var(--light-gray)',
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                    backgroundColor: '--sapphire',
+                                },
+                            }}
                         />
                     </Group>
                 )}
@@ -169,11 +198,16 @@ export function Transactions() {
                                 checkoutHistory.map((c, i) => (
                                     <Paper withBorder p="xs" radius="sm" key={i}>
                                         <Group justify="space-between">
-                                            <Text size="sm" fw={500}>{c.name}</Text>
+                                            <Text size="sm" fw={500}>
+                                                {docNames[c.id] ?? c.id}
+                                            </Text>
                                             <Badge color={getBadgeColor(c.change)} size="sm">
                                                 {c.change === "Checked Out Document" ? "Out" : "In"}
                                             </Badge>
                                         </Group>
+                                        <Text size="xs" c="dimmed" mb={2}>
+                                            {empNames[c.empid] ?? `Employee ${c.empid}`}
+                                        </Text>
                                         <Text size="xs" c="dimmed">
                                             {dayjs.utc(c.date).format("MMM D, YYYY h:mm A")}
                                         </Text>

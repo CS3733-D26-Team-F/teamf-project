@@ -967,6 +967,20 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
     }
 });
 
+router.get('/contentnames/:id', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    try {
+        const id = parseInt(req.params.id);
+        const contentForm = await prisma.contentform.findUnique({
+            where: {id}
+        });
+        if (!contentForm) return res.status(404).json({error: 'Not found'});
+        res.json(contentForm.name);
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
 router.get('/contentforms/employee/:empid', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
 
