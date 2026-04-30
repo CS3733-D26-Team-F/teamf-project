@@ -29,13 +29,13 @@ The app will run on the Vite dev server, usually at:
 
 - `http://localhost:5173`
 
-If that port is already in use, Vite may choose the next available port.
+If that port is already in use, Vite may choose the next available port, though this port is heavily preferred.
 
 ## Environment setup
 
 If the frontend depends on API calls, make sure the backend is also running and reachable.
 
-If your app uses environment variables, keep them in the frontend `.env` file in this folder.
+Keep environment variables in the frontend `.env` file in this folder.
 
 ## API usage
 
@@ -107,11 +107,12 @@ Page-level screens. These are the larger views users navigate to.
 
 Examples include:
 
-- login
+- about
 - main menu
-- profile pages
+- profile page
 - document/archive views
-- employee management
+- notifications
+- statistics
 
 ### `src/components/`
 
@@ -125,6 +126,7 @@ Examples include:
 - settings modal
 - access denied screen
 - reusable content and login-related components
+- card modals
 
 ### `src/components/interfaces/`
 

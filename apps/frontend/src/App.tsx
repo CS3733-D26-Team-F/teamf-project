@@ -13,12 +13,15 @@ import { Credit } from './pages/Credit.tsx';
 import { CommandPalette } from './components/CommandPalette'
 import { Statistics } from './pages/Statistics.tsx';
 
+function RootRoute() {
+    const { isAuthenticated } = useAuth0();
+    return isAuthenticated ? <Statistics /> : <MainMenu />;
+}
 // Top-level application shell:
 // - configures Auth0 once for the whole app
 // - wires up client-side routing
 // - maps routes to page components
 export default function App() {
-    const { isAuthenticated } = useAuth0();
 
     return (
         // Auth0Provider makes authentication state and login/logout helpers
@@ -42,10 +45,7 @@ export default function App() {
                 <CommandPalette />
                 {/* Define the app's main navigation routes. */}
                 <Routes>
-                    <Route
-                        path="/"
-                        element={isAuthenticated ? <Statistics /> : <MainMenu />}
-                    />
+                    <Route path="/" element={<RootRoute />}/>
                     <Route path="/statistics" element={<Statistics />}/>
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />

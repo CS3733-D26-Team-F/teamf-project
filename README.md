@@ -1,7 +1,38 @@
-# CS3733 - Hanover Insurance Content Management System
+# CS 3733 Team Forest Fairies
+## Special Features:
+- Auth0 Login Authentication
+- Archive Page
+- List and Grid Views for Documents
+- Toggle Between Inline and Popup views for Documents
+- Red-Green Color-Blindness Filter
+- Soft Delete for Documents
+- Footer with Social Links
+- Recently Viewd Display
+- Bulk Upload Documents and Links
+  - Autofill optional on bulk upload 
+- Customizable Widget-Based Dashboard
+  - Widgets are personalized for and vary based on user
+  - Admin have special widgets for tracking all employees
+- Sound and Video File Options
+- The AI Chatbot
+  - Can for add, delete, find, favorite, checkin in and out, restore, and view documents
+  - Can send notifications to other users
+  - Can find documents based on keywords
+  - Can take in voice prompts
+  - Can display a portal summary of the website
+  - Can display a navigation menu for the website
+- Full Translated Website in 9 Additional Languages
+- Folder Sorting System
+  - Can create folders and subfolders to sort documents
+  - Can privatize folders to only allow certain users to view them
+  - Can add, move, and delete documents in folders
+  - Can update folder access
+  - Can duplicate folders
+- Possible Workflow System (WIP)
+
+# The Hanover Insurance CMS
 
 This repository contains the full application stack for the project:
-
 - `apps/frontend` — React frontend
 - `apps/backend` — Express API
 
@@ -25,6 +56,9 @@ Create `apps/backend/.env` and add the required database connection values:
 - DIRECT_URL="<your-postgres-connection-string>"
 - AUTH0, Supabase, and Mistral keys 
 
+Create `apps/frontend/.env` and add the required database connection values:
+- AUTH0 keys
+
 Notes:
 - `DIRECT_URL` is preferred when present.
 - If `DIRECT_URL` is missing, the backend falls back to `DATABASE_URL`.
@@ -40,7 +74,7 @@ This usually starts:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:3000`
 
-If a port is already in use, one of the apps may move to the next available port.
+If a port is already in use, one of the apps may move to the next available port, though 5173 is preferred overall.
 
 ### Run apps separately
 
@@ -91,21 +125,25 @@ Common areas:
 - Prisma and database configuration
 - service/integration setup
 
-## API and frontend request behavior
+### API and Frontend Request Behavior Notice
 
-The frontend should use the shared API helper for requests rather than calling `fetch` directly. That keeps request behavior consistent and reduces duplicated setup.
+The frontend uses the shared API helper for requests rather than calling `fetch` directly. That keeps request behavior consistent and reduces duplicated setup for authentication.
+Please use `api` as the call for backend API calls instead.
 
-## Troubleshooting
+# Troubleshooting
 
 ## Frontend issues
 
 ### The frontend does not start
 
 Check:
-
 - dependencies are installed
 - Node.js is working correctly
 - the Vite dev port is not already in use
+- package.json has the correct versions for all dependencies
+  - Note: `npm install` may not install the latest versions, if you suspect the package.json has changed run
+    - `rmdir package-lock.json`
+    - `npm install`
 
 Try: `npm install cd apps/frontend`
 `npm run dev`
@@ -146,6 +184,7 @@ Check:
 
 - `apps/backend/.env` exists
 - `DATABASE_URL` and `DIRECT_URL` are correct
+- if the correct keys are in your dotenv file
 - the database is reachable from your network
 
 If needed, run Prisma commands from the repo root to verify the schema and connection.
@@ -169,7 +208,7 @@ Check backend terminal logs first, then confirm the environment variables.
 
 1. Install dependencies once from the repo root.
 2. Configure backend environment variables.
-3. Start the backend if the frontend depends on live data.
+3. Start the backend.
 4. Start the frontend.
 5. Use browser dev tools and terminal output together when debugging.
 
