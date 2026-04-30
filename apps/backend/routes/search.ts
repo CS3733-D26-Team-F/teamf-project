@@ -29,9 +29,29 @@ router.get('/search/semantic', checkJWT, async (req, res) => {
         if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
         const userPersona = employee.persona ?? 'Guest';
+
+        // 1. STANDARD TITLE SEARCH (Exact/Partial Match)
+        const titleMatches = await prisma.contentform.findMany({
+            where: {
+                name: { contains: query, mode: 'insensitive' },
+                is_deleted: false,
+                ...(userPersona !== 'Admin' ? { persona: { has: userPersona } } : {})
+            },
+            take: 3
+        });
+
+        const formattedTitleMatches = titleMatches.map(doc => ({
+            contentformId: doc.id,
+            docName: doc.name,
+            docUrl: doc.url,
+            snippet: { before: `Found match in document title: ${doc.name}`, match: '', after: '' },
+            similarity: 0
+        }));
+
+        // 2. RAG SEMANTIC SEARCH (Content Match)
         const results = await semanticSearch(query, userPersona, 8);
 
-        const formatted = results.map(r => {
+        const formattedSemanticMatches = results.map(r => {
             const snippet = buildSnippet(r.content, query);
             return {
                 contentformId: r.contentformId,
@@ -42,8 +62,10 @@ router.get('/search/semantic', checkJWT, async (req, res) => {
             };
         });
 
+        // 3. MERGE AND DEDUPLICATE
+        const combined = [...formattedTitleMatches, ...formattedSemanticMatches];
         const seen = new Set<number>();
-        const deduped = formatted.filter(r => {
+        const deduped = combined.filter(r => {
             if (seen.has(r.contentformId)) return false;
             seen.add(r.contentformId);
             return true;

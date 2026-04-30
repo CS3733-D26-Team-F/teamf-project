@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Spotlight, type SpotlightActionData } from '@mantine/spotlight';
 import '@mantine/spotlight/styles.css';
@@ -7,10 +7,14 @@ import {
     IconUsers, IconBrightnessUp, IconBell, IconUserCircle,
     IconSearch, IconLoader,
 } from '@tabler/icons-react';
-import { Text, Group, Badge, Box, Highlight } from '@mantine/core';
+import { Text, Group, Badge, Box } from '@mantine/core';
 import { useApi } from '../components/api';
 import { DOMAIN } from '../const';
 
+// ADDED: Document Viewer Imports (Make sure this path matches where you put it for the Chatbot!)
+import DocViewer, { DocViewerRenderers } from '@iamjariwala/react-doc-viewer';
+import '@iamjariwala/react-doc-viewer/dist/index.css';
+import { pickRenderer, getExt } from '../components/content/Functions';
 
 // TYPES
 type SearchResult = {
@@ -22,7 +26,7 @@ type SearchResult = {
 };
 
 // CUSTOM SNIPPET RENDERER
-function SnippetPreview({ snippet, query }: { snippet: SearchResult['snippet']; query: string }) {
+function SnippetPreview({ snippet }: { snippet: SearchResult['snippet']; query: string }) {
     if (!snippet.match && !snippet.before) return null;
 
     return (
@@ -47,6 +51,10 @@ export function CommandPalette() {
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [searching, setSearching] = useState(false);
     const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+    // ADDED: Document Viewer State
+    const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+    const [viewerLabel, setViewerLabel] = useState('');
 
     useEffect(() => {
         const handleStorageChange = () => setPersona(localStorage.getItem('persona') || 'Guest');
@@ -78,14 +86,13 @@ export function CommandPalette() {
             } finally {
                 setSearching(false);
             }
-        }, 400); // 400ms debounce
+        }, 400);
 
         setDebounceTimer(timer);
 
         return () => clearTimeout(timer);
     }, [query]);
 
-    // navigation actions
     const navActions: SpotlightActionData[] = [
         {
             id: 'home',
@@ -137,7 +144,8 @@ export function CommandPalette() {
             id: 'profile',
             label: 'Profile',
             description: 'View Profile',
-            onClick: () => navigate('/profilePage'),
+            // CHANGED: Fires the global event instead of navigating
+            onClick: () => window.dispatchEvent(new CustomEvent('openProfilePopup')),
             leftSection: <IconUserCircle size={20} stroke={1.5} />,
             group: 'Navigation'
         },
@@ -151,21 +159,28 @@ export function CommandPalette() {
         }] : [])
     ];
 
-    // Document content search results
     const docActions: SpotlightActionData[] = searchResults.map(r => ({
         id: `doc-${r.contentformId}-${r.docName}`,
         label: r.docName,
-        description: `${Math.round(r.similarity * 100)}% match`,
-        onClick: () => window.open(r.docUrl, '_blank'),
+        // CHANGED: Hides the badge text if similarity is 0 (Title Match)
+        description: r.similarity > 0 ? `${Math.round(r.similarity * 100)}% match` : 'Title Match',
+        // CHANGED: Opens the popup viewer instead of a new tab
+        onClick: () => {
+            setViewerUrl(r.docUrl);
+            setViewerLabel(r.docName);
+        },
         leftSection: <IconFileText size={20} stroke={1.5} color="var(--mantine-color-blue-5)" />,
         group: 'Document Contents',
         children: (
             <Box>
                 <Group justify="space-between" wrap="nowrap">
                     <Text size="sm" fw={500} truncate>{r.docName}</Text>
-                    <Badge size="xs" color="blue" variant="light">
-                        {Math.round(r.similarity * 100)}% match
-                    </Badge>
+                    {/* CHANGED: Hides the badge visually if similarity is 0 */}
+                    {r.similarity > 0 && (
+                        <Badge size="xs" color="blue" variant="light">
+                            {Math.round(r.similarity * 100)}% match
+                        </Badge>
+                    )}
                 </Group>
                 <SnippetPreview snippet={r.snippet} query={query} />
             </Box>
@@ -188,36 +203,89 @@ export function CommandPalette() {
     ];
 
     return (
-        <Spotlight
-            actions={allActions}
-            nothingFound={
-                query.length >= 3 && !searching
-                    ? 'No matching documents or pages found.'
-                    : 'Type at least 3 characters to search document contents...'
-            }
-            highlightQuery
-            onQueryChange={setQuery}
-            searchProps={{
-                placeholder: 'Jump to page or search document contents...',
-                leftSection: <IconSearch size={20} stroke={1.5} />,
-            }}
-            shortcut={['mod + K', 'mod + P', '/']}
-            filter={(query, actions) => {
-                if (!query) return actions.filter(a => (a as any).group === 'Navigation');
+        <>
+            <Spotlight
+                actions={allActions}
+                nothingFound={
+                    query.length >= 3 && !searching
+                        ? 'No matching documents or pages found.'
+                        : 'Type at least 3 characters to search document contents...'
+                }
+                highlightQuery
+                onQueryChange={setQuery}
+                searchProps={{
+                    placeholder: 'Jump to page or search document contents...',
+                    leftSection: <IconSearch size={20} stroke={1.5} />,
+                }}
+                shortcut={['mod + K', 'mod + P', '/']}
+                filter={(query, actions) => {
+                    if (!query) return actions.filter(a => (a as any).group === 'Navigation');
 
-                const lowerQuery = query.toLowerCase();
+                    const lowerQuery = query.toLowerCase();
 
-                return actions.filter(rawAction => {
-                    const a = rawAction as any;
+                    return actions.filter(rawAction => {
+                        const a = rawAction as any;
 
-                    if (a.group === 'Document Contents') return true;
+                        if (a.group === 'Document Contents') return true;
 
-                    const label = a.label ? String(a.label).toLowerCase() : '';
-                    const description = a.description ? String(a.description).toLowerCase() : '';
+                        const label = a.label ? String(a.label).toLowerCase() : '';
+                        const description = a.description ? String(a.description).toLowerCase() : '';
 
-                    return label.includes(lowerQuery) || description.includes(lowerQuery);
-                });
-            }}
-        />
+                        return label.includes(lowerQuery) || description.includes(lowerQuery);
+                    });
+                }}
+            />
+
+            {/* ADDED: Document Viewer Overlay UI */}
+            {viewerUrl && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                     style={{zIndex: 10000}} onClick={() => setViewerUrl(null)}>
+                    <div className="bg-white rounded-xl shadow-xl w-4/5 flex flex-col overflow-hidden"
+                         style={{height: '80vh'}} onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center px-4 py-2 border-b">
+                            <h2 className="text-lg font-bold"
+                                style={{color: 'var(--color-yale-blue)'}}>{viewerLabel}</h2>
+                            <button onClick={() => setViewerUrl(null)}
+                                    className="text-gray-500 hover:text-gray-800 text-xl font-bold">✕
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto">
+                            {pickRenderer(viewerUrl ?? '') === 'docviewer' && (
+                                <DocViewer documents={[{uri: viewerUrl, fileName: viewerLabel}]}
+                                           pluginRenderers={DocViewerRenderers}
+                                           style={{height: '100%', minHeight: '600px'}}/>
+                            )}
+                            {pickRenderer(viewerUrl ?? '') === 'player' && (
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    backgroundColor: '#000',
+                                    padding: '20px'
+                                }}>
+                                    {['MP3', 'M4A', 'WAV', 'OGG'].includes(getExt(viewerUrl ?? '').toUpperCase()) ? (
+                                        <audio controls style={{width: '100%', maxWidth: '600px'}}>
+                                            <source src={viewerUrl}/>
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    ) : (
+                                        <video controls style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            maxHeight: '100%',
+                                            objectFit: 'contain'
+                                        }}>
+                                            <source src={viewerUrl}/>
+                                            Your browser does not support the video element.
+                                        </video>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
