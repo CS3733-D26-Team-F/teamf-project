@@ -1508,7 +1508,7 @@ export function Documents() {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
                                             <IconWindowMaximize size={16}/>
-                                            <span>{t('Viewer')}</span>
+                                            <span>{t('viewer')}</span>
                                         </Group>
                                     ),
                                     value: 'popup'
@@ -1662,7 +1662,7 @@ export function Documents() {
                 {folders.length > 0 && (
                     <Box mb="lg">
                         <Group justify="space-between" mb="xs">
-                            <Text fw={700} size="sm">{t('folders')}</Text>
+                            <Text fw={700} size="sm" c="dimmed">{t('folders')}</Text>
                             {selectedFolderId !== null && (
                                 <Button variant="light" size="xs" onClick={() => setSelectedFolderId(null)}>
                                     {t('show_all_doc')}
@@ -1875,7 +1875,7 @@ export function Documents() {
                                         await new Promise(resolve => setTimeout(resolve, 500));
                                     }
                                 }
-                            }}>{t('download_all')}</Button>
+                            }}>{t('download_selected')}</Button>
                             <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
@@ -2336,7 +2336,7 @@ export function Documents() {
                                      }))
                                  }
                                  disabled={persona !== 'Admin'}/>
-                    <Text fw={600} mt="sm">{t('Lifecycle & Attributes')}</Text>
+                    <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
                         <Text fw={600} size="sm">{(addData.folder && addData.folder !== '') ? (folderMap[Number(addData.folder)]?.name ?? 'Selected folder') : (selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root')}</Text>
@@ -2344,7 +2344,7 @@ export function Documents() {
                     <Group align="flex-end" mt="sm">
                         <Select
                             label={t('folder')}
-                            placeholder="Top level"
+                            placeholder={t('top_level')}
                             value={addData.folder === '' ? 'root' : addData.folder}
                             onChange={val => setAddData({...addData, folder: (val === 'root' ? '' : (val ?? ''))})}
                             data={folderParentOptions}
@@ -2365,8 +2365,8 @@ export function Documents() {
                                     setAddData(prev => ({...prev, folder: String(created.id)}));
                                     setQuickFolderName('');
                                 }
-                            }}>Create</Button>
-                    </Group>
+                            }}>{t('create')}</Button>
+                        </Group>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
@@ -2403,7 +2403,7 @@ export function Documents() {
             <Modal opened={editOpen} onClose={() => closeEdit()} title={t('edit_doc')} size="lg">
                 <Stack>
                     <Text fw={600}>{t('document_details')}</Text>
-                    <TextInput label="Name of Document" value={editData.name}
+                    <TextInput label={t("name_document")} value={editData.name}
                                onChange={e => setEditData({...editData, name: e.target.value})}/>
                     <Box>
                         <SegmentedControl
