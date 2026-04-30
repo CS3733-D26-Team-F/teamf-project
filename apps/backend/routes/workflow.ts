@@ -12,24 +12,24 @@ router.get('/workflows', checkJWT, async (req: Request, res: Response) => {
     try {
         let workflows;
 
-        if (role === 'creator') {
+        if (role === 'agent') {
             workflows = await prisma.workflow.findMany({
-                where: {creator_id: Number(empid)},
-                include: {creator: true, reviewer: true, approver: true}
+                where: {agent_id: Number(empid)},
+                include: {agent: true, underwriter: true, approver: true}
             });
-        } else if (role === 'reviewer') {
+        } else if (role === 'underwriter') {
             workflows = await prisma.workflow.findMany({
-                where: {reviewer_id: Number(empid)},
-                include: {creator: true, reviewer: true, approver: true}
+                where: {underwriter_id: Number(empid)},
+                include: {agent: true, underwriter: true, approver: true}
             });
         } else if (role === 'approver') {
             workflows = await prisma.workflow.findMany({
                 where: {approver_id: Number(empid)},
-                include: {creator: true, reviwer: true, approver: true}
+                include: {agent: true, underwriter: true, approver: true}
             });
         } else {
             workflows = await prisma.workflow.findMany({
-                include: {creator: true, reviewer: true, approver: true}
+                include: {agent: true, underwriter: true, approver: true}
             });
         }
         res.json(workflows);
@@ -41,9 +41,9 @@ router.get('/workflows', checkJWT, async (req: Request, res: Response) => {
 // workflow creation
 
 router.post('/workflows', checkJWT, async (req: Request, res: Response) => {
-    const {title, creator_id, reviewer_id, approver_id} = req.body;
+    const {title, agent_id, underwriter_id, approver_id} = req.body;
 
-    if (!title || !creator_id || !reviewer_id || !approver_id) {
+    if (!title || !agent_id || !underwriter_id || !approver_id) {
         return res.status(400).send({error: 'id is required'});
     }
 
@@ -52,8 +52,8 @@ router.post('/workflows', checkJWT, async (req: Request, res: Response) => {
             data: {
                 title,
                 status: 'pending review',
-                creator_id: Number(creator_id),
-                reviewer_id: Number(reviewer_id),
+                agent_id: Number(agent_id),
+                underwriter_id: Number(underwriter_id),
                 approver_id: Number(approver_id),
             }
         });
@@ -64,18 +64,17 @@ router.post('/workflows', checkJWT, async (req: Request, res: Response) => {
     }
 });
 
-// reviewer submission
+// underwriter submission
 router.patch('/workflows/:id/review', checkJWT, async (req: Request, res: Response) => {
     const {id} = req.params;
-    const {reviewer_status} = req.body;
+    const {underwriter_status} = req.body;
 
     try {
         const workflow = await prisma.workflow.update({
             where: {id: Number(id)},
             data: {
-                reviewer_status,
-                reviewer_date: new Date(),
-                status: reviewer_status === 'reviewed' ? 'pending_reviewed' : 'denied'
+                underwriter_status,
+                status: underwriter_status === 'reviewed' ? 'pending_reviewed' : 'denied'
             }
         });
         res.json(workflow);
@@ -94,7 +93,6 @@ router.patch('/workflows/:id/approve', checkJWT, async (req: Request, res: Respo
             where: {id: Number(id)},
             data: {
                 approver_status,
-                reviewer_date: new Date(),
                 status: approver_status === 'approved' ? 'pending_approval' : 'rejected'
             }
         });
@@ -110,7 +108,7 @@ router.get('/workflows/:id', checkJWT, async (req: Request, res: Response) => {
     try {
         const workflow = await prisma.workflow.findUnique({
             where: {id: Number(id)},
-            include: {creator: true, reviewer: true, approver: true}
+            include: {creator: true, underwriter: true, approver: true}
         });
         if (!workflow) return res.status(404).send({error: 'no workflow found'});
         res.json(workflow);
