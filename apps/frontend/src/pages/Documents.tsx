@@ -1428,7 +1428,7 @@ export function Documents() {
         return (
             <Accordion.Item value={givenPersona} key={givenPersona}>
                 <Accordion.Control aria-label={givenPersona}>
-                    <Text fw={700} size="sm" c="dimmed" mb="xs">{t(personaKey)} {t('documents')}</Text>
+                    <Text fw={700} size="sm" mb="xs">{t(personaKey)} {t('documents')}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
                     {contentTable(givenPersona as PageKey, existingDocuments)}
@@ -1662,7 +1662,7 @@ export function Documents() {
                 {folders.length > 0 && (
                     <Box mb="lg">
                         <Group justify="space-between" mb="xs">
-                            <Text fw={700} size="sm" c="dimmed">{t('folders')}</Text>
+                            <Text fw={700} size="sm">{t('folders')}</Text>
                             {selectedFolderId !== null && (
                                 <Button variant="light" size="xs" onClick={() => setSelectedFolderId(null)}>
                                     {t('show_all_doc')}
@@ -1793,7 +1793,7 @@ export function Documents() {
                             <Accordion multiple defaultValue={["All"]}>
                                 <Accordion.Item value="All" key="All">
                                     <Accordion.Control aria-label="All documents">
-                                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                        <Text fw={700} size="sm" mb="xs">{t("all_doc")}</Text>
                                     </Accordion.Control>
                                     <Accordion.Panel>
                                         {contentTable("All", filtered)}
@@ -2454,7 +2454,7 @@ export function Documents() {
                         data={folderParentOptions}
                         clearable
                     />
-                    <Group preventGrowOverflow={false}>
+                    <Group preventGrowOverflow={false} align="flex-end">
                         <MultiSelect
                             w="75%"
                             label="Tags"
@@ -2467,7 +2467,7 @@ export function Documents() {
                             style={{width: '20%', padding: '0 0px'}}
                             onClick={() => setAdvancedTagsOpen(true)}
                         >
-                            Advanced Tags
+                            {t('advanced_tags')}
                         </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
