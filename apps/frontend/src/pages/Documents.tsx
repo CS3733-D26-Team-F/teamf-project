@@ -864,15 +864,8 @@ export function Documents() {
 
     async function handleAdd() {
         //double check it is not a duplicate document name before adding
-        let duplicateFile = "";
-        if (documents.some(doc => {
-            if (addData.name === doc.name) {
-                duplicateFile = doc.name
-            }
-            return addData.name === doc.name
-        })) {
+        if (documents.some(doc => addData.name === doc.name)) {
             setAddError("Error: Duplicate document name")
-            //setAddError(`You cannot have a duplicate document name, please rename: ${duplicateFile}`);
             return;
         }
 
