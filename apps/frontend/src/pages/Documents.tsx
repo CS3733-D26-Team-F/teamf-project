@@ -943,10 +943,23 @@ export function Documents() {
             setAddError('Please fill in all fields for every entry.');
             return;
         }
+        /*
         if (stagedFiles.some(sf => (documents.some(doc => (sf.name === doc.name))))) {
             setAddError('Cannot Have a duplicate document name.');
             return;
         }
+        */
+        let duplicateFile = "";
+        if (stagedFiles.some(sf => (documents.some(doc => {
+            if (sf.name === doc.name) {
+                duplicateFile = doc.name
+            }
+            return sf.name === doc.name
+        })))) {
+            setAddError(`You cannot have a duplicate ducument name, please rename: ${duplicateFile}`);
+            return;
+        }
+
 
         for (const sf of stagedFiles) {
             try {
