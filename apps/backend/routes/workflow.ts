@@ -24,7 +24,7 @@ router.get('/workflows', checkJWT, async (req: Request, res: Response) => {
     }
 
     try {
-        const workflows = await workflows.create({
+        const workflows = await prisma.workflow.create({
             data: {
                 title,
                 status: ' pending_review',

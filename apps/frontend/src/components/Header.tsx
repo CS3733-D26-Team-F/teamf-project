@@ -37,6 +37,8 @@ export function Header() {
     const isBusinessAnalyst = personaHook === 'Business Analyst';
     const isActuarialAnalyst = personaHook === 'Actuarial Analyst';
     const isEXLOperations = personaHook === 'EXL Operations';
+    const isAgent = personaHook === 'Agent';
+    const isApprover = personaHook === 'Approver';
 
     const displayCount = unreadCount > 9 ? '9+' : unreadCount;
 
@@ -49,14 +51,15 @@ export function Header() {
                     </Link>
                 </div>
                     <nav className="menu-links">
-                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
+                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations || isAgent || isApprover) && (
                             <Link to="/statistics">{t('statistics')}</Link>
                         )}
                         {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
-                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
+                        {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations || isAgent || isApprover) && (
                             <Link to="/documents">{t('documents')}</Link>
                         )}
-                        {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations) && (
+                        {(isAdmin || isAgent || isUnderwriter || isApprover) && <Link to ="/workflow">Workflow</Link>}
+                        {(isAdmin || isUnderwriter || isBusinessAnalyst || isActuarialAnalyst || isEXLOperations || isAgent || isApprover) && (
                             <Link to="/archive">{t('archive')}</Link>
                         )}
                   <Profile />

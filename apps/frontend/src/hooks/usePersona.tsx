@@ -2,10 +2,10 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 
 // Supported application personas. `null` means we couldn't resolve a valid role.
-type Persona = "Admin" | "Business Analyst" | "Underwriter" | "Actuarial Analyst" | "EXL Operations" | null;
+type Persona = "Admin" | "Business Analyst" | "Underwriter" | "Actuarial Analyst" | "EXL Operations" | "Agent" | "Approver" |  null;
 
 // Central list of valid persona strings used to validate values from storage/claims.
-const PERSONA_VALUES: Exclude<Persona, null>[] = ["Admin", "Business Analyst", "Underwriter", "Actuarial Analyst", "EXL Operations"];
+const PERSONA_VALUES: Exclude<Persona, null>[] = ["Admin", "Business Analyst", "Underwriter", "Actuarial Analyst", "EXL Operations", "Agent", "Approver"];
 
 // Normalize a raw string from localStorage into a known Persona value.
 function asPersona(value: string | null): Persona {
@@ -32,6 +32,12 @@ function derivePersonaFromRoles(roles: string[]): Persona {
     }
     if (roles.includes("EXL Operations")) {
         return "EXL Operations";
+    }
+    if (roles.includes("Agent")) {
+        return "Agent";
+    }
+    if (roles.includes("Approver")) {
+        return "Approver";
     }
     return null;
 }

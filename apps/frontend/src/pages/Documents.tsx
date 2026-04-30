@@ -1361,7 +1361,7 @@ export function Documents() {
 
     if (isLoadingUser) return <div style={{padding: '20px'}}>{t('load_profile')}</div>;
 
-    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations';
+    const allowedAccess = persona === 'Admin' || persona === 'Underwriter' || persona === 'Business Analyst' || persona === 'Actuarial Analyst' || persona === 'EXL Operations' || persona === 'Agent' || persona === 'Approver';
     if (!allowedAccess) return <AccessDenied/>;
 
 
