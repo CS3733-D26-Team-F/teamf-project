@@ -1808,9 +1808,9 @@ export function Documents() {
                                 {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
                             </Accordion>
                             :
-                            <Accordion multiple defaultValue={["All"]}>
+                            <Accordion value="All">
                                 <Accordion.Item value="All" key="All">
-                                    <Accordion.Control aria-label="All documents">
+                                    <Accordion.Control aria-label={t("all_doc")}>
                                         <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
                                     </Accordion.Control>
                                     <Accordion.Panel>
