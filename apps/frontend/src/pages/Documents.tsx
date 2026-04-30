@@ -1428,7 +1428,7 @@ export function Documents() {
         return (
             <Accordion.Item value={givenPersona} key={givenPersona}>
                 <Accordion.Control aria-label={givenPersona}>
-                    <Text fw={700} size="sm" c="dimmed" mb="xs">{t(personaKey)} {t('documents')}</Text>
+                    <Text fw={700} size="sm" mb="xs">{t(personaKey)} {t('documents')}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
                     {contentTable(givenPersona as PageKey, existingDocuments)}
@@ -1793,7 +1793,7 @@ export function Documents() {
                             <Accordion multiple defaultValue={["All"]}>
                                 <Accordion.Item value="All" key="All">
                                     <Accordion.Control aria-label="All documents">
-                                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                        <Text fw={700} size="sm" mb="xs">{t("all_doc")}</Text>
                                     </Accordion.Control>
                                     <Accordion.Panel>
                                         {contentTable("All", filtered)}
@@ -2341,7 +2341,7 @@ export function Documents() {
                         <Text size="xs" c="dimmed">Upload destination</Text>
                         <Text fw={600} size="sm">{(addData.folder && addData.folder !== '') ? (folderMap[Number(addData.folder)]?.name ?? 'Selected folder') : (selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root')}</Text>
                     </Box>
-                    <Group grow mt="sm">
+                    <Group align="flex-end" mt="sm">
                         <Select
                             label={t('folder')}
                             placeholder={t('top_level')}
@@ -2349,15 +2349,16 @@ export function Documents() {
                             onChange={val => setAddData({...addData, folder: (val === 'root' ? '' : (val ?? ''))})}
                             data={folderParentOptions}
                             clearable
+                            style = {{ flex: 3 }}
                         />
-                        <Group style={{alignItems: 'flex-end'}}>
                             <TextInput
-                                label="Or create folder"
+                                label="Or Create Folder"
                                 placeholder="New folder name"
                                 value={quickFolderName}
+                                style = {{ flex: 3 }}
                                 onChange={e => setQuickFolderName(e.target.value)}
                             />
-                            <Button mt={20} className="invert-hover-outline" onClick={async () => {
+                            <Button mt={20} className="invert-hover" style = {{ flex: 1 }} onClick={async () => {
                                 const personas = [persona ?? ''].filter(Boolean);
                                 const created = await createFolder(quickFolderName, personas, [], null);
                                 if (created) {
@@ -2366,7 +2367,6 @@ export function Documents() {
                                 }
                             }}>{t('create')}</Button>
                         </Group>
-                    </Group>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
@@ -2376,8 +2376,6 @@ export function Documents() {
                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label={t('last_modified')} type="date" value={addData.date_modified}
-                                   onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
                     </Group>
@@ -2456,7 +2454,7 @@ export function Documents() {
                         data={folderParentOptions}
                         clearable
                     />
-                    <Group preventGrowOverflow={false}>
+                    <Group preventGrowOverflow={false} align="flex-end">
                         <MultiSelect
                             w="75%"
                             label="Tags"
@@ -2469,7 +2467,7 @@ export function Documents() {
                             style={{width: '20%', padding: '0 0px'}}
                             onClick={() => setAdvancedTagsOpen(true)}
                         >
-                            Advanced Tags
+                            {t('advanced_tags')}
                         </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
@@ -2482,8 +2480,6 @@ export function Documents() {
                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label={t('last_modified')} type="date" value={editData.date_modified}
-                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                     </Group>
@@ -2578,9 +2574,9 @@ export function Documents() {
                                 id="bulk-file-input"
                                 onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
                             />
-                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
-                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
-                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
+                            <Button className="invert-hover-outline" variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
+                            <Button className="invert-hover-outline" variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
+                            <Button className="invert-hover" variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
                         </Group>
                     </Box>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
@@ -2659,9 +2655,6 @@ export function Documents() {
                                             </Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
-                                                    <TextInput type="date" label={t('modified')} size="xs"
-                                                               value={staged.date_modified}
-                                                               onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
                                                     <TextInput type="date" label={t('expires')} size="xs"
                                                                value={staged.expiration_date}
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>

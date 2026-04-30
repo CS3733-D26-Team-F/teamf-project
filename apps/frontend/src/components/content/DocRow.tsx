@@ -251,11 +251,13 @@ export function DocRow({
                         )}
                                 {/* 3-dots menu for move actions */}
                                 <Menu withinPortal>
+                                    <Tooltip label={t('relocate')}>
                                     <Menu.Target>
                                         <ActionIcon variant="subtle" onClick={e => e.stopPropagation()}>
                                             <IconDotsVertical size={16} />
                                         </ActionIcon>
                                     </Menu.Target>
+                                    </Tooltip>
                                     <Menu.Dropdown>
                                         <Menu.Item onClick={(e) => { e.stopPropagation(); onRequestMove && onRequestMove(doc.id); }}>
                                             {t('move_to_folder')}
