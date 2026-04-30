@@ -943,6 +943,10 @@ export function Documents() {
             setAddError('Please fill in all fields for every entry.');
             return;
         }
+        if (stagedFiles.some(sf => (documents.some(doc => (sf.name === doc.name))))) {
+            setAddError('Cannot Have a duplicate document name.');
+            return;
+        }
 
         for (const sf of stagedFiles) {
             try {
