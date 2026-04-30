@@ -57,6 +57,7 @@ export function Workflow() {
         policy: '',
         liability: '',
         expiration_date: '',
+        rating: '',
     });
 
     const loadWorkflows = async () => {
@@ -95,6 +96,7 @@ export function Workflow() {
                 policy: newWorkflow.policy,
                 liability: newWorkflow.liability,
                 expiration_date: newWorkflow.expiration_date,
+                rating: newWorkflow.rating,
             })
         });
         close();
@@ -147,7 +149,7 @@ export function Workflow() {
                             <Table.Th>Agent</Table.Th>
                             <Table.Th>Underwriter</Table.Th>
                             <Table.Th>Approver</Table.Th>
-                            <Table.Th>Actions</Table.Th>
+                            <Table.Th>Actions Required:</Table.Th>
                         </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -219,6 +221,11 @@ export function Workflow() {
                             onChange={e => setNewWorkflow({...newWorkflow, liability: e.target.value})}
                         />
                         <TextInput
+                            label="Rating"
+                            value={newWorkflow.rating}
+                            onChange={e => setNewWorkflow({...newWorkflow, rating: e.target.value})}
+                        />
+                        <TextInput
                             label="Expiration Date"
                             type="date"
                             value={newWorkflow.expiration_date}
@@ -230,15 +237,6 @@ export function Workflow() {
                             onChange={val => setNewWorkflow({...newWorkflow, underwriter_id: val ?? ''})}
                             data={employees
                                 .filter(e => e.persona === 'Underwriter')
-                                .map(e => ({value: String(e.empid), label: e.username}))
-                            }
-                        />
-                        <Select
-                            label="Approver"
-                            value={newWorkflow.approver_id}
-                            onChange={val => setNewWorkflow({...newWorkflow, approver_id: val ?? ''})}
-                            data={employees
-                                .filter(e => e.persona === 'Approver')
                                 .map(e => ({value: String(e.empid), label: e.username}))
                             }
                         />
