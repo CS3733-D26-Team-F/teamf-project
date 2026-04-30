@@ -2376,8 +2376,6 @@ export function Documents() {
                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label={t('last_modified')} type="date" value={addData.date_modified}
-                                   onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
                     </Group>
@@ -2482,8 +2480,6 @@ export function Documents() {
                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label={t('last_modified')} type="date" value={editData.date_modified}
-                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                     </Group>
@@ -2578,9 +2574,9 @@ export function Documents() {
                                 id="bulk-file-input"
                                 onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
                             />
-                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
-                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
-                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
+                            <Button className="invert-hover-outline" variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
+                            <Button className="invert-hover-outline" variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
+                            <Button className="invert-hover" variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
                         </Group>
                     </Box>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
@@ -2659,9 +2655,6 @@ export function Documents() {
                                             </Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
-                                                    <TextInput type="date" label={t('modified')} size="xs"
-                                                               value={staged.date_modified}
-                                                               onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
                                                     <TextInput type="date" label={t('expires')} size="xs"
                                                                value={staged.expiration_date}
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>

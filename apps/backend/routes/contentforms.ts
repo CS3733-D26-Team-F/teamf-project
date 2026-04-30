@@ -1779,7 +1779,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             name: name,
             owner: resolvedOwner,
             persona,  // now correctly set
-            date_modified: new Date(date_modified),
+            date_modified: today,
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
