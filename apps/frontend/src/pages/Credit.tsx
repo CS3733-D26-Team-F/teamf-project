@@ -19,17 +19,75 @@ export function Credit() {
                 <Text size={"xl"}>
                     {t('pern')}
                 </Text>
-                <ul>
-                    <li>Prisma 7.6.0</li>
-                    <li>Express 5.2.1</li>
-                    <li>React 19.2.4</li>
-                    <li>Node 10.9.2</li>
-                </ul>
                 <Text size={"xl"}>
                     {t('tools')}
                 </Text>
                 <Center>
                     <Stack gap={imageGap}>
+                        <Group gap={imageGap}>
+                            <CreditCard
+                                tool="PrismaORM"
+                                description="Prisma 7.6.0"
+                                url="https://www.prisma.io/"
+                                logo="https://velog.velcdn.com/images/youngkiu/post/bfb3f3a0-2ca1-4e75-add7-0adfa9cfaa78/image.jpg">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Express"
+                                description="Express 5.2.1"
+                                url="https://expressjs.com/"
+                                logo="https://miro.medium.com/v2/resize:fit:1200/1*q6b32yNdlpyQjDZlAc1QEg.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="React"
+                                description="React 19.2.4"
+                                url="https://react.dev/"
+                                logo="https://tse1.mm.bing.net/th/id/OIP.cSShcLEtJV5oPcNajCV6sAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Node"
+                                description="Node 10.9.2"
+                                url="https://nodejs.org/en"
+                                logo="https://miro.medium.com/v2/resize:fit:1200/1*iiQVXqcPDlh8BsyI2PT14w.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Supabase"
+                                description="Supabase 2.102.1"
+                                url="https://supabase.com/docs"
+                                logo="https://chaechae.life/images/blog/thumbnails/supabase-logo.webp">
+                            </CreditCard>
+                        </Group>
+                        <Group gap={imageGap}>
+                            <CreditCard
+                                tool="Nodemon"
+                                description="Nodemon 3.1.14"
+                                url="https://nodemon.io/"
+                                logo="https://miro.medium.com/v2/resize:fit:1200/1*j1p_qPQmgSzJm4W6G2MtdA.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="MUI"
+                                description="MUI 7.3.9"
+                                url="https://mui.com/"
+                                logo="https://mui.com/static/social-previews/home-preview.jpg">
+                            </CreditCard>
+                            <CreditCard
+                                tool="il18next"
+                                description="il18next 26.0.6"
+                                url="https://www.i18next.com/"
+                                logo="https://simplelocalize.io/blog/i18next-localization-guide-with-translation-management.jpg">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Dayjs"
+                                description="Dayjs 1.11.20"
+                                url="https://day.js.org/"
+                                logo="https://day.js.org/img/logo.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Postman"
+                                description="Postman 12.7.6"
+                                url="https://www.postman.com/login"
+                                logo="https://tse4.mm.bing.net/th/id/OIP.eUrLjP_6-w6sEA3CFbiejgHaD3?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                        </Group>
                         <Group gap={imageGap}>
                             <CreditCard
                                 tool="Github"
@@ -44,6 +102,12 @@ export function Credit() {
                                 logo="https://cdn.hackr.io/uploads/posts/attachments/webstorm.png">
                             </CreditCard>
                             <CreditCard
+                                tool="Mantine"
+                                description="Mantine version 9.1.0"
+                                url="https://mantine.dev/"
+                                logo="https://tse2.mm.bing.net/th/id/OIP.Vmg11uIcQhV8gb6ryeHyIAHaDt?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                            <CreditCard
                                 tool="Tailwind"
                                 description="Tailwind version 4.2.2"
                                 url="https://tailwindcss.com/docs/installation/using-vite"
@@ -55,31 +119,13 @@ export function Credit() {
                                 url="https://manage.auth0.com/"
                                 logo="https://images.ctfassets.net/2ntc334xpx65/7xwGomgGQpkGyi4G0Mbtyv/f995abfa6a94aba745b002e5196646cf/Silver_Auth0.jpg">
                             </CreditCard>
-                            <CreditCard
-                                tool="Mantine"
-                                description="Mantine version 9.1.0"
-                                url="https://mantine.dev/"
-                                logo="https://tse2.mm.bing.net/th/id/OIP.Vmg11uIcQhV8gb6ryeHyIAHaDt?rs=1&pid=ImgDetMain&o=7&rm=3">
-                            </CreditCard>
+                        </Group>
+                        <Group gap={imageGap}>
                             <CreditCard
                                 tool="Jetbrains AI Assistant"
                                 description="Jetbrains AI Assistant"
                                 url="https://www.jetbrains.com/ai-ides/"
                                 logo="https://www.jetbrains.com/guide/assets/light-5688bcc9.png">
-                            </CreditCard>
-                        </Group>
-                        <Group gap={imageGap}>
-                            <CreditCard
-                                tool="Postman"
-                                description="Postman 12.7.6"
-                                url="https://www.postman.com/login"
-                                logo="https://tse4.mm.bing.net/th/id/OIP.eUrLjP_6-w6sEA3CFbiejgHaD3?rs=1&pid=ImgDetMain&o=7&rm=3">
-                            </CreditCard>
-                            <CreditCard
-                                tool="Supabase"
-                                description="Supabase 2.102.1"
-                                url="https://supabase.com/docs"
-                                logo="https://chaechae.life/images/blog/thumbnails/supabase-logo.webp">
                             </CreditCard>
                             <CreditCard
                                 tool="Mistral AI"

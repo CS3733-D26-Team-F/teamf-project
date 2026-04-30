@@ -46,7 +46,9 @@ export function Transactions() {
 
     const todaysChanges = changes.filter((c) => {
         const itemDate = dayjs.utc(c.date).format("YYYY-MM-DD");
-        const today = dayjs().format("YYYY-MM-DD");
+        const today = dayjs()
+            .subtract(4, "hour")
+            .format("YYYY-MM-DD");
         return itemDate === today;
     });
 
