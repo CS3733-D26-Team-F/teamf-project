@@ -101,6 +101,25 @@ export function Transactions() {
         void fetchDocNames();
     }, [adminView, allChanges]);
 
+    useEffect(() => {
+        if (todaysChanges.length === 0) return;
+        const fetchMyDocNames = async () => {
+            const uniqueDocIds = [...new Set(todaysChanges.map(c => c.id))];
+            const results = await Promise.all(
+                uniqueDocIds.map(id =>
+                    api(`${DOMAIN}/contentnames/${id}`)
+                        .then(r => r.json())
+                        .then(name => ({ id, name }))
+                        .catch(() => ({ id, name: null }))
+                )
+            );
+            const map: Record<number, string> = {};
+            results.forEach(({ id, name }) => { if (name) map[id] = name; });
+            setDocNames(map);
+        };
+        void fetchMyDocNames();
+    }, [changes]);
+
 
     const addedToday = todaysChanges.filter(c => c.change === "Added Document").length;
     const editedToday = todaysChanges.filter(c => c.change === "Updated Document").length;
@@ -126,14 +145,19 @@ export function Transactions() {
     };
 
     return (
-        <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative", marginLeft: 20 }}>
+        <Paper withBorder p="md" radius="md"
+               mx="auto"
+               style={{ width: adminView ? 1000 : 700,
+                   height: adminView ? 700 : 400,
+                   position: "relative",
+                   transition: 'width 0.3s ease'}}>
             <HelpModal title={t('transactions')} position ="top">
                 <Text>{t('transactions_tip')}</Text>
             </HelpModal>
 
             <Group justify="space-between" mb="md" mt="xl">
                 <Text fw={700} size="lg">
-                    {adminView ? t('admin-activity_today'): isAdmin ? t('two_activity_today'): t('activity_today')}
+                    {adminView ? t('Employee Activity Today'): isAdmin ? t('two_activity_today'): t('activity_today')}
                 </Text>
                 {isAdmin && (
                     <Group gap={4}>
@@ -158,26 +182,73 @@ export function Transactions() {
             {!adminView ? (
                 // normal user view
                 <>
-                    <Group justify="space-between" mb="xs">
-                        <Text>{t('files_added')}</Text>
-                        <Group gap={4}>
-                            <Text fw={700}>{addedToday}</Text>
-                            <FilePlusIcon size={18} />
-                        </Group>
-                    </Group>
-                    <Group justify="space-between" mb="xs">
-                        <Text>{t('files_edited')}</Text>
-                        <Group gap={4}>
-                            <Text fw={700}>{editedToday}</Text>
-                            <NotePencilIcon size={18} />
-                        </Group>
-                    </Group>
-                    <Group justify="space-between">
-                        <Text>{t('files_deleted')}</Text>
-                        <Group gap={4}>
-                            <Text fw={700}>{deletedToday}</Text>
-                            <TrashIcon size={18} />
-                        </Group>
+                    <Group align="flex-start" gap="md">
+                        <div style={{ flex: 1, height: 400 }}>
+                            <Group justify="space-between" mb="xs">
+                                <Text>{t('files_added')}</Text>
+                                <Group gap={4}>
+                                    <Text fw={700}>{addedToday}</Text>
+                                    <FilePlusIcon size={18} />
+                                </Group>
+                            </Group>
+                            <Group justify="space-between" mb="xs">
+                                <Text>{t('files_edited')}</Text>
+                                <Group gap={4}>
+                                    <Text fw={700}>{editedToday}</Text>
+                                    <NotePencilIcon size={18} />
+                                </Group>
+                            </Group>
+                            <Group justify="space-between" mb="md">
+                                <Text>{t('files_deleted')}</Text>
+                                <Group gap={4}>
+                                    <Text fw={700}>{deletedToday}</Text>
+                                    <TrashIcon size={18} />
+                                </Group>
+                            </Group>
+                        </div>
+                        <div style={{ flex: 1 , height: 400}}>
+                            <Text fw={600} size="sm" mb="xs" c="dimmed">
+                                Document Activity (Today)
+                            </Text>
+                            <ScrollArea h={250}>
+                                <Stack gap="xs">
+                                    {todaysChanges.filter(c =>
+                                        c.change === "Added Document" ||
+                                        c.change === "Updated Document" ||
+                                        c.change === "Deleted Document"
+                                    ).length === 0 ? (
+                                        <Text c="dimmed" size="sm">No document activity today.</Text>
+                                    ) : (
+                                        todaysChanges
+                                            .filter(c =>
+                                                c.change === "Added Document" ||
+                                                c.change === "Updated Document" ||
+                                                c.change === "Deleted Document"
+                                            )
+                                            .sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
+                                            .map((c, i) => (
+                                                <Paper withBorder p="xs" radius="sm" key={i} mih={75}>
+                                                    <Group justify="space-between">
+                                                        <Text size="sm" fw={500}>
+                                                            {docNames[c.id] ?? c.id}
+                                                        </Text>
+                                                        <Badge color={
+                                                            c.change === "Added Document" ? "var(--sapphire)" :
+                                                                c.change === "Updated Document" ? "var(--fresh-sky)" : "var(--neutral-red)"
+                                                        } size="sm">
+                                                            {c.change === "Added Document" ? "Added" :
+                                                                c.change === "Updated Document" ? "Edited" : "Deleted"}
+                                                        </Badge>
+                                                    </Group>
+                                                    <Text size="xs" c="dimmed">
+                                                        {dayjs.utc(c.date).format("MMM D, YYYY h:mm A")}
+                                                    </Text>
+                                                </Paper>
+                                            ))
+                                    )}
+                                </Stack>
+                            </ScrollArea>
+                        </div>
                     </Group>
                 </>
             ) : (
@@ -191,35 +262,84 @@ export function Transactions() {
                         mb="md"
                         size="sm"
                     />
-                    <Text fw={600} size="sm" mb="xs" c="dimmed">
-                        {t("check_history")}
-                    </Text>
-                    <ScrollArea h={200}>
-                        <Stack gap="xs">
-                            {checkoutHistory.length === 0 ? (
-                                <Text c="dimmed" size="sm">{t('no_checkout_activity')}</Text>
-                            ) : (
-                                checkoutHistory.map((c, i) => (
-                                    <Paper withBorder p="xs" radius="sm" key={i}>
-                                        <Group justify="space-between">
-                                            <Text size="sm" fw={500}>
-                                                {docNames[c.id] ?? c.id}
-                                            </Text>
-                                            <Badge color={getBadgeColor(c.change)} size="sm">
-                                                {c.change === "Checked Out Document" ? "Out" : "In"}
-                                            </Badge>
-                                        </Group>
-                                        <Text size="xs" c="dimmed" mb={2}>
-                                            {empNames[c.empid] ?? `Employee ${c.empid}`}
-                                        </Text>
-                                        <Text size="xs" c="dimmed">
-                                            {dayjs.utc(c.date).format("MMM D, YYYY h:mm A")}
-                                        </Text>
-                                    </Paper>
-                                ))
-                            )}
-                        </Stack>
-                    </ScrollArea>
+                    <Group align="flex-start" gap="md">
+                        {/* checkout history */}
+                        <div style={{ flex: 1, height: 700 }}>
+                            <Text fw={600} size="sm" mb="xs" c="dimmed">
+                                Check In / Out History (Past Week)
+                            </Text>
+                            <ScrollArea h={430}>
+                                <Stack gap="xs">
+                                    {checkoutHistory.length === 0 ? (
+                                        <Text c="dimmed" size="sm">No checkout activity this week.</Text>
+                                    ) : (
+                                        checkoutHistory.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
+                                            .map((c, i) => (
+                                            <Paper withBorder p="xs" radius="sm" key={i} style={{ minHeight: 75}}>
+                                                <Group justify="space-between">
+                                                    <Text size="sm" fw={500}>
+                                                        {docNames[c.id] ?? c.id}
+                                                    </Text>
+                                                    <Badge color={getBadgeColor(c.change)} size="sm">
+                                                        {c.change === "Checked Out Document" ? "Out" : "In"}
+                                                    </Badge>
+                                                </Group>
+
+                                                <Text size="xs" c="dimmed">
+                                                    {dayjs.utc(c.date).format("MMM D, YYYY h:mm A")}
+                                                </Text>
+                                            </Paper>
+                                        ))
+                                    )}
+                                </Stack>
+                            </ScrollArea>
+                        </div>
+
+                        {/* document activity */}
+                        <div style={{ flex: 1 }}>
+                            <Text fw={600} size="sm" mb="xs" c="dimmed">
+                                Document Activity (Past Week)
+                            </Text>
+                            <ScrollArea h={430}>
+                                <Stack gap="xs">
+                                    {filteredChanges.filter(c =>
+                                        c.change === "Added Document" ||
+                                        c.change === "Updated Document" ||
+                                        c.change === "Deleted Document"
+                                    ).length === 0 ? (
+                                        <Text c="dimmed" size="sm">No document activity this week.</Text>
+                                    ) : (
+                                        filteredChanges
+                                            .filter(c =>
+                                                c.change === "Added Document" ||
+                                                c.change === "Updated Document" ||
+                                                c.change === "Deleted Document"
+                                            )
+                                            .sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
+                                            .map((c, i) => (
+                                                <Paper withBorder p="xs" radius="sm" key={i} style={{ minHeight: 75}}>
+                                                    <Group justify="space-between">
+                                                        <Text size="sm" fw={500}>
+                                                            {docNames[c.id] ?? c.id}
+                                                        </Text>
+                                                        <Badge color={
+                                                            c.change === "Added Document" ? "var(--sapphire)" :
+                                                                c.change === "Updated Document" ? "var(--fresh-sky)" : "var(--neutral-red)"
+                                                        } size="sm">
+                                                            {c.change === "Added Document" ? "Added" :
+                                                                c.change === "Updated Document" ? "Edited" : "Deleted"}
+                                                        </Badge>
+                                                    </Group>
+                                                    <Text size="xs" c="dimmed">
+                                                        {dayjs.utc(c.date).format("MMM D, YYYY h:mm A")}
+                                                    </Text>
+                                                </Paper>
+                                            ))
+                                    )}
+                                </Stack>
+                            </ScrollArea>
+                        </div>
+                    </Group>
                 </>
             )}
         </Paper>
