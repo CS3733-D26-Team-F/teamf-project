@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from 'react';
-import {Paper, Loader, Center, Text} from '@mantine/core';
+import {Paper, Loader, Center, Text, Group} from '@mantine/core';
 import { Heatmap } from '@mantine/charts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';      //spanish
@@ -82,12 +82,15 @@ export function HeatMap() {
     }
     return (
         <Paper p="md" radius="md" w="100%" h="100%">
-            <HelpModal title={t('activity_heatmap')}>
-                <Text>{t("activity_heatmap_tip")}</Text>
-            </HelpModal>
-            <Text fw={900} size="xl" mb="md">
-                {t('heat_activity')}
-            </Text>
+            <Group mb = "md">
+                <Text fw={900} size="xl" >
+                    {t('heat_activity')}
+                </Text>
+                <HelpModal title={t('activity_heatmap')} inline>
+                    <Text>{t("activity_heatmap_tip")}</Text>
+                </HelpModal>
+            </Group>
+
             <Heatmap
                 key = {currentLocale}
                 data={HeatmapData}
