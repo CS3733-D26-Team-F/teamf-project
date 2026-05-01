@@ -121,7 +121,7 @@ export function Dashboard() {
                     fontSize: '3.5rem',
                     fontWeight: 'bold',
                 }}>
-                    {t('welcome')}, {user?.nickname}</h1>
+                    {t('welcome')}, {localStorage.getItem('first_name')}</h1>
                 <p>{t('dashboard_subtitle')}</p>
             </div>
             <EditButton
