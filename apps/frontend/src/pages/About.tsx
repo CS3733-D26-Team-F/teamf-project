@@ -54,14 +54,14 @@ export function About() {
                                     position={t('da')}
                                     photoID="Milan.jpg"
                                     linkedIn="https://www.linkedin.com/in/milan-denicola-214a92267"
-                                    quote='"When you eliminate the impossible, whatever remains, however improbable, must be the truth." - Spock'/>
+                                    quote='When you eliminate the impossible, whatever remains, however improbable, must be the truth. - Spock'/>
                                 <PeopleCard
                                     firstName="Andrew"
                                     lastName="Phengthalasy"
                                     position={t('swe')}
                                     photoID="Andrew.jpg"
                                     linkedIn="https://www.linkedin.com/in/andrew-phengthalasy/"
-                                    quote='"Words"'/>
+                                    quote='Interesting - Andrew'/>
                                 <PeopleCard
                                     firstName="John"
                                     lastName="Bernard"
@@ -85,7 +85,7 @@ export function About() {
                                     position={t('assist')}
                                     photoID="Berenis.jpg"
                                     linkedIn="https://www.linkedin.com/in/berenistekin/"
-                                    quote='"Words"'/>
+                                    quote='Nothing is lost. . .Everything is transformed. - Michael Ende, Neverending Story'/>
                                 <PeopleCard
                                     firstName="Chloe"
                                     lastName="Polit"
@@ -99,7 +99,7 @@ export function About() {
                                     position={t('sm')}
                                     photoID="Ryan.jpg"
                                     linkedIn="https://www.linkedin.com/in/ryan-veith-8389ba34a/"
-                                    quote='"Words"'/>
+                                    quote='So many books, so little time. - Frank Zappa"'/>
                                 <PeopleCard
                                     firstName="Bowen"
                                     lastName="Cassel"
