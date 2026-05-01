@@ -1,6 +1,5 @@
 import { ManageEmployeesForm} from "./pages/ManageEmployeesForm.tsx";
 import { MainMenu } from './pages/MainMenu';
-// import { ProfilePage } from './pages/ProfilePage';
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
 import {Auth0Provider, useAuth0} from "@auth0/auth0-react";
@@ -11,11 +10,11 @@ import { About} from "./pages/About.tsx";
 import {Footer} from "./components/Footer.tsx";
 import { Credit } from './pages/Credit.tsx';
 import { CommandPalette } from './components/CommandPalette'
-import { Statistics } from './pages/Statistics.tsx';
+import { Dashboard } from './pages/Dashboard.tsx';
 
 function RootRoute() {
     const { isAuthenticated } = useAuth0();
-    return isAuthenticated ? <Statistics /> : <MainMenu />;
+    return isAuthenticated ? <Dashboard /> : <MainMenu />;
 }
 // Top-level application shell:
 // - configures Auth0 once for the whole app
@@ -46,11 +45,10 @@ export default function App() {
                 {/* Define the app's main navigation routes. */}
                 <Routes>
                     <Route path="/" element={<RootRoute />}/>
-                    <Route path="/statistics" element={<Statistics />}/>
+                    <Route path="/statistics" element={<Dashboard />}/>
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>
-                    {/*<Route path="/profilePage" element={<ProfilePage />}/>*/}
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/about" element={<About />}/>
                     <Route path="/credit" element={<Credit />}/>
