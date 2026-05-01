@@ -46,7 +46,9 @@ export function Transactions() {
 
     const todaysChanges = changes.filter((c) => {
         const itemDate = dayjs.utc(c.date).format("YYYY-MM-DD");
-        const today = dayjs().format("YYYY-MM-DD");
+        const today = dayjs()
+            .subtract(4, "hour")
+            .format("YYYY-MM-DD");
         return itemDate === today;
     });
 
@@ -124,7 +126,7 @@ export function Transactions() {
     };
 
     return (
-        <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative" }}>
+        <Paper withBorder p="md" radius="md" style={{ width: 500, position: "relative", marginLeft: 20 }}>
             <HelpModal title={t('transactions')} position ="top">
                 <Text>{t('transactions_tip')}</Text>
             </HelpModal>
