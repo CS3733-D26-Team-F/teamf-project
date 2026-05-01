@@ -122,7 +122,7 @@ export function ContentCurrencyWidget() {
             </Group>
 
             {currentPersona === 'Admin' ? (
-                <Text fw={700} size="sm" c="dimmed">{t('view')} All Personas</Text>
+                <Text fw={700} size="sm" c="dimmed">{t('view')}: {t('all_personas')}</Text>
             ) : (
                 <Group>
                     <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>

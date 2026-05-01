@@ -335,5 +335,7 @@
   "edit_employee": "تحرير حساب الموظف",
   "pfp_optional": "صورة ملف شخصي جديدة (اختياري)",
   "creation": "الإنشاء",
-  "edit_details": "تحرير التفاصيل"
+  "edit_details": "تحرير التفاصيل",
+  "all_personas": "جميع الأشخاص",
+  "you": "أنت"
 }
