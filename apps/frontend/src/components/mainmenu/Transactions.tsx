@@ -37,8 +37,6 @@ export function Transactions() {
                 body: form,
             });
             const data: Change [] = await res.json();
-            console.log("RAW CHANGES FROM BACKEND:", data);
-            console.log("EACH DATE:", data.map(c => dayjs(c.date).format("YYYY-MM-DD")));
             setChanges(data);
         };
         void fetchData()
