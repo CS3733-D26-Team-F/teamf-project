@@ -149,14 +149,18 @@ export function Transactions() {
                    height: adminView ? 700 : 400,
                    position: "relative",
                    transition: 'width 0.3s ease'}}>
-            <HelpModal title={t('transactions')} position ="top">
-                <Text>{t('transactions_tip')}</Text>
-            </HelpModal>
+
+
 
             <Group justify="space-between" mb="md" mt="xl">
-                <Text fw={700} size="lg">
-                    {adminView ? t('Employee Activity Today'): isAdmin ? t('two_activity_today'): t('activity_today')}
-                </Text>
+                <Group mb = "md">
+                    <Text fw={700} size="lg">
+                        {adminView ? t('Employee Activity Today'): isAdmin ? t('two_activity_today'): t('activity_today')}
+                    </Text>
+                    <HelpModal title={t('transactions')} inline>
+                        <Text>{t('transactions_tip')}</Text>
+                    </HelpModal>
+                </Group>
                 {isAdmin && (
                     <Group gap={4}>
                         <Text size="xs" c="dimmed">{t('admin_view')}</Text>

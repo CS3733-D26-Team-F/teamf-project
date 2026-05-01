@@ -48,15 +48,22 @@ export function ToDoList() {
 
     return (
         <div>
-        <HelpModal title= {t("todo_list")}>
-            <Text>{t("todo_list_tip")}</Text>
-        </HelpModal>
+
+
         <Stack gap="md" h="100%" style={{ padding: '1.25rem' }}>
             <Group justify="space-between" align="center">
-                <Group gap="xs">
-                    <IconClipboardList size={20} color="var(--yale-blue)" />
-                    <Title order={3} style={{ color: 'var(--yale-blue)', margin: 0 }}>{t('task')}</Title>
+
+
+                <Group mb = "md">
+                    <Group gap="xs">
+                        <IconClipboardList size={20} color="var(--yale-blue)" />
+                        <Title order={3} style={{ color: 'var(--yale-blue)', margin: 0 }}>{t('task')}</Title>
+                    </Group>
+                    <HelpModal title= {t("todo_list")} inline>
+                        <Text>{t("todo_list_tip")}</Text>
+                    </HelpModal>
                 </Group>
+
                 <Group gap="xs">
                     {pending > 0 && <Badge color="blue" variant="light">{pending} {t('pending')}</Badge>}
                     {done > 0 && <Badge color="var(--pacific-blue)" variant="light">{done} {t('done')}</Badge>}

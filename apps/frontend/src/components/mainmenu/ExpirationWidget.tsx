@@ -122,12 +122,17 @@ export function ExpirationWidget() {
                     position: 'relative'
                 }}
             >
-                <HelpModal title= {t('expiring_soon')}>
-                    <Text>{t('expiring_soon_tip')}</Text>
-                </HelpModal>
-                <Group gap={6} mb="xs">
-                    <IconClock size={14} color="gray" />
-                    <Text fw={700} size="sm" c="dimmed">{t('expire_widget')}</Text>
+
+
+
+                <Group mb = "md">
+                    <Group gap={6} >
+                        <IconClock size={14} color="gray" />
+                        <Text fw={700} size="sm" c="dimmed">{t('expire_widget')}</Text>
+                    </Group>
+                    <HelpModal title= {t('expiring_soon')} inline>
+                        <Text>{t('expiring_soon_tip')}</Text>
+                    </HelpModal>
                 </Group>
 
                 {currentPersona === 'Admin' ? (

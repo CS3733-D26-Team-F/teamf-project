@@ -127,7 +127,7 @@ export function StatsDashboard() {
         persona,
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
-        color: ['var(--sapphire)', 'var(--fresh-sky)'][index % 2],
+        color: ['var(--sapphire)', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--pale-sky)' ][index % 4],
         tooltip: `${persona}: ${count} files`
     }));
 
@@ -178,15 +178,19 @@ export function StatsDashboard() {
 
         return (
             <Paper withBorder p="md" radius="md" key={stat.title} style={{position: 'relative' }}>
-                <HelpModal title={stat.title}>
-                    <Text>{t('shows_num_files_first')} {stat.title.toLowerCase()} {t('shows_num_files_seocnd')}</Text>
-                </HelpModal>
-                <Group justify="space-between">
-                    <Text size="xs" c="dimmed" className={classes.title}>
-                        {stat.title}
-                    </Text>
-                    <Icon className={classes.icon} size={22} stroke={1.5} />
+                <Group mb = "md">
+                    <Group justify="space-between">
+                        <Text size="xs" c="dimmed" className={classes.title}>
+                            {stat.title}
+                        </Text>
+                        <Icon className={classes.icon} size={22} stroke={1.5} />
+                    </Group>
+                    <HelpModal title={stat.title }>
+                        <Text>{t('shows_num_files_first')} {stat.title.toLowerCase()} {t('shows_num_files_seocnd')}</Text>
+                    </HelpModal>
                 </Group>
+
+
                 <Group justify="space-between" align="center" mt={20}>
                     <div>
                         <Text className={classes.value}>{stat.value}</Text>
@@ -210,12 +214,14 @@ export function StatsDashboard() {
         <div className={classes.root}>
             <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
                 <Paper withBorder p="md" radius="md" style={{ height: '100%' , position: 'relative' }}>
-                    <HelpModal title={t('files_by_persona')}>
-                        <Text>{t('files_by_persona_tip')}</Text>
-                    </HelpModal>
-                    <Text size="xs" c="dimmed" fw='bold'>
-                        {t('my_files')}
-                    </Text>
+                    <Group mb = "md">
+                        <Text size="xs" c="dimmed" fw='bold'>
+                            {t('my_files')}
+                        </Text>
+                        <HelpModal title={t('files_by_persona')} >
+                            <Text>{t('files_by_persona_tip')}</Text>
+                        </HelpModal>
+                    </Group>
 
                     <Group align="flex-start" justify="center" mt="md" gap="xl">
                         <RingProgress
@@ -246,12 +252,14 @@ export function StatsDashboard() {
                 {stats}</SimpleGrid>
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="xl">
                 <Paper withBorder p="md" radius="md"  style={{ height: '100%', position: 'relative' }} >
-                    <HelpModal title={t('content_types')}>
-                        <Text>{t("content_types_tip")}</Text>
-                    </HelpModal>
-                    <Text fw={700} size="lg" mb="md">
-                        {t('content_types')}
-                    </Text>
+                    <Group mb = "md">
+                        <Text fw={700} size="lg">
+                            {t('content_types')}
+                        </Text>
+                        <HelpModal title={t('content_types')} inline>
+                            <Text>{t("content_types_tip")}</Text>
+                        </HelpModal>
+                    </Group>
                     <Group align="flex-start" justify="center" mt="md">
                         <RingProgress
                             size={220}
@@ -278,12 +286,14 @@ export function StatsDashboard() {
                     </Group>
                 </Paper>
                 <Paper withBorder p="md" radius="md" style={{ height: '100%', position: 'relative' }} >
-                    <HelpModal title={t('document_statuses')}>
-                        <Text>{t('document_statuses_tip')}</Text>
-                    </HelpModal>
-                    <Text fw={700} size="lg" mb="md">
-                        {t('document_statuses')}
-                    </Text>
+                    <Group mb = "md">
+                        <Text fw={700} size="lg">
+                            {t('document_statuses')}
+                        </Text>
+                        <HelpModal title={t('document_statuses')} inline>
+                            <Text>{t('document_statuses_tip')}</Text>
+                        </HelpModal>
+                    </Group>
                     <Group align="flex-start" justify="center" mt="md" gap="xl">
                         <RingProgress
                             size={220}
