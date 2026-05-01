@@ -257,6 +257,18 @@ export function Documents() {
         }
     };
 
+    // Listen for Command Palette Trash
+    useEffect(() => {
+        const handleOpenTrash = () => {
+            if (persona === 'Admin') {
+                loadTrash();
+                setTrashOpen(true);
+            }
+        };
+        window.addEventListener('openTrashPopup', handleOpenTrash);
+        return () => window.removeEventListener('openTrashPopup', handleOpenTrash);
+    }, [persona]);
+
     // ── Recently viewed ──────────────────────────────────────────────────────
     const [recentIds, setRecentIds] = useState<number[]>(() => {
         try {

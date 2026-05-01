@@ -5,13 +5,11 @@ import '@mantine/spotlight/styles.css';
 import {
     IconHome, IconFileText, IconArchive,
     IconUsers, IconBrightnessUp, IconBell, IconUserCircle,
-    IconSearch, IconLoader,
+    IconSearch, IconLoader, IconMicrophone, IconTrash,
 } from '@tabler/icons-react';
-import { Text, Group, Badge, Box } from '@mantine/core';
+import { Text, Group, Badge, Box, ActionIcon } from '@mantine/core';
 import { useApi } from '../components/api';
 import { DOMAIN } from '../const';
-
-// ADDED: Document Viewer Imports (Make sure this path matches where you put it for the Chatbot!)
 import DocViewer, { DocViewerRenderers } from '@iamjariwala/react-doc-viewer';
 import '@iamjariwala/react-doc-viewer/dist/index.css';
 import { pickRenderer, getExt } from '../components/content/Functions';
@@ -52,7 +50,23 @@ export function CommandPalette() {
     const [searching, setSearching] = useState(false);
     const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-    // ADDED: Document Viewer State
+    const [isListening, setIsListening] = useState(false);
+
+    const toggleVoice = () => {
+        if (isListening) { setIsListening(false); return; }
+        const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SR) { alert('Voice input is not supported in your browser. Please use Chrome or Edge.'); return; }
+        const r = new SR();
+        r.continuous = false;
+        r.interimResults = true;
+        r.lang = 'en-US';
+        r.onstart = () => setIsListening(true);
+        r.onresult = (e: any) => setQuery(Array.from(e.results).map((x: any) => x[0].transcript).join(''));
+        r.onerror = () => setIsListening(false);
+        r.onend = () => setIsListening(false);
+        r.start();
+    };
+
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
 
@@ -144,27 +158,41 @@ export function CommandPalette() {
             id: 'profile',
             label: 'Profile',
             description: 'View Profile',
-            // CHANGED: Fires the global event instead of navigating
             onClick: () => window.dispatchEvent(new CustomEvent('openProfilePopup')),
             leftSection: <IconUserCircle size={20} stroke={1.5} />,
             group: 'Navigation'
         },
-        ...(persona === 'Admin' ? [{
-            id: 'employees',
-            label: 'Manage Employees',
-            description: 'Add, edit, or remove staff accounts',
-            onClick: () => navigate('/manageemployees'),
-            leftSection: <IconUsers size={20} stroke={1.5} />,
-            group: 'Navigation'
-        }] : [])
+        ...(persona === 'Admin' ? [
+            {
+                id: 'employees',
+                label: 'Manage Employees',
+                description: 'Add, edit, or remove staff accounts',
+                onClick: () => navigate('/manageemployees'),
+                leftSection: <IconUsers size={20} stroke={1.5} />,
+                group: 'Navigation'
+            },
+            {
+                id: 'trash',
+                label: 'Trash',
+                description: 'View deleted documents and folders',
+                onClick: () => {
+                    if (window.location.pathname !== '/documents') {
+                        navigate('/documents');
+                        setTimeout(() => window.dispatchEvent(new CustomEvent('openTrashPopup')), 150);
+                    } else {
+                        window.dispatchEvent(new CustomEvent('openTrashPopup'));
+                    }
+                },
+                leftSection: <IconTrash size={20} stroke={1.5} />,
+                group: 'Navigation'
+            }
+        ] : [])
     ];
 
     const docActions: SpotlightActionData[] = searchResults.map(r => ({
         id: `doc-${r.contentformId}-${r.docName}`,
         label: r.docName,
-        // CHANGED: Hides the badge text if similarity is 0 (Title Match)
         description: r.similarity > 0 ? `${Math.round(r.similarity * 100)}% match` : 'Title Match',
-        // CHANGED: Opens the popup viewer instead of a new tab
         onClick: () => {
             setViewerUrl(r.docUrl);
             setViewerLabel(r.docName);
@@ -175,7 +203,6 @@ export function CommandPalette() {
             <Box>
                 <Group justify="space-between" wrap="nowrap">
                     <Text size="sm" fw={500} truncate>{r.docName}</Text>
-                    {/* CHANGED: Hides the badge visually if similarity is 0 */}
                     {r.similarity > 0 && (
                         <Badge size="xs" color="blue" variant="light">
                             {Math.round(r.similarity * 100)}% match
@@ -212,10 +239,22 @@ export function CommandPalette() {
                         : 'Type at least 3 characters to search document contents...'
                 }
                 highlightQuery
+                query={query}
                 onQueryChange={setQuery}
                 searchProps={{
-                    placeholder: 'Jump to page or search document contents...',
+                    placeholder: isListening ? 'Listening...' : 'Jump to page or search document contents...',
                     leftSection: <IconSearch size={20} stroke={1.5} />,
+                    rightSectionPointerEvents: 'all',
+                    rightSection: (
+                        <ActionIcon
+                            size="sm"
+                            variant={isListening ? 'filled' : 'subtle'}
+                            color={isListening ? 'red' : 'gray'}
+                            onClick={toggleVoice}
+                        >
+                            <IconMicrophone size={16} />
+                        </ActionIcon>
+                    ),
                 }}
                 shortcut={['mod + K', 'mod + P', '/']}
                 filter={(query, actions) => {
@@ -236,7 +275,7 @@ export function CommandPalette() {
                 }}
             />
 
-            {/* ADDED: Document Viewer Overlay UI */}
+            {/* Document Viewer Overlay UI */}
             {viewerUrl && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
                      style={{zIndex: 10000}} onClick={() => setViewerUrl(null)}>

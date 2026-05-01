@@ -1,9 +1,3 @@
-/**
- * search.ts
- * Semantic search endpoint for the CommandPalette nav bar.
- * Also exposes an admin reindex endpoint.
- */
-
 import { Router } from 'express';
 import { checkJWT } from '../setup/auth0.js';
 import { prisma } from '../setup/prisma.js';

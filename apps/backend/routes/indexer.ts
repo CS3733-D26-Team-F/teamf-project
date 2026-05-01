@@ -1,12 +1,3 @@
-/**
- * indexer.ts
- * RAG indexing pipeline — fetches files from Supabase storage,
- * extracts text, chunks it, embeds via Mistral, stores in pgvector.
- *
- * Supported file types: PDF, DOCX, PPTX, TXT, MD
- * Audio/video/image files are skipped gracefully.
- */
-
 import { prisma } from '../setup/prisma.js';
 import { Mistral } from '@mistralai/mistralai';
 import { createRequire } from 'module';
@@ -239,7 +230,8 @@ export async function reindexAll(): Promise<{ total: number; indexed: number; sk
     return { total: docs.length, indexed, skipped, failed };
 }
 
-// SEMANTIC SEARCH
+// HYBRID SEARCH — exact keyword match + semantic similarity
+// Exact matches are ranked first, then semantic results fill in the rest.
 export async function semanticSearch(
     query: string,
     userPersona: string,
@@ -251,66 +243,138 @@ export async function semanticSearch(
     chunkIndex: number;
     content: string;
     similarity: number;
+    matchType: 'exact' | 'semantic';
+    highlightRanges?: Array<{ start: number; end: number }>;
 }>> {
     try {
+        // EXACT KEYWORD SEARCH
+        const personaFilter = userPersona === 'Admin'
+            ? ''
+            : `AND cf.persona::text[] && ARRAY[$3]::text[]`;
+
+        const exactParams: any[] = userPersona === 'Admin'
+            ? [`%${query}%`, limit * 2]
+            : [`%${query}%`, limit * 2, userPersona];
+
+        const exactResults: any[] = await prisma.$queryRawUnsafe(
+            `SELECT
+                dc.contentform_id,
+                dc.chunk_index,
+                dc.content,
+                cf.name AS doc_name,
+                cf.url AS doc_url,
+                1.0 AS similarity
+             FROM document_chunks dc
+             JOIN contentform cf ON cf.id = dc.contentform_id
+             WHERE cf.is_deleted = false
+             AND LOWER(dc.content) LIKE LOWER($1)
+             ${personaFilter}
+             ORDER BY cf.name ASC, dc.chunk_index ASC
+             LIMIT $2`,
+            ...exactParams
+        );
+
+        // SEMANTIC SEARCH
         const response = await mistral.embeddings.create({
             model: 'mistral-embed',
             inputs: [query],
         });
         const queryEmbedding = response.data[0].embedding;
 
-        let results: any[];
+        const semanticParams: any[] = userPersona === 'Admin'
+            ? [JSON.stringify(queryEmbedding), limit * 2]
+            : [JSON.stringify(queryEmbedding), userPersona, limit * 2];
 
-        if (userPersona === 'Admin') {
-            results = await prisma.$queryRawUnsafe(
-                `SELECT
-                    dc.id,
-                    dc.contentform_id,
-                    dc.chunk_index,
-                    dc.content,
-                    cf.name AS doc_name,
-                    cf.url AS doc_url,
-                    1 - (dc.embedding <=> $1::vector) AS similarity
-                 FROM document_chunks dc
-                 JOIN contentform cf ON cf.id = dc.contentform_id
-                 WHERE cf.is_deleted = false
-                 ORDER BY dc.embedding <=> $1::vector
-                 LIMIT $2`,
-                JSON.stringify(queryEmbedding),
-                limit
-            );
-        } else {
-            results = await prisma.$queryRawUnsafe(
-                `SELECT
-                    dc.id,
-                    dc.contentform_id,
-                    dc.chunk_index,
-                    dc.content,
-                    cf.name AS doc_name,
-                    cf.url AS doc_url,
-                    1 - (dc.embedding <=> $1::vector) AS similarity
-                 FROM document_chunks dc
-                 JOIN contentform cf ON cf.id = dc.contentform_id
-                 WHERE cf.is_deleted = false
-                 AND cf.persona::text[] && ARRAY[$2]::text[]
-                 ORDER BY dc.embedding <=> $1::vector
-                 LIMIT $3`,
-                JSON.stringify(queryEmbedding),
-                userPersona,
-                limit
-            );
+        const semanticQuery = userPersona === 'Admin'
+            ? `SELECT
+                dc.contentform_id,
+                dc.chunk_index,
+                dc.content,
+                cf.name AS doc_name,
+                cf.url AS doc_url,
+                1 - (dc.embedding <=> $1::vector) AS similarity
+               FROM document_chunks dc
+               JOIN contentform cf ON cf.id = dc.contentform_id
+               WHERE cf.is_deleted = false
+               ORDER BY dc.embedding <=> $1::vector
+               LIMIT $2`
+            : `SELECT
+                dc.contentform_id,
+                dc.chunk_index,
+                dc.content,
+                cf.name AS doc_name,
+                cf.url AS doc_url,
+                1 - (dc.embedding <=> $1::vector) AS similarity
+               FROM document_chunks dc
+               JOIN contentform cf ON cf.id = dc.contentform_id
+               WHERE cf.is_deleted = false
+               AND cf.persona::text[] && ARRAY[$2]::text[]
+               ORDER BY dc.embedding <=> $1::vector
+               LIMIT $3`;
+
+        const semanticResults: any[] = await prisma.$queryRawUnsafe(
+            semanticQuery,
+            ...semanticParams
+        );
+
+        // HIGHLIGHT HELPER
+        function getHighlightRanges(
+            content: string,
+            query: string
+        ): Array<{ start: number; end: number }> {
+            const ranges: Array<{ start: number; end: number }> = [];
+            const lowerContent = content.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            let idx = 0;
+            while (idx < lowerContent.length) {
+                const pos = lowerContent.indexOf(lowerQuery, idx);
+                if (pos === -1) break;
+                ranges.push({ start: pos, end: pos + query.length });
+                idx = pos + 1;
+            }
+            return ranges;
         }
 
-        return results.map(r => ({
-            contentformId: r.contentform_id,
-            docName: r.doc_name,
-            docUrl: r.doc_url,
-            chunkIndex: r.chunk_index,
-            content: r.content,
-            similarity: parseFloat(r.similarity)
-        }));
+        // 4. MERGE — exact first, then semantic deduped
+        const seen = new Set<string>(); // contentformId-chunkIndex
+
+        const exactMapped = exactResults.map(r => {
+            const key = `${r.contentform_id}-${r.chunk_index}`;
+            seen.add(key);
+            return {
+                contentformId: r.contentform_id,
+                docName: r.doc_name,
+                docUrl: r.doc_url,
+                chunkIndex: r.chunk_index,
+                content: r.content,
+                similarity: 1.0,
+                matchType: 'exact' as const,
+                highlightRanges: getHighlightRanges(r.content, query)
+            };
+        });
+
+        const semanticMapped = semanticResults
+            .filter(r => {
+                const key = `${r.contentform_id}-${r.chunk_index}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            })
+            .map(r => ({
+                contentformId: r.contentform_id,
+                docName: r.doc_name,
+                docUrl: r.doc_url,
+                chunkIndex: r.chunk_index,
+                content: r.content,
+                similarity: parseFloat(r.similarity),
+                matchType: 'semantic' as const,
+                highlightRanges: [] as Array<{ start: number; end: number }>
+            }));
+
+        return [...exactMapped, ...semanticMapped].slice(0, limit);
+
     } catch (err) {
-        console.error('[indexer] Semantic search failed:', err);
+        console.error('[indexer] Hybrid search failed:', err);
         return [];
     }
 }
