@@ -50,7 +50,7 @@ export function Header() {
                 </div>
                     <nav className="menu-links">
                         {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
-                            <Link to="/statistics">{t('dashboard')}</Link>
+                            <Link to="/dashboard">{t('dashboard')}</Link>
                         )}
                         {isAdmin && <Link to="/manageemployees">{t('employees')}</Link>}
                         {(isAdmin || isBusinessAnalyst || isUnderwriter || isActuarialAnalyst || isEXLOperations) && (
