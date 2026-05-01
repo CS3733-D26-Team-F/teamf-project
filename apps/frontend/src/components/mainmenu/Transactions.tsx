@@ -101,6 +101,25 @@ export function Transactions() {
         void fetchDocNames();
     }, [adminView, allChanges]);
 
+    useEffect(() => {
+        if (todaysChanges.length === 0) return;
+        const fetchMyDocNames = async () => {
+            const uniqueDocIds = [...new Set(todaysChanges.map(c => c.id))];
+            const results = await Promise.all(
+                uniqueDocIds.map(id =>
+                    api(`${DOMAIN}/contentnames/${id}`)
+                        .then(r => r.json())
+                        .then(name => ({ id, name }))
+                        .catch(() => ({ id, name: null }))
+                )
+            );
+            const map: Record<number, string> = {};
+            results.forEach(({ id, name }) => { if (name) map[id] = name; });
+            setDocNames(map);
+        };
+        void fetchMyDocNames();
+    }, [changes]);
+
 
     const addedToday = todaysChanges.filter(c => c.change === "Added Document").length;
     const editedToday = todaysChanges.filter(c => c.change === "Updated Document").length;
@@ -129,7 +148,7 @@ export function Transactions() {
         <Paper withBorder p="md" radius="md"
                mx="auto"
                style={{ width: adminView ? 1000 : 700,
-                   height: adminView ? 700 : 500,
+                   height: adminView ? 700 : 400,
                    position: "relative",
                    transition: 'width 0.3s ease'}}>
             <HelpModal title={t('transactions')} position ="top">
@@ -191,7 +210,7 @@ export function Transactions() {
                             <Text fw={600} size="sm" mb="xs" c="dimmed">
                                 Document Activity (Today)
                             </Text>
-                            <ScrollArea h={350}>
+                            <ScrollArea h={250}>
                                 <Stack gap="xs">
                                     {todaysChanges.filter(c =>
                                         c.change === "Added Document" ||
@@ -206,6 +225,7 @@ export function Transactions() {
                                                 c.change === "Updated Document" ||
                                                 c.change === "Deleted Document"
                                             )
+                                            .sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
                                             .map((c, i) => (
                                                 <Paper withBorder p="xs" radius="sm" key={i} mih={75}>
                                                     <Group justify="space-between">
@@ -253,7 +273,8 @@ export function Transactions() {
                                     {checkoutHistory.length === 0 ? (
                                         <Text c="dimmed" size="sm">No checkout activity this week.</Text>
                                     ) : (
-                                        checkoutHistory.map((c, i) => (
+                                        checkoutHistory.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
+                                            .map((c, i) => (
                                             <Paper withBorder p="xs" radius="sm" key={i} style={{ minHeight: 75}}>
                                                 <Group justify="space-between">
                                                     <Text size="sm" fw={500}>
@@ -294,6 +315,7 @@ export function Transactions() {
                                                 c.change === "Updated Document" ||
                                                 c.change === "Deleted Document"
                                             )
+                                            .sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
                                             .map((c, i) => (
                                                 <Paper withBorder p="xs" radius="sm" key={i} style={{ minHeight: 75}}>
                                                     <Group justify="space-between">
