@@ -45,7 +45,7 @@ export default function App() {
                 {/* Define the app's main navigation routes. */}
                 <Routes>
                     <Route path="/" element={<RootRoute />}/>
-                    <Route path="/statistics" element={<Dashboard />}/>
+                    <Route path="/dashboard" element={<Dashboard />}/>
                     <Route path="/documents" element={<Documents />} />
                     <Route path="/manageemployees" element={<ManageEmployeesForm />} />
                     <Route path="/archive" element={<Archive />}/>

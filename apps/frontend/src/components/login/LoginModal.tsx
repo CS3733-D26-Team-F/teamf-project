@@ -39,7 +39,7 @@ function LoginModal() {
             localStorage.removeItem('pfp_URL');
         }
 
-        navigate('/statistics');
+        navigate('/dashboard');
     }
 
     return (

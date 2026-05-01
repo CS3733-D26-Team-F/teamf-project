@@ -47,7 +47,7 @@ export function About() {
                                     position={t('pm')}
                                     photoID="Jeremia.jpg"
                                     linkedIn="https://www.linkedin.com/in/jeremia-leo/"
-                                    quote='"Words"'/>
+                                    quote='When people say impossible, they usually mean improbable - Nikolai Lantsov'/>
                                 <PeopleCard
                                     firstName="Milan"
                                     lastName="DeNicola"
