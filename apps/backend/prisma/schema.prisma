@@ -62,28 +62,28 @@ model folders {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model employee {
-  empid                                   Int               @id @default(autoincrement())
-  username                                String            @unique @db.VarChar(50)
-  password                                String?           @db.VarChar(20)
-  persona                                 String?           @db.VarChar(50)
-  theme                                   Int?              @default(0)
-  isLoggedIn                              Boolean?          @default(false)
-  auth0Id                                 String?           @unique @db.VarChar
-  first_name                              String?
-  last_name                               String?
-  created_at                              DateTime?         @default(now()) @db.Timestamp(6)
-  pfp_URL                                 String?           @unique @db.VarChar
-  widgets                                 String[]
-  admin                                   admin?
-  changes                                 changes[]
-  contentform                             contentform[]
-  folders                                 folders[]
-  joinedfavorites                         joinedfavorites[]
-  joinednotice                            joinednotice[]
-  notifications                           notifications[]
-  workflow_workflow_approver_idToemployee workflow[]        @relation("workflow_approver_idToemployee")
-  workflow_workflow_creator_idToemployee  workflow[]        @relation("workflow_creator_idToemployee")
-  workflow_workflow_reviewer_idToemployee workflow[]        @relation("workflow_reviewer_idToemployee")
+  empid                                      Int               @id @default(autoincrement())
+  username                                   String            @unique @db.VarChar(50)
+  password                                   String?           @db.VarChar(20)
+  persona                                    String?           @db.VarChar(50)
+  theme                                      Int?              @default(0)
+  isLoggedIn                                 Boolean?          @default(false)
+  auth0Id                                    String?           @unique @db.VarChar
+  first_name                                 String?
+  last_name                                  String?
+  created_at                                 DateTime?         @default(now()) @db.Timestamp(6)
+  pfp_URL                                    String?           @unique @db.VarChar
+  widgets                                    String[]
+  admin                                      admin?
+  changes                                    changes[]
+  contentform                                contentform[]
+  folders                                    folders[]
+  joinedfavorites                            joinedfavorites[]
+  joinednotice                               joinednotice[]
+  notifications                              notifications[]
+  workflow_workflow_approver_idToemployee    workflow[]        @relation("workflow_approver_idToemployee")
+  workflow_workflow_agent_idToemployee       workflow[]        @relation("workflow_agent_idToemployee")
+  workflow_workflow_underwriter_idToemployee workflow[]        @relation("workflow_underwriter_idToemployee")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -169,21 +169,34 @@ model document_chunks {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model workflow {
-  id                                      Int       @id @default(autoincrement())
-  title                                   String    @db.VarChar
-  status                                  String    @db.VarChar
-  created_at                              DateTime? @db.Timestamptz(6)
-  updated_at                              DateTime? @db.Timestamptz(6)
-  creator_id                              Int
-  creator_date                            DateTime? @db.Timestamp(6)
-  creator_status                          String?   @db.VarChar
-  reviewer_id                             Int?
-  reviewer_date                           DateTime? @db.Timestamp(6)
-  reviewer_status                         String?   @db.VarChar
-  approver_id                             Int?
-  approver_date                           DateTime? @db.Timestamp(6)
-  approver_status                         String?   @db.VarChar
-  employee_workflow_approver_idToemployee employee? @relation("workflow_approver_idToemployee", fields: [approver_id], references: [empid], onDelete: NoAction, onUpdate: NoAction)
-  employee_workflow_creator_idToemployee  employee  @relation("workflow_creator_idToemployee", fields: [creator_id], references: [empid], onDelete: NoAction, onUpdate: NoAction)
-  employee_workflow_reviewer_idToemployee employee? @relation("workflow_reviewer_idToemployee", fields: [reviewer_id], references: [empid], onDelete: NoAction, onUpdate: NoAction)
+  id                                         Int             @id @default(autoincrement())
+  title                                      String          @unique @db.VarChar
+  status                                     String          @db.VarChar
+  created_at                                 DateTime?       @db.Timestamptz(6)
+  agent_id                                   Int
+  agent_status                               String?         @db.VarChar
+  underwriter_id                             Int?
+  underwriter_status                         String?         @db.VarChar
+  approver_id                                Int?
+  approver_status                            String?         @db.VarChar
+  is_locked                                  Boolean?        @default(false)
+  employee_workflow_approver_idToemployee    employee?       @relation("workflow_approver_idToemployee", fields: [approver_id], references: [empid], onDelete: NoAction, onUpdate: NoAction)
+  employee_workflow_agent_idToemployee       employee        @relation("workflow_agent_idToemployee", fields: [agent_id], references: [empid], onDelete: NoAction, onUpdate: NoAction, map: "workflow_creator_id_fkey")
+  employee_workflow_underwriter_idToemployee employee?       @relation("workflow_underwriter_idToemployee", fields: [underwriter_id], references: [empid], onDelete: NoAction, onUpdate: NoAction, map: "workflow_reviewer_id_fkey")
+  workflow_form                              workflow_form[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model workflow_form {
+  id               BigInt    @id @default(autoincrement())
+  workflow_id      Int
+  name             String?   @db.VarChar
+  carrier          String?   @db.VarChar
+  policy_type      String?   @db.VarChar
+  limits_liability Float?
+  expiration_date  DateTime? @db.Date
+  rating           String?   @db.VarChar
+  estimate         Float?
+  coverage         Float?
+  workflow         workflow  @relation(fields: [workflow_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
