@@ -6,13 +6,13 @@ import { usePersona } from "../hooks/usePersona";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Button, Group } from "@mantine/core";
 import { HelpModal } from "../components/helpModal.tsx";
-import { Text } from "@mantine/core";
+
 import {useTranslation} from "react-i18next";
 import { IconHelp } from "@tabler/icons-react";
 import { useState } from "react";
 
 export function ManageEmployeesForm() {
-    const { t } = useTranslation();
+    
 
     const [ openHelpModal, setOpenHelpModal ] = useState(false);
 
@@ -63,7 +63,7 @@ export function ManageEmployeesForm() {
                     onClose={() => setOpenHelpModal(false)}
                     popupContent={t('emp_help_content')}
                                   />
-                <PageTitle title={t('employees')}/>
+                
                 <EmployeeListView />
             </>
         );
