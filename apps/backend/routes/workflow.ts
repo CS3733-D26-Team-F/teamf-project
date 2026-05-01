@@ -1,60 +1,73 @@
 import {Router, Request, Response} from "express";
 import {prisma} from '../setup/prisma.js'
 import {checkJWT} from '../setup/auth0.js'
+import {sendNotificationToUsers} from "./notifications.js";
 
 const router = Router();
 
-//workflow creation
+// get all workflows
 
 router.get('/workflows', checkJWT, async (req: Request, res: Response) => {
-    const {
-        title,
-        agent_id,
-        underwriter_id,
-        approver_id,
-        name,
-        carrier,
-        policy_type,
-        limits_liability,
-        expiration_date
-    } = req.body;
-
-    if (!title || !agent_id || !underwriter_id || !approver_id) {
-        return res.status(400).json({error: 'Missing fields'});
-    }
+    const {empid, persona} = req.query;
 
     try {
-        const workflows = await prisma.workflow.create({
-            data: {
-                title,
-                status: ' pending_review',
-                agent_id: Number(agent_id),
-                underwriter_id: underwriter_id,
-                approver_id: approver_id,
-                agent_status: 'pending',
-                form: {
-                    create: {
-                        name,
-                        carrier,
-                        policy_type,
-                        limits_liability: Number(limits_liability),
-                        expiration_date: new Date(expiration_date),
-                    }
+        let workflows;
+
+        if (persona === 'Agent') {
+            workflows = await prisma.workflow.findMany({
+                where: {agent_id: Number(empid)},
+                include: {
+                    employee_workflow_agent_idToemployee: true,
+                    employee_workflow_underwriter_idToemployee: true,
+                    approver: true,
+                    workflow_form: true
                 }
-            },
-            include: {form: true}
-        });
-        res.status(200).json(workflows);
+            });
+        } else if (persona === 'Underwriter') {
+            workflows = await prisma.workflow.findMany({
+                where: {underwriter_id: Number(empid)},
+                include: {
+                    employee_workflow_agent_idToemployee: true,
+                    employee_workflow_underwriter_idToemployee: true,
+                    approver: true,
+                    workflow_form: true
+
+                }
+            });
+        } else if (persona === 'Approver') {
+            workflows = await prisma.workflow.findMany({
+                where: {approver_id: Number(empid)},
+                include: {
+                    employee_workflow_agent_idToemployee: true,
+                    employee_workflow_underwriter_idToemployee: true,
+                    approver: true,
+                    workflow_form: true
+
+                }
+            });
+        } else {
+            workflows = await prisma.workflow.findMany({
+                include: {
+                    employee_workflow_agent_idToemployee: true,
+                    employee_workflow_underwriter_idToemployee: true,
+                    approver: true,
+                    workflow_form: true
+                }
+            });
+        }
+
+        res.json(workflows);
     } catch (error) {
         console.error(error);
         res.status(500).json({error: 'something wrong'});
     }
 });
 
-//
+
+// creating workflows
 
 router.post('/workflows', checkJWT, async (req: Request, res: Response) => {
-    const {title, agent_id, underwriter_id, approver_id} = req.body;
+    const {title, agent_id, underwriter_id, approver_id, name, carrier, policy, liability, expiration_date} = req.body;
 
     if (!title || !agent_id || !underwriter_id || !approver_id) {
         return res.status(400).send({error: 'id is required'});
@@ -64,12 +77,29 @@ router.post('/workflows', checkJWT, async (req: Request, res: Response) => {
         const workflow = await prisma.workflow.create({
             data: {
                 title,
-                status: 'pending review',
+                status: 'pending_review',
                 agent_id: Number(agent_id),
                 underwriter_id: Number(underwriter_id),
                 approver_id: Number(approver_id),
-            }
+                agent_status: 'pending',
+                workflow_form: {
+                    create: {
+                        name,
+                        carrier,
+                        policy_type: policy,
+                        limits_liability: liability ? Number ( liability) : null,
+                        expiration_date: expiration_date ? new Date(expiration_date) : null,
+                    }
+                }
+            },
+            include: {workflow_form: true}
         });
+        await sendNotificationToUsers(
+            'New Workflow',
+            `a new workflow "${title}" has been created`,
+            [Number(underwriter_id)],
+            Number(agent_id)
+        );
         res.status(200).json(workflow);
     } catch (error) {
         console.error(error);
@@ -83,21 +113,40 @@ router.patch('/workflows/:id/review', checkJWT, async (req: Request, res: Respon
     const {underwriter_status, rating, coverage, estimate} = req.body;
 
     try {
+        const existing = await prisma.workflow.findUnique({where: {id}});
         const workflow = await prisma.workflow.update({
             where: {id},
             data: {
                 underwriter_status,
                 status: underwriter_status === 'approved' ? 'pending_review' : 'rejected',
-                form: {
-                    update: {
-                        rating,
-                        coverage: Number(coverage),
-                        estimate: Number(estimate),
+                workflow_form: {
+                    updateMany: {
+                        where: {workflow_id: id},
+                        data: {
+                            rating,
+                            coverage: Number(coverage),
+                            estimate: Number(estimate),
+                        }
                     }
                 }
             },
-            include: {form: true}
+            include: {workflow_form: true}
         });
+        if (underwriter_status === 'approved') {
+            await sendNotificationToUsers(
+                'Workflow ready for approval',
+                `Workflow "${existing?.title}" has been reviewed and is waiting approval`,
+                [existing?.approver_id!],
+                existing?.underwriter_id!
+            );
+        } else {
+            await sendNotificationToUsers(
+                'Workflow Rejected',
+                `your workflow "${existing?.title}" has been rejected`,
+                [existing?.approver_id!],
+                existing?.underwriter_id!
+            )
+        }
         res.json(workflow);
     } catch (error) {
         res.status(500).send({error: 'something wrong'});
@@ -110,15 +159,23 @@ router.patch('/workflows/:id/approve', checkJWT, async (req: Request, res: Respo
     const {approver_status} = req.body;
 
     try {
+        const existing = await prisma.workflow.findUnique({where: {id}});
         const workflow = await prisma.workflow.update({
             where: {id: Number(id)},
             data: {
                 approver_status,
                 status: approver_status === 'approved' ? 'pending_approval' : 'rejected',
-                is_locked: {form: true}
+                is_locked: true
             },
-            include: {form: true}
+            include: {workflow_form: true}
         });
+        await sendNotificationToUsers(
+            approver_status === 'approved' ? 'Workflow Approved ' : 'Rejected',
+            `Your workflow "${existing?.title}" has been ${approver_status} by an approver`,
+            [existing?.approver_id!],
+            existing?.underwriter_id!
+        )
+
         res.json(workflow);
     } catch (error) {
         res.status(500).send({error: 'no workflow found'});
@@ -132,10 +189,10 @@ router.get('/workflows/:id', checkJWT, async (req: Request, res: Response) => {
         const workflow = await prisma.workflow.findUnique({
             where: {id},
             include: {
-                agent: true,
-                underwriter: true,
+                employee_workflow_agent_idToemployee: true,
+                employee_workflow_underwriter_idToemployee: true,
                 approver: true,
-                form: true
+                workflow_form: true
 
             }
         });
@@ -145,36 +202,4 @@ router.get('/workflows/:id', checkJWT, async (req: Request, res: Response) => {
         res.status(500).send({error: 'something wrong'});
     }
 });
-
-// get all
-
-router.get('/workflows/:id', checkJWT, async (req: Request, res: Response) => {
-    const {empid, persona} = req.query;
-
-    try {
-        let workflows;
-
-        if (persona === 'Agent') {
-            workflows = await prisma.workflow.findMany({
-                where: {agent_id: Number(empid)},
-                include: {agent: true, underwriter: true, approver: true, form: true}
-            });
-        } else if (persona === 'Underwriter') {
-            workflows = await prisma.workflow.findMany({
-                where: {underwriter_id: Number(empid)},
-                include: {agent: true, underwriter: true, approver: true, form: true}
-            });
-        } else if (persona === 'Approver') {
-            workflows = await prisma.workflow.findMany({
-                where: {approver_id: Number(empid)},
-                include: {agent: true, underwriter: true, approver: true, form: true}
-            });
-        }
-        res.json(workflows);
-    } catch (error) {
-        res.status(500).send({error: 'something wrong'});
-    }
-})
-
-
 export default router;

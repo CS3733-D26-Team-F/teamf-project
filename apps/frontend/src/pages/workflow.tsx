@@ -1,6 +1,19 @@
 import {useEffect, useState} from "react";
 import {Header} from "../components/Header.tsx";
-import {Button, Modal, TextInput, Select, Table, Badge, Group, Text, Stack} from '@mantine/core'
+import {
+    Button,
+    Modal,
+    Card,
+    Divider,
+    TextInput,
+    Select,
+    Table,
+    Badge,
+    Group,
+    Text,
+    Stack,
+    SegmentedControl
+} from '@mantine/core'
 import {useDisclosure} from "@mantine/hooks";
 import {useApi} from "../components/api.ts";
 import {DOMAIN} from '../const.ts'
@@ -11,25 +24,26 @@ interface Workflow {
     id: number;
     title: string;
     status: string;
+    is_locked: boolean;
     agent_id: number;
-    underwriter_id: number;
-    approver_id: number;
-    agent_status: string;
-    underwriter_status: string;
-    approver_status: string;
-    agent: { username: string, persona: string };
-    underwriter: { username: string, persona: string } | null;
-    approver: { username: string, persona: string } | null
-    form: workflowForm | null;
+    underwriter_id: number | null;
+    approver_id: number | null;
+    agent_status: string | null;
+    underwriter_status: string | null;
+    approver_status: string | null;
+    employee_workflow_agent_idToemployee: { username: string; persona: string };
+    employee_workflow_underwriter_idToemployee: { username: string; persona: string } | null;
+    approver: { username: string; persona: string } | null;
+    workflow_form: WorkflowForm[] | null;
 }
 
-interface workflowForm {
+interface WorkflowForm {
     id: number;
     workflow_id: number;
     name: string | null,
     carrier: string | null,
-    policy: string | null,
-    liability: string | null,
+    policy_type: string | null,
+    limits_liability: string | null,
     expiration_date: string | null,
     rating: string | null,
     coverage: string | null,
@@ -47,6 +61,7 @@ export function Workflow() {
     const [isAvailable, {open: openCreate, close: closeCreate}] = useDisclosure(false);
     const [isReviewAvailable, {open: openReview, close: closeReview}] = useDisclosure(false);
     const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+    const [workflowView, setWorkflowView] = useState<'card' | 'table'>('card')
 
     const [newWorkflow, setNewWorkflow] = useState({
         title: '',
@@ -57,7 +72,6 @@ export function Workflow() {
         policy: '',
         liability: '',
         expiration_date: '',
-        rating: '',
     });
 
     const loadWorkflows = async () => {
@@ -83,6 +97,7 @@ export function Workflow() {
     }, []);
 
     const handleCreateWorkflow = async () => {
+        console.log('submitting workflow:', newWorkflow);
         await api(`${DOMAIN}/workflows`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -96,17 +111,16 @@ export function Workflow() {
                 policy: newWorkflow.policy,
                 liability: newWorkflow.liability,
                 expiration_date: newWorkflow.expiration_date,
-                rating: newWorkflow.rating,
             })
         });
-        close();
+        closeCreate();
         loadWorkflows();
     };
 
     const handleReview = async (status: string) => {
         if (!selectedWorkflow) return;
         await api(`${DOMAIN}/workflows/${selectedWorkflow.id}/review`, {
-            method: 'POST',
+            method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 underwriter_status: status,
@@ -122,7 +136,7 @@ export function Workflow() {
     const handleApprove = async (status: string) => {
         if (!selectedWorkflow) return;
         await api(`${DOMAIN}/workflows/${selectedWorkflow.id}/approve`, {
-            method: 'POST',
+            method: 'PATCH',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({approver_status: status}),
         });
@@ -136,62 +150,112 @@ export function Workflow() {
             <Stack p="md">
                 <Group justify="space-betwen">
                     <Text fw={700} size="x1">Workflows</Text>
-                    {persona === 'Agent' && (
-                        <FilledButton leftSection="plus" onClick={openCreate}>Add Workflow</FilledButton>
-                    )}
+                    <Group gap="xs">
+                        <SegmentedControl
+                            value={workflowView}
+                            onChange={val => setWorkflowView(val as 'card' | 'table')}
+                            data={[
+                                {label: 'Card', value: 'card'},
+                                {label: 'Table', value: 'table'},
+                            ]}
+                        />
+                        {persona === 'Agent' && (
+                            <FilledButton leftSection="plus" onClick={openCreate}>Add Workflow</FilledButton>
+                        )}
+                    </Group>
                 </Group>
-                {/* Workflow Table */}
-                <Table withTableBorder withColumnBorders>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Title</Table.Th>
-                            <Table.Th>Status</Table.Th>
-                            <Table.Th>Agent</Table.Th>
-                            <Table.Th>Underwriter</Table.Th>
-                            <Table.Th>Approver</Table.Th>
-                            <Table.Th>Actions Required:</Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {workflows.map(w => (
-                            <Table.Tr key={w.id}>
-                                <Table.Td>{w.title}</Table.Td>
-                                <Table.Td>
-                                    <Badge color={
-                                        w.status === 'approved' ? 'var(--color-yale-blue)' :
-                                            w.status === 'denied' ? 'var(--color-yale-blue)' :
-                                                w.status === 'pending_approval' ? 'yellow' : 'var(--color-yale-blue)'
-                                    }>
-                                        {w.status.replace('_', '').toUpperCase()}
-                                    </Badge>
-                                </Table.Td>
-                                <Table.Td>{w.agent?.username}</Table.Td>
-                                <Table.Td>{w.underwriter?.username ?? '_'}</Table.Td>
-                                <Table.Td>{w.approver?.username ?? '_'}</Table.Td>
-                                <Table.Td>
-                                    {(persona === 'Underwriter' && w.status === 'pending_review') && (
-                                        <Button size="xs" onClick={() => {
-                                            setSelectedWorkflow(w);
-                                            openReview();
-                                        }}>
-                                            Review
-                                        </Button>
-                                    )}
-                                    {(persona === 'Approver' && w.status === 'pending_approval') && (
-                                        <Button size="xs" onClick={() => {
-                                            setSelectedWorkflow(w);
-                                            openReview();
-                                        }}>
-                                            Approve
-                                        </Button>
-                                    )}
-                                </Table.Td>
-                            </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
 
-                {/* Create Workflow Modal */}
+                {/* Workflow card */}
+                {workflowView === 'table' ? (
+                    <Table withTableBorder withColumnBorders>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Title</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th>Agent</Table.Th>
+                                <Table.Th>Underwriter</Table.Th>
+                                <Table.Th>Approver</Table.Th>
+                                <Table.Th>Actions Required:</Table.Th>
+                            </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {workflows.map(w => (
+                                <Table.Tr key={w.id}>
+                                    <Table.Td>{w.title}</Table.Td>
+                                    <Table.Td>
+                                        <Badge color={
+                                            w.status === 'approved' ? 'var(--color-yale-blue)' :
+                                                w.status === 'denied' ? 'var(--color-yale-blue)' :
+                                                    w.status === 'pending_approval' ? 'yellow' : 'var(--color-yale-blue)'
+                                        }>
+                                            {w.status.replace(/_/g, '').toUpperCase()}
+                                        </Badge>
+                                    </Table.Td>
+                                    <Table.Td>{w.employee_workflow_agent_idToemployee?.username}</Table.Td>
+                                    <Table.Td>{w.employee_workflow_underwriter_idToemployee?.username ?? '_'}</Table.Td>
+                                    <Table.Td>{w.approver?.username ?? '_'}</Table.Td>
+                                    <Table.Td>
+                                        {(persona === 'Underwriter' && w.status === 'pending_review') && (
+                                            <Button size="xs" onClick={() => {
+                                                setSelectedWorkflow(w);
+                                                openReview();
+                                            }}>
+                                                Review
+                                            </Button>
+                                        )}
+                                        {(persona === 'Approver' && w.status === 'pending_approval') && (
+                                            <Button size="xs" onClick={() => {
+                                                setSelectedWorkflow(w);
+                                                openReview();
+                                            }}>
+                                                Approve
+                                            </Button>
+                                        )}
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                ) : (
+                    <Stack p="md">
+                        {workflows.map(w => (
+                            <Card key={w.id} shadow='sm' radius="md" withBorder padding="lg"
+                                  style={{cursor: 'pointer', opacity: w.is_locked ? 0.8 : 1}}
+                                  onClick={() => {
+                                      setSelectedWorkflow(w);
+                                      openReview();
+                                  }}
+                            >
+                                <Group justify="space-between" mb="xs">
+                                    <Text fw={700} size="lg">{w.title}</Text>
+                                    <Group gap="xs">
+                                        {w.is_locked && <Badge color="gray">FORM IS LOCKED</Badge>}
+                                        <Badge color={
+                                            w.status === 'approved' ? 'var(--color-yale-blue)' :
+                                                w.status === 'rejected' ? 'var(--color-yale-blue)' :
+                                                    w.status === 'pending_approval' ? 'yellow' : 'var(--color-yale-blue)'}>
+                                            {w.status.replace(/_/g, '').toUpperCase()}
+                                        </Badge>
+                                    </Group>
+                                </Group>
+                                <Group gap="xl">
+                                    <Text size="sm" c="dimmed"> Agent: <strong> {w.employee_workflow_agent_idToemployee?.username}</strong></Text>
+                                    <Text size="sm"
+                                          c="dimmed"> Underwriter: <strong> {w.employee_workflow_underwriter_idToemployee?.username}</strong></Text>
+                                    <Text size="sm"
+                                          c="dimmed"> Approver: <strong> {w.approver?.username}</strong></Text>
+                                </Group>
+                            </Card>
+                        ))}
+                        {workflows.length === 0 && (
+                            <Text c="dimmed" ta="center"> No Workflows Found</Text>
+                        )}
+                    </Stack>
+                )
+                }
+
+                {/* Create Workflow Modal */
+                }
 
                 <Modal opened={isAvailable} onClose={closeCreate} title="New Workflow">
                     <Stack>
@@ -200,6 +264,7 @@ export function Workflow() {
                             value={newWorkflow.title}
                             onChange={e => setNewWorkflow({...newWorkflow, title: e.target.value})}
                         />
+                        <Divider label="Policy Information" labelPosition="center"/>
                         <TextInput
                             label=" Policy Holder Name"
                             value={newWorkflow.name}
@@ -221,24 +286,26 @@ export function Workflow() {
                             onChange={e => setNewWorkflow({...newWorkflow, liability: e.target.value})}
                         />
                         <TextInput
-                            label="Rating"
-                            value={newWorkflow.rating}
-                            onChange={e => setNewWorkflow({...newWorkflow, rating: e.target.value})}
-                        />
-                        <TextInput
                             label="Expiration Date"
                             type="date"
                             value={newWorkflow.expiration_date}
                             onChange={e => setNewWorkflow({...newWorkflow, expiration_date: e.target.value})}
                         />
+                        <Divider label=" Send Request To:" labelPosition="center"/>
                         <Select
-                            label="Underwriter"
+                            label="Request Underwriter:"
                             value={newWorkflow.underwriter_id}
                             onChange={val => setNewWorkflow({...newWorkflow, underwriter_id: val ?? ''})}
                             data={employees
                                 .filter(e => e.persona === 'Underwriter')
                                 .map(e => ({value: String(e.empid), label: e.username}))
                             }
+                        />
+                        <Select
+                            label="Request Approver:" value={newWorkflow.approver_id}
+                            onChange={val => setNewWorkflow({...newWorkflow, approver_id: val ?? ''})}
+                            data={employees.filter(e => e.persona === 'Approver')
+                                .map(e => ({value: String(e.empid), label: e.username}))}
                         />
                         <Group justify="flex-end">
                             <Button
@@ -258,7 +325,8 @@ export function Workflow() {
                     </Stack>
                 </Modal>
 
-                {/* Review/Approve moda*/}
+                {/* Review/Approve modals*/
+                }
                 <Modal
                     opened={isReviewAvailable}
                     onClose={closeReview}
@@ -266,64 +334,74 @@ export function Workflow() {
                 >
                     <Stack>
                         {/* Agent fields */}
-                        <Text fw={700} size="sm">Agent Information</Text>
-                        <TextInput label="Policy Holder Name" value={selectedWorkflow?.form?.name ?? ''} readOnly/>
-                        <TextInput label="Carrier" value={selectedWorkflow?.form?.carrier ?? ''} readOnly/>
-                        <TextInput label="Policy Type" value={selectedWorkflow?.form?.policy ?? ''} readOnly/>
-                        <TextInput label="Limits of Liability" value={selectedWorkflow?.form?.liability ?? ''}
+                        <Divider label="Agent Information" labelPosition="center"/>
+                        <TextInput label="Policy Holder Name" value={selectedWorkflow?.workflow_form?.[0]?.name ?? ''} readOnly/>
+                        <TextInput label="Carrier" value={selectedWorkflow?.workflow_form?.[0]?.carrier ?? ''} readOnly/>
+                        <TextInput label="Policy Type" value={selectedWorkflow?.workflow_form?.[0]?.policy_type ?? ''} readOnly/>
+                        <TextInput label="Limits of Liability" value={String(selectedWorkflow?.workflow_form?.[0]?.limits_liability ?? '')}
                                    readOnly/>
-                        <TextInput label="Expiration Date" value={selectedWorkflow?.form?.expiration_date ?? ''}
+                        <TextInput label="Expiration Date" value={selectedWorkflow?.workflow_form?.[0]?.expiration_date ?? ''}
                                    readOnly/>
 
-                        {/* Underwriter fields */}
-                        <>
-                            <Text fw={700} size="sm"> Underwriter Edits </Text>
-                            <Select
-                                label="Risk Rating"
-                                value={reviewData.rating}
-                                onChange={val => setReviewData({...reviewData, rating: val ?? ''})}
-                                data={['Low', 'Medium', 'High']}
-                            />
-                            <TextInput label="Recommended Coverage"
-                                       value={reviewData.coverage}
-                                       onChange={e => setReviewData({...reviewData, coverage: e.target.value})}
-                            />
-                            <TextInput label="Premium Estimate"
-                                       value={reviewData.estimate}
-                                       onChange={e => setReviewData({...reviewData, estimate: e.target.value})}
-                            />
-                        </>
-
-                        {/* Approver read-onlys*/}
-                        {persona === 'Approver' && (
+                        <Divider label="Underwriter Assessment" labelPosition="center"/>
+                        {persona === 'Underwriter' && !selectedWorkflow?.is_locked ? (
                             <>
-                                <Text fw={700} size="sm"> Approver Assessment </Text>
-                                <TextInput label="Risk rating" value={selectedWorkflow?.form?.rating ?? ''} readOnly/>
-                                <TextInput label="Recommended Coverage" value={selectedWorkflow?.form?.coverage ?? ''}
-                                           readOnly/>
-                                <TextInput label="Premium Estimate" value={selectedWorkflow?.form?.estimate ?? ''}
-                                           readOnly/>
+                                <Select label="Risk Rating" value={reviewData.rating}
+                                        onChange={val => setReviewData({...reviewData, rating: val ?? ''})}
+                                        data={['Low', 'Medium', 'High']}
+                                />
+                                <TextInput label="Recommended Coverage" value={reviewData.coverage}
+                                           onChange={e => setReviewData({...reviewData, coverage: e.target.value})}
+                                />
+                                <TextInput label="Premium Estimate" value={reviewData.estimate}
+                                           onChange={e => setReviewData({...reviewData, estimate: e.target.value})}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <TextInput label="Risk Rating" value={selectedWorkflow?.workflow_form?.[0]?.rating ?? '-'} readOnly
+                                />
+                                <TextInput label="Recommended Coverage" value={selectedWorkflow?.workflow_form?.[0]?.coverage ?? '-'}
+                                           readOnly
+                                />
+                                <TextInput label="Premium Estimate" value={selectedWorkflow?.workflow_form?.[0]?.estimate ?? '-'}
+                                           readOnly
+                                />
                             </>
                         )}
-                        <Group>
-                            <Button
-                                color="green"
-                                onClick={() => persona === 'Underwriter' ? handleReview('approved') : handleApprove('approved')}
-                            >
-                                Approve
-                            </Button>
-                            <Button
-                                color="red"
-                                onClick={() => persona === 'Underwriter' ? handleReview('rejected') : handleApprove('rejected')}
-                            >
-                                Rejected
-                            </Button>
-                        </Group>
+                        {/* Approvers portion*/}
+
+                        {!selectedWorkflow?.is_locked && (
+                            <Group justify="space-between">
+                                {persona === 'Underwriter' && selectedWorkflow?.status === 'pending_review' && (
+                                    <>
+                                        <Button color="var(--color-yale-blue)"
+                                                onClick={() => handleReview('rejected')}>Reject</Button>
+                                        <Button color="var(--color-yale-blue)"
+                                                onClick={() => handleReview('approved')}>Approve</Button>
+                                    </>
+                                )}
+                                {persona === 'Approver' && selectedWorkflow?.status === 'pending_approval' && (
+                                    <>
+                                        <Button color="var(--color-yale-blue)"
+                                                onClick={() => handleApprove('rejected')}>Reject</Button>
+                                        <Button color="var(--color-yale-blue)"
+                                                onClick={() => handleApprove('approved')}>Approve</Button>
+                                    </>
+                                )}
+                            </Group>
+                        )}
+                        {selectedWorkflow?.is_locked && (
+                            <Text ta="center" c="dimmed" size="sm"> This workflow is locked and can no longer be
+                                edited. </Text>
+                        )}
+
                     </Stack>
                 </Modal>
             </Stack>
         </>
-    );
+    )
+        ;
 }
 
 
