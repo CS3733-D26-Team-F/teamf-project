@@ -2,6 +2,10 @@ import { prisma } from '../setup/prisma.js';
 import { Mistral } from '@mistralai/mistralai';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import ffmpeg from 'fluent-ffmpeg';
 
 const mistral = new Mistral({ apiKey: process.env.MISTRAL_API_KEY! });
 
@@ -11,31 +15,68 @@ const EMBEDDING_BATCH = 8;    // chunks to embed per API call
 
 // FILE TYPE DETECTION
 function getExtension(url: string): string {
+    // 1. If it is a raw website link instead of a file (ex., github.com or youtube.com/watch)
+    if (url.startsWith('http') && !url.match(/\.[a-zA-Z0-9]{2,4}(\?|$)/)) {
+        return 'link';
+    }
     const clean = url.split('?')[0];
     return clean.split('.').pop()?.toLowerCase() ?? '';
 }
 
 function isIndexable(url: string): boolean {
     const ext = getExtension(url);
-    return ['pdf', 'docx', 'pptx', 'txt', 'md', 'csv'].includes(ext);
+    return ['pdf', 'docx', 'pptx', 'txt', 'md', 'csv', 'mp3', 'mp4', 'wav', 'm4a', 'ogg', 'html', 'htm', 'app', 'png', 'jpg', 'jpeg', 'link'].includes(ext);
 }
 
 // TEXT EXTRACTION
-async function extractText(buffer: Buffer, ext: string): Promise<string> {
+async function extractText(buffer: Buffer, ext: string, rawUrl: string=''): Promise<string> {
     try {
-        switch (ext) {
+        // SPECIAL HANDLER FOR RAW EXTERNAL LINKS
+        if (ext === 'link' || ext === 'url' || rawUrl.includes('youtube.com') || rawUrl.includes('youtu.be')) {
+            const urlToScrape = buffer.toString('utf-8').trim().startsWith('http')
+                ? buffer.toString('utf-8').trim() // If it's a .url file containing the link
+                : rawUrl; // If the database just stores the link directly
+
+            console.log(`[indexer] Attempting to scrape web link: ${urlToScrape}`);
+
+            if (urlToScrape.includes('youtube.com') || urlToScrape.includes('youtu.be')) {
+                const { YoutubeTranscript } = require('youtube-transcript');
+                try {
+                    const transcript = await YoutubeTranscript.fetchTranscript(urlToScrape);
+                    // Combine all the spoken lines into one giant paragraph
+                    return transcript.map((t: any) => t.text).join(' ');
+                } catch (err) {
+                    console.log(`[indexer] Could not fetch YouTube transcript (might be private or lack captions).`);
+                    return ''; // Fallback to empty if it fails
+                }
+            }
+
+            // 2. Standard Webpage Scraper (Cheerio)
+            try {
+                const cheerio = require('cheerio');
+                const response = await fetch(urlToScrape);
+                const htmlString = await response.text();
+                const $ = cheerio.load(htmlString);
+
+                // Strip out the junk
+                $('script, style, noscript, iframe, img, svg, nav, footer, header').remove();
+
+                return $('body').text().replace(/\s+/g, ' ').trim();
+            } catch (err) {
+                console.log(`[indexer] Failed to scrape website: ${urlToScrape}`);
+                return '';
+            }
+        }
+        switch (ext.toLowerCase()) {
             case 'pdf': {
                 const pdfModule = require('pdf-parse');
 
                 if (pdfModule.PDFParse) {
                     const parser = new pdfModule.PDFParse({ data: buffer });
-
                     const textResult = await parser.getText();
-
                     if (typeof parser.destroy === 'function') {
                         await parser.destroy();
                     }
-
                     return typeof textResult === 'string' ? textResult : textResult.text;
                 }
 
@@ -51,7 +92,6 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
             case 'pptx': {
                 const officeModule = require('officeparser');
                 const officeparser = officeModule.default || officeModule;
-
                 const fs = require('fs');
                 const os = require('os');
                 const path = require('path');
@@ -74,6 +114,121 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
             case 'csv': {
                 return buffer.toString('utf-8');
             }
+
+            // HTML / WEBPAGE PARSER
+            case 'html':
+            case 'htm': {
+                const cheerio = require('cheerio');
+                const htmlString = buffer.toString('utf-8');
+                const $ = cheerio.load(htmlString);
+
+                // Strip out the junk that confuses the AI (scripts, styling, navbars)
+                $('script, style, noscript, iframe, img, svg, nav, footer').remove();
+
+                // Return just the raw, readable text
+                return $('body').text().replace(/\s+/g, ' ').trim();
+            }
+
+            // IMAGE PARSER (OCR)
+            case 'png':
+            case 'jpg':
+            case 'jpeg': {
+                const Tesseract = require('tesseract.js');
+
+                try {
+                    const result = await Tesseract.recognize(buffer, 'eng', {
+                        logger: m => console.log(`[OCR] ${m.status}: ${Math.round(m.progress * 100)}%`)
+                    });
+                    return result.data.text.trim();
+                } catch (err) {
+                    console.error('[indexer] OCR failed on image:', err);
+                    return '';
+                }
+            }
+
+            // AUDIO & VIDEO PARSER (WHISPER)
+            case 'mp3':
+            case 'mp4':
+            case 'wav':
+            case 'm4a':
+            case 'ogg': {
+                const fs = require('fs');
+                const os = require('os');
+                const path = require('path');
+                const ffmpeg = require('fluent-ffmpeg');
+                const FormData = require('form-data'); // <-- Using form-data to send to Python
+                const crypto = require('crypto');
+
+                const tempDir = os.tmpdir();
+                const uniqueId = crypto.randomUUID();
+                const inputPath = path.join(tempDir, `media-in-${uniqueId}.${ext}`);
+                const outputPath = path.join(tempDir, `audio-out-${uniqueId}.mp3`);
+
+                fs.writeFileSync(inputPath, buffer);
+
+                try {
+                    await new Promise<void>((resolve, reject) => {
+                        ffmpeg(inputPath)
+                            .toFormat('mp3')
+                            .noVideo()
+                            .audioFrequency(16000)
+                            .audioChannels(1)
+                            .audioBitrate('64k')
+                            .on('stderr', (stderrLine: string) => {
+                                console.log('[FFmpeg Log]: ' + stderrLine);
+                            })
+                            .on('end', () => resolve())
+                            .on('error', (err: any) => reject(err))
+                            .save(outputPath);
+                    });
+
+                    const formData = new FormData();
+
+                    formData.append('file', fs.createReadStream(outputPath), {
+                        filename: 'audio.mp3',
+                        contentType: 'audio/mpeg'
+                    });
+
+                    const http = require('http');
+
+                    const textResult = await new Promise<string>((resolve, reject) => {
+                        const req = http.request('http://127.0.0.1:8000/transcribe', { //you need local whisper server running while you reindex
+                            method: 'POST',
+                            headers: formData.getHeaders(),
+                        }, (res) => {
+                            let responseBody = '';
+                            res.on('data', chunk => responseBody += chunk);
+                            res.on('end', () => {
+                                if (res.statusCode === 200) {
+                                    try {
+                                        const parsed = JSON.parse(responseBody);
+                                        resolve(parsed.text || '');
+                                    } catch (e) {
+                                        resolve('');
+                                    }
+                                } else {
+                                    console.error(`[indexer] Whisper server error ${res.statusCode}: ${responseBody}`);
+                                    resolve('');
+                                }
+                            });
+                        });
+
+                        req.on('error', (err) => {
+                            console.error('[indexer] HTTP request failed:', err);
+                            resolve('');
+                        });
+
+                        formData.pipe(req);
+                    });
+
+                    return textResult;
+
+                } finally {
+                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                }
+            }
+
             default:
                 return '';
         }
@@ -154,9 +309,14 @@ export async function indexDocument(contentformId: number): Promise<{ success: b
         const arrayBuffer = await fileRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const text = await extractText(buffer, ext);
-        if (!text.trim()) {
-            console.log(`[indexer] No text extracted from ${doc.name} — may be a scanned image`);
+        const text = await extractText(buffer, ext, doc.url);
+
+        // ── PEEK AT THE TEXT ──
+        if (text && text.trim().length > 0) {
+            console.log(`\n--- EXTRACTED TEXT FOR: ${doc.name} ---`);
+            console.log(text.substring(0, 800) + '\n---------------------------------------\n');
+        } else {
+            console.log(`[indexer] No text extracted from ${doc.name} — may be a scanned image or empty media.`);
             return { success: true, chunks: 0 };
         }
 
