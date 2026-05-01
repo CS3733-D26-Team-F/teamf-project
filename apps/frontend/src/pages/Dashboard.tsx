@@ -24,7 +24,7 @@ const DEFAULT_LAYOUTS = {
     "EXL Operations": ['transactions', 'charts', 'calendar', 'stats']
 };
 
-export function Statistics() {
+export function Dashboard() {
     const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const api = useApi();

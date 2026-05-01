@@ -21,6 +21,7 @@ export function ManageEmployeesForm() {
     // Auth0 loading state is used so we can show a brief access-check message
     // before deciding whether to render the page or deny access.
     const { isLoading } = useAuth0();
+    const {t} = useTranslation();
 
     // Allow access if the current persona is Admin; localStorage is used as a fallback
     // for cases where the session state is still being resolved.
@@ -62,6 +63,7 @@ export function ManageEmployeesForm() {
                     onClose={() => setOpenHelpModal(false)}
                     popupContent={t('emp_help_content')}
                                   />
+                <PageTitle title={t('employees')}/>
                 <EmployeeListView />
             </>
         );

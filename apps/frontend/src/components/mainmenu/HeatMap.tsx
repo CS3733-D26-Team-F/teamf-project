@@ -82,8 +82,8 @@ export function HeatMap() {
     }
     return (
         <Paper p="md" radius="md" w="100%" h="100%">
-            <HelpModal title="Activity Heatmap">
-                <Text>Shows document modification activity over the last 6 months. Darker colours indicate more changes on that day. Hover over boxes to see dates and details.</Text>
+            <HelpModal title={t('activity_heatmap')}>
+                <Text>{t("activity_heatmap_tip")}</Text>
             </HelpModal>
             <Text fw={900} size="xl" mb="md">
                 {t('heat_activity')}

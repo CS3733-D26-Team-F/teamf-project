@@ -179,7 +179,7 @@ export function StatsDashboard() {
         return (
             <Paper withBorder p="md" radius="md" key={stat.title} style={{position: 'relative' }}>
                 <HelpModal title={stat.title}>
-                    <Text>Shows the number of files {stat.title.toLowerCase()} as a proportion of all files.</Text>
+                    <Text>{t('shows_num_files_first')} {stat.title.toLowerCase()} {t('shows_num_files_seocnd')}</Text>
                 </HelpModal>
                 <Group justify="space-between">
                     <Text size="xs" c="dimmed" className={classes.title}>
@@ -210,8 +210,8 @@ export function StatsDashboard() {
         <div className={classes.root}>
             <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
                 <Paper withBorder p="md" radius="md" style={{ height: '100%' , position: 'relative' }}>
-                    <HelpModal title="Files by Persona">
-                        <Text>Breakdown of files split by persona.</Text>
+                    <HelpModal title={t('files_by_persona')}>
+                        <Text>{t('files_by_persona_tip')}</Text>
                     </HelpModal>
                     <Text size="xs" c="dimmed" fw='bold'>
                         {t('my_files')}
@@ -246,8 +246,8 @@ export function StatsDashboard() {
                 {stats}</SimpleGrid>
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt="xl">
                 <Paper withBorder p="md" radius="md"  style={{ height: '100%', position: 'relative' }} >
-                    <HelpModal title="Content Types">
-                        <Text>Breakdown of files split by content type.</Text>
+                    <HelpModal title={t('content_types')}>
+                        <Text>{t("content_types_tip")}</Text>
                     </HelpModal>
                     <Text fw={700} size="lg" mb="md">
                         {t('content_types')}
@@ -278,8 +278,8 @@ export function StatsDashboard() {
                     </Group>
                 </Paper>
                 <Paper withBorder p="md" radius="md" style={{ height: '100%', position: 'relative' }} >
-                    <HelpModal title="Document Statuses">
-                        <Text>Breakdown of files split by their current status.</Text>
+                    <HelpModal title={t('document_statuses')}>
+                        <Text>{t('document_statuses_tip')}</Text>
                     </HelpModal>
                     <Text fw={700} size="lg" mb="md">
                         {t('document_statuses')}
