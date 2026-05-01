@@ -863,6 +863,12 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !favoritedIds.has(d.id)));
 
     async function handleAdd() {
+        //double check it is not a duplicate document name before adding
+        if (documents.some(doc => addData.name === doc.name)) {
+            setAddError("Error: Duplicate document name")
+            return;
+        }
+
         const formPayload = new FormData();
         formPayload.append('name', addData.name);
         formPayload.append('ownerUsername', addData.owner);
@@ -943,6 +949,18 @@ export function Documents() {
             setAddError('Please fill in all fields for every entry.');
             return;
         }
+
+        let duplicateFile = "";
+        if (stagedFiles.some(sf => (documents.some(doc => {
+            if (sf.name === doc.name) {
+                duplicateFile = doc.name
+            }
+            return sf.name === doc.name
+        })))) {
+            setAddError(`You cannot have a duplicate document name, please rename: ${duplicateFile}`);
+            return;
+        }
+
 
         for (const sf of stagedFiles) {
             try {
@@ -1790,9 +1808,9 @@ export function Documents() {
                                 {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
                             </Accordion>
                             :
-                            <Accordion multiple defaultValue={["All"]}>
+                            <Accordion value="All">
                                 <Accordion.Item value="All" key="All">
-                                    <Accordion.Control aria-label="All documents">
+                                    <Accordion.Control aria-label={t("all_doc")}>
                                         <Text fw={700} size="sm" mb="xs">{t("all_doc")}</Text>
                                     </Accordion.Control>
                                     <Accordion.Panel>
