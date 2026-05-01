@@ -5,7 +5,7 @@ import '@mantine/spotlight/styles.css';
 import {
     IconHome, IconFileText, IconArchive,
     IconUsers, IconBrightnessUp, IconBell, IconUserCircle,
-    IconSearch, IconLoader, IconMicrophone, IconTrash,
+    IconSearch, IconLoader, IconMicrophone, IconTrash, IconUpload, IconFilePlus, IconInfoCircle, IconUsersGroup
 } from '@tabler/icons-react';
 import { Text, Group, Badge, Box, ActionIcon } from '@mantine/core';
 import { useApi } from '../components/api';
@@ -155,12 +155,58 @@ export function CommandPalette() {
             group: 'Navigation'
         },
         {
+            id: 'about',
+            label: 'About Us',
+            description: 'View About Us',
+            onClick: () => navigate('/about'),
+            leftSection: <IconUsersGroup size={20} stroke={1.5} />,
+            group: 'Navigation'
+        },
+        {
+            id: 'credit',
+            label: 'Credits',
+            description: 'View the Credits page',
+            onClick: () => navigate('/credit'),
+            leftSection: <IconInfoCircle size={20} stroke={1.5} />,
+            group: 'Navigation'
+        },
+        {
             id: 'profile',
             label: 'Profile',
             description: 'View Profile',
             onClick: () => window.dispatchEvent(new CustomEvent('openProfilePopup')),
             leftSection: <IconUserCircle size={20} stroke={1.5} />,
             group: 'Navigation'
+        },
+        {
+            id: 'add-document',
+            label: 'Add Document',
+            description: 'Upload or link a new document',
+            onClick: () => {
+                if (window.location.pathname !== '/documents') {
+                    navigate('/documents');
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('openAddDocumentPopup')), 150);
+                } else {
+                    window.dispatchEvent(new CustomEvent('openAddDocumentPopup'));
+                }
+            },
+            leftSection: <IconFilePlus size={20} stroke={1.5} />,
+            group: 'Actions'
+        },
+        {
+            id: 'bulk-upload',
+            label: 'Bulk Upload Documents',
+            description: 'Upload multiple documents at once',
+            onClick: () => {
+                if (window.location.pathname !== '/documents') {
+                    navigate('/documents');
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('openBulkUploadPopup')), 150);
+                } else {
+                    window.dispatchEvent(new CustomEvent('openBulkUploadPopup'));
+                }
+            },
+            leftSection: <IconUpload size={20} stroke={1.5} />,
+            group: 'Actions'
         },
         ...(persona === 'Admin' ? [
             {

@@ -43,7 +43,7 @@ router.get('/search/semantic', checkJWT, async (req, res) => {
         }));
 
         // 2. RAG SEMANTIC SEARCH (Content Match)
-        const results = await semanticSearch(query, userPersona, 8);
+        const results = await semanticSearch(query, userPersona, 50);
 
         const formattedSemanticMatches = results.map(r => {
             const snippet = buildSnippet(r.content, query);
@@ -63,7 +63,7 @@ router.get('/search/semantic', checkJWT, async (req, res) => {
             if (seen.has(r.contentformId)) return false;
             seen.add(r.contentformId);
             return true;
-        });
+        }).slice(0,8);
 
         return res.json({ results: deduped });
     } catch (err) {

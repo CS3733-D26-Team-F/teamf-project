@@ -1160,7 +1160,7 @@ router.post('/api/chat', async (req, res) => {
                 execute: async (args) => {
                     if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
 
-                    const results = await semanticSearch(args.query, userRole, 6);
+                    const results = await semanticSearch(args.query, userRole, 50);
 
                     if (results.length === 0) {
                         return {
@@ -1191,7 +1191,7 @@ router.post('/api/chat', async (req, res) => {
                         docUrl: chunks[0].docUrl,
                         relevantPassages: chunks.map(c => c.content.slice(0, 300) + (c.content.length > 300 ? '...' : '')),
                         topSimilarity: Math.max(...chunks.map(c => c.similarity))
-                    }));
+                    })).sort((a,b) => b.topSimilarity - a.topSimilarity).slice(0,5);
 
                     return {
                         success: true,
