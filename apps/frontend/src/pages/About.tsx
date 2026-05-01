@@ -68,7 +68,7 @@ export function About() {
                                     position={t('swe')}
                                     photoID="John.jpg"
                                     linkedIn="https://www.linkedin.com/in/john-bernard-8b8216370/"
-                                    quote='"Words"'/>
+                                    quote='ctrl+k for the navigation search bar 🙏 - John'/>
                             </Group>
                             <div style={{ height: 30 }} />
                             <Group gap={imageGap}>
@@ -78,7 +78,7 @@ export function About() {
                                     position={t('assist')}
                                     photoID="Adrian.jpg"
                                     linkedIn="https://github.com/Phantomforce260"
-                                    quote='"Words"'/>
+                                    quote='It’s a leap of faith. That’s all it is, Miles. A leap of faith. - Peter B. Parker'/>
                                 <PeopleCard
                                     firstName="Berenis"
                                     lastName="Tekin"
