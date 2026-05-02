@@ -32,7 +32,13 @@ export function Profile() {
     }, [openProfile]);
 
     const {t} = useTranslation();
+    const [currentLanguage, setCurrentLanguage] = useState<string>(localStorage.getItem('language') ?? "eng");
+    useEffect(() => {
+        translate(currentLanguage);
+    }, []);
+
     const translate = (lang: string) => {
+        setCurrentLanguage(lang);
         i18n.changeLanguage(lang);
         localStorage.setItem('language', lang);
     };
@@ -163,7 +169,7 @@ export function Profile() {
                         <ThemeToggle/>
                         <Select
                             label={t('language')}
-                            value={i18n.language ?? 'eng'}
+                            value={currentLanguage}
                             onChange={(val) => translate(val ?? 'eng')}
                             data={[
                                 {value: 'eng', label: 'English'},
