@@ -5,7 +5,7 @@ import '@mantine/spotlight/styles.css';
 import {
     IconHome, IconFileText, IconArchive,
     IconUsers, IconBrightnessUp, IconBell, IconUserCircle,
-    IconSearch, IconLoader, IconMicrophone, IconTrash, IconUpload, IconFilePlus, IconInfoCircle, IconUsersGroup
+    IconSearch, IconLoader, IconMicrophone, IconTrash, IconUpload, IconFilePlus, IconInfoCircle, IconUsersGroup, IconDatabase
 } from '@tabler/icons-react';
 import { Text, Group, Badge, Box, ActionIcon } from '@mantine/core';
 import { useApi } from '../components/api';
@@ -65,6 +65,26 @@ export function CommandPalette() {
         r.onerror = () => setIsListening(false);
         r.onend = () => setIsListening(false);
         r.start();
+    };
+
+    const handleReindex = async () => {
+        alert('Starting system reindex... This might take a minute.');
+
+        try {
+            const res = await api(`${DOMAIN}/api/admin/reindex`, {
+                method: 'POST'
+            });
+
+            if (!res.ok) {
+                throw new Error(`Reindex failed: ${res.statusText}`);
+            }
+
+            const data = await res.json();
+            alert(`✅ ${data.message}\n\nYou can close this window and continue working while the server processes the documents.`);
+        } catch (error) {
+            console.error("Failed to reindex:", error);
+            alert("❌ Failed to run the reindex process. Check the browser console.");
+        }
     };
 
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
@@ -231,6 +251,14 @@ export function CommandPalette() {
                 },
                 leftSection: <IconTrash size={20} stroke={1.5} />,
                 group: 'Navigation'
+            },
+            {
+                id: 'reindex',
+                label: 'Reindex System Data',
+                description: 'Scan and transcribe new documents and media.',
+                onClick: handleReindex,
+                leftSection: <IconDatabase size={20} stroke={1.5} />,
+                group: 'Actions'
             }
         ] : [])
     ];
