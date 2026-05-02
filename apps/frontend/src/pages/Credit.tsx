@@ -122,16 +122,16 @@ export function Credit() {
                         </Group>
                         <Group gap={imageGap}>
                             <CreditCard
-                                tool="Jetbrains AI Assistant"
-                                description="Jetbrains AI Assistant"
-                                url="https://www.jetbrains.com/ai-ides/"
-                                logo="https://www.jetbrains.com/guide/assets/light-5688bcc9.png">
-                            </CreditCard>
-                            <CreditCard
                                 tool="Mistral AI"
                                 description="Mistral-large-latest"
                                 url="https://mistral.ai/"
                                 logo="https://www.ia-espana.es/wp-content/uploads/2024/11/mistral-ai-1.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Tesserect OCR"
+                                description="tesserect.js 7.0.0"
+                                url="https://github.com/tesseract-ocr/tesseract"
+                                logo="https://a.fsdn.com/allura/mirror/tesseract-js/icon?1744024618?&w=120">
                             </CreditCard>
                             <CreditCard
                                 tool="Docker"
@@ -150,6 +150,38 @@ export function Credit() {
                                 description="Nginx version 1.18"
                                 url="https://nginx.org/en/"
                                 logo="https://tse2.mm.bing.net/th/id/OIP.uy7Ux1lb3iZm7O2IuAR64AHaEK?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                        </Group>
+                        <Group gap={imageGap}>
+                            <CreditCard
+                                tool="Jira"
+                                description="Task Management"
+                                url="https://www.atlassian.com/software/jira/comparison?campaign=470092300&adgroup=1302922538842663&targetid=kwd-81432969382034:loc-190&matchtype=b&bidmatchtype=bb&network=o&device=c&creative=81432721941054&keyword=jira%20hive&querystring=jira%20website&ds_eid=700000001738795&ds_e1=MICROSOFT&ms_acc_id=F1114F5B&msclkid=6f3feeb45f27139ddfb58741c99ffdc7"
+                                logo="https://tse1.mm.bing.net/th/id/OIP.qWD2nuAClkBmeTenIJVAngAAAA?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Discord"
+                                description="Communication Platform"
+                                url="https://discord.com/"
+                                logo="https://tse3.mm.bing.net/th/id/OIP.WPl2ATbtEsTxte9SpbF0pAHaHa?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Zoom"
+                                description="Meeting Platform"
+                                url="https://zoom.us/signin"
+                                logo="https://tse3.mm.bing.net/th/id/OIP.FnKqTe9H-H_GojBdgf5cHwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3">
+                            </CreditCard>
+                            <CreditCard
+                                tool="Jetbrains AI"
+                                description="AI Assistant"
+                                url="https://www.jetbrains.com/ai-ides/"
+                                logo="https://www.jetbrains.com/guide/assets/light-5688bcc9.png">
+                            </CreditCard>
+                            <CreditCard
+                                tool="dbdiagram.io"
+                                description="Diagramming Tool"
+                                url="https://dbdiagram.io/home/"
+                                logo="https://tse4.mm.bing.net/th/id/OIP.HV-s8d8lRKRuK9QXzY5f3wHaB7?rs=1&pid=ImgDetMain&o=7&rm=3">
                             </CreditCard>
                         </Group>
                     </Stack>

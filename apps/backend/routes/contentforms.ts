@@ -400,18 +400,27 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             })
             : null;
 
-        if (employee1) {
-            await prisma.changes.create({
-                data: {
-                    id: content.id,
-                    empid: employee1.empid,
-                    change: "Added Document",
-                    date: new Date(date_modified).toISOString()
-                }
-            })
-        } else {
-            console.warn('[contentforms] Skipping add-document audit log because username was not resolved');
-        }
+        // if (employee1) {
+        //     await prisma.changes.create({
+        //         data: {
+        //             id: content.id,
+        //             empid: employee1.empid,
+        //             change: "Added Document",
+        //             date: new Date(date_modified).toISOString()
+        //         }
+        //     })
+        // } else {
+        //     console.warn('[contentforms] Skipping add-document audit log because username was not resolved');
+        // }
+
+        const transaction = await prisma.changes.create({
+            data: {
+                id: content.id,
+                empid: employee.empid,
+                change: "Added Document",
+                date: dayjs().subtract(4, "hour").toDate()
+            }
+        })
 
         return res.status(200).json({
             message: 'Content form created successfully',

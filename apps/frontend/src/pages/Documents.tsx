@@ -1941,14 +1941,6 @@ export function Documents() {
                                 setQuickFolderName('');
                                 setMoveFolderOpen(true);
                             }}>{t('move_to_folder')}</Button>
-                            <Button className="invert-hover-red" onClick={async () => {
-                                const ids = [...selectedIds, ...selectedFavIds];
-                                if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'})));
-                                setSelectedIds([]);
-                                setSelectedFavIds([]);
-                                loadDocuments();
-                            }}>{t('delete_selected')}</Button>
                         </Group>
                     </Box>
                 )}
