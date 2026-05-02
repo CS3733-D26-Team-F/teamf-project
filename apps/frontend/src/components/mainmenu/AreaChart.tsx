@@ -2,7 +2,7 @@ import { AreaChart as MantineAreaChart } from '@mantine/charts';
 import { useEffect, useState } from "react";
 import { DOMAIN } from "../../const.ts";
 import { useApi } from "../api.ts";
-import {Paper, Text} from '@mantine/core';
+import {Group, Paper, Text} from '@mantine/core';
 import {useTranslation} from "react-i18next";
 import {HelpModal} from "./StatsPopup.tsx";
 
@@ -60,12 +60,14 @@ export function AreaChart() {
 
     return (
         <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>
-            <HelpModal title={t("recently_modified")} position ="top">
-                <Text>{t("recently_modified_tip")}</Text>
-            </HelpModal>
-            <Text fw={700} size="lg" mb="md">
-                {t('chart_update')}
-            </Text>
+            <Group mb = "md">
+                <Text fw={700} size="lg" >
+                    {t('chart_update')}
+                </Text>
+                <HelpModal title={t("recently_modified")} inline>
+                    <Text>{t("recently_modified_tip")}</Text>
+                </HelpModal>
+            </Group>
                 <MantineAreaChart
                     h={400}
                     data={chartData}

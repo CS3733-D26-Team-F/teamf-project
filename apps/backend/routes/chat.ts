@@ -624,7 +624,7 @@ router.post('/api/chat', async (req, res) => {
                 }
             }),
 
-            // Document Statistics
+            // Document Dashboard
             getDocumentStats: tool({
                 description: 'Get statistics and analytics about the document library. Use when user asks about document counts, status breakdown, expired docs, or wants a chart/overview.',
                 parameters: z.object({

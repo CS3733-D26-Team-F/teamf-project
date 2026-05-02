@@ -24,7 +24,7 @@ const DEFAULT_LAYOUTS = {
     "EXL Operations": ['transactions', 'charts', 'calendar', 'stats']
 };
 
-export function Statistics() {
+export function Dashboard() {
     const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
     const api = useApi();
@@ -121,7 +121,7 @@ export function Statistics() {
                     fontSize: '3.5rem',
                     fontWeight: 'bold',
                 }}>
-                    {t('welcome')}, {user?.nickname}</h1>
+                    {t('welcome')}, {localStorage.getItem('first_name')}</h1>
                 <p>{t('dashboard_subtitle')}</p>
             </div>
             <EditButton

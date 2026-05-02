@@ -5,6 +5,7 @@ import {upload} from '../setup/upload.js';
 import {checkJWT} from '../setup/auth0.js';
 import { sendNotificationToUsers } from './notifications.js';
 import { indexDocument, removeDocumentFromIndex } from './indexer.js';
+import dayjs from "dayjs";
 
 const router = Router();
 
@@ -212,7 +213,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
                 id: contentForm.id,
                 empid: employee1.empid,
                 change: "Updated Document",
-                date: new Date().toISOString()
+                date: dayjs().subtract(4, "hour").toDate()
             }
         });
 
@@ -649,7 +650,7 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
                 id: updated.id,
                 empid: employee1.empid,
                 change: "Deleted Document",
-                date: new Date().toISOString()
+                date: dayjs().subtract(4, "hour").toDate()
             }
         });
         res.json(updated);
@@ -1552,7 +1553,7 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                         id: updated.id,
                         empid: employee1.empid,
                         change: "Checked Out Document",
-                        date: new Date().toISOString()
+                        date: dayjs().subtract(4, "hour").toDate()
                     }
                 });
 
@@ -1632,7 +1633,7 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                         id: updated.id,
                         empid: employee1.empid,
                         change: "Checked In Document",
-                        date: new Date().toISOString()
+                        date: dayjs().subtract(4, "hour").toDate()
                     }
                 });
 
@@ -1785,7 +1786,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             name: name,
             owner: resolvedOwner,
             persona,  // now correctly set
-            date_modified: new Date(date_modified),
+            date_modified: today,
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
@@ -1888,7 +1889,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
                 id: updated.id,
                 empid: employee1.empid,
                 change: "Updated Document",
-                date: new Date().toISOString()
+                date: dayjs().subtract(4, "hour").toDate()
             }
         })
 
@@ -2191,11 +2192,21 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
 
 router.post('/transactionDates', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const today = new Date();
+
+    const start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setUTCHours(23, 59, 59, 999);
 
     const transactions = await prisma.changes.findMany({
-        where: {date: today}
-    })
+        where: {
+            date: {
+                gte: start,
+                lt: end
+            }
+        }
+    });
 
     return(transactions);
 })

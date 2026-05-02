@@ -2,7 +2,7 @@ import { Box, Button, Group, Stack, Text, TextInput } from "@mantine/core";
 import { Header } from "../components/Header";
 import { PageTitle } from '../components/Title.tsx';
 import { useState, useEffect, useRef } from "react";
-import { IconSearch } from "@tabler/icons-react";
+import { IconSearch, IconMailExclamation } from "@tabler/icons-react";
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { FilledButton } from "../components/Buttons/FilledButton.tsx";
@@ -29,7 +29,6 @@ function Notification({ title, message, send_date, importance: _importance, read
         <Box
             mb="lg"
             style={{
-                opacity: read ? 0.5 : 1 ,
                 border: '1px solid #dee2e6',
                 borderRadius: 8,
                 padding: 16,
@@ -59,6 +58,10 @@ function Notification({ title, message, send_date, importance: _importance, read
                     >
                         {send_date.toString()}
                     </Text>
+
+                    { !read &&
+                    <IconMailExclamation color="var(--color-neutral-red)"/>
+                    }
                 </Group>
 
                 <Group>
@@ -270,8 +273,8 @@ export function Notifications() {
                 <Stack>
                     <Text>{t('noti_sure')}</Text>
                     <Group justify="center" mt="md">
-                        <Button variant="default" onClick={closeMarkAllRead}>{t('cancel')}</Button>
-                        <Button onClick={() => {
+                        <Button className="invert-hover-outline"variant="default" onClick={closeMarkAllRead}>{t('cancel')}</Button>
+                        <Button className="invert-hover" onClick={() => {
                             closeMarkAllRead();
                             handleMarkAllRead();
                         }}>{t('confirm')}</Button>
