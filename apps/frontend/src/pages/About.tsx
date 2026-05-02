@@ -40,7 +40,7 @@ export function About() {
                                     position= {t("lead")}
                                     photoID="Molly.jpg"
                                     linkedIn="https://www.linkedin.com/in/molly-olsen-53182b28a/"
-                                    quote='"Words"'/>
+                                    quote='Life doesn’t have to be perfect to be wonderful - Annette Funicello'/>
                                 <PeopleCard
                                     firstName="Jeremia"
                                     lastName="Leo"
@@ -106,7 +106,7 @@ export function About() {
                                     position={t('po')}
                                     photoID="Bowen.jpg"
                                     linkedIn="https://www.linkedin.com/in/bowen-cassel/"
-                                    quote='"Words"'/>
+                                    quote='Greatness is defined by how much you want to put into what you do - LeBron James'/>
                             </Group>
                         </Stack>
                     </Center>
