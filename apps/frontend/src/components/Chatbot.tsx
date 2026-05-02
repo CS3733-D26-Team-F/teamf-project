@@ -10,7 +10,7 @@ import {
 import {
     IconSend, IconTrash, IconPaperclip, IconX, IconMicrophone,
     IconSquare, IconStar, IconDownload, IconUser,
-    IconFileText, IconAlertTriangle, IconCheck, IconRefresh
+    IconFileText, IconAlertTriangle, IconCheck, IconRefresh, IconChevronRight, IconChevronLeft
 } from '@tabler/icons-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -437,6 +437,20 @@ export function Chatbot() {
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
 
+    // Initialize from local storage so it remembers between pages
+    const [isHidden, setIsHidden] = useState(() => {
+        return localStorage.getItem('chatbotHidden') === 'true';
+    });
+
+    // Helper function to toggle and save to local storage simultaneously
+    const toggleHidden = () => {
+        setIsHidden(prev => {
+            const next = !prev;
+            localStorage.setItem('chatbotHidden', String(next));
+            return next;
+        });
+    };
+
     const handleView = (url: string, name: string) => {
         setViewerUrl(url);
         setViewerLabel(name);
@@ -601,9 +615,38 @@ export function Chatbot() {
 
     return (
         <>
-            {/* Floating Button */}
-            <Affix position={{ bottom: 24, right: 24 }}>
-                <Tooltip label="Hanover AI Assistant" position="left" withArrow>
+            {/* Sliding Avatar Container */}
+            <div style={{
+                position: 'fixed',
+                bottom: '24px',
+                right: opened ? '-150px' : (isHidden ? '-65px' : '24px'),
+                width: '65px',
+                height: '65px',
+                transition: 'right 0.3s ease-in-out',
+                zIndex: 199
+            }}>
+                {/* Tiny Toggle Arrow */}
+                <Tooltip label={isHidden ? "Show Chat" : "Hide Chat"} position="left" withArrow>
+                    <ActionIcon
+                        variant="default"
+                        radius="xl"
+                        size="md"
+                        onClick={toggleHidden}
+                        style={{
+                            position: 'absolute',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            left: '-32px',
+                            zIndex: 1001,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }}
+                    >
+                        {isHidden ? <IconChevronLeft size={16} /> : <IconChevronRight size={16} />}
+                    </ActionIcon>
+                </Tooltip>
+
+                {/* Existing Avatar */}
+                <Tooltip label="Hanover AI Assistant" position="top" withArrow disabled={isHidden}>
                     <Avatar
                         src={avatar}
                         size={65}
@@ -612,11 +655,13 @@ export function Chatbot() {
                         style={{
                             boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
                             border: '0px solid rgba(255,255,255,0.15)',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            width: '100%',
+                            height: '100%'
                         }}
                     />
                 </Tooltip>
-            </Affix>
+            </div>
 
             {/* Confirm Modal */}
             <Modal
@@ -891,78 +936,81 @@ export function Chatbot() {
                             onChange={(e) => setAttachedFile(e.target.files?.[0] ?? null)}
                         />
 
-                        <Textarea
-                            placeholder={
-                                !dbUsername ? 'Please log in to use the assistant.' :
-                                    isListening ? 'Listening...' :
-                                        'Ask about documents, employees, or portal navigation...'
-                            }
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
-                            size="sm"
-                            radius="md"
-                            autosize
-                            minRows={1}
-                            maxRows={4}
-                            leftSection={
-                                <Tooltip label="Attach file" withArrow>
-                                    <ActionIcon
-                                        size="sm"
-                                        variant="subtle"
-                                        color="gray"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
-                                    >
-                                        <IconPaperclip size={15} />
-                                    </ActionIcon>
-                                </Tooltip>
-                            }
-                            rightSectionWidth={72}
-                            rightSection={
-                                <Group gap={2} mr={2} wrap="nowrap">
-                                    <Tooltip label={isListening ? 'Stop listening' : 'Voice input'} withArrow>
+                        {/* Input Area Group */}
+                        <Group gap="xs" align="flex-end" wrap="nowrap">
+                            <Textarea
+                                style={{ flex: 1 }} // Forces the text box to take up all remaining horizontal space
+                                placeholder={
+                                    !dbUsername ? 'Please log in to use the assistant.' :
+                                        isListening ? 'Listening...' :
+                                            'Ask about documents, employees, or portal navigation...'
+                                }
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
+                                size="sm"
+                                radius="md"
+                                autosize
+                                minRows={1}
+                                maxRows={4}
+                                leftSection={
+                                    <Tooltip label="Attach file" withArrow>
                                         <ActionIcon
                                             size="sm"
-                                            variant={isListening ? 'filled' : 'subtle'}
-                                            color={isListening ? 'red' : 'gray'}
-                                            onClick={toggleVoice}
+                                            variant="subtle"
+                                            color="gray"
+                                            onClick={() => fileInputRef.current?.click()}
                                             disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
                                         >
-                                            <IconMicrophone size={14} />
+                                            <IconPaperclip size={15} />
                                         </ActionIcon>
                                     </Tooltip>
-                                    {status === 'submitted' || status === 'streaming' ? (
-                                        <Tooltip label="Stop generating" withArrow>
-                                            <ActionIcon size="sm" color="red" variant="filled" onClick={stop}>
-                                                <IconSquare size={12} fill="currentColor" />
-                                            </ActionIcon>
-                                        </Tooltip>
-                                    ) : (
-                                        <Tooltip label="Send (Enter)" withArrow>
-                                            <ActionIcon
-                                                size="sm"
-                                                color="blue"
-                                                variant="filled"
-                                                disabled={!input.trim() || !dbUsername}
-                                                onClick={handleSubmit}
-                                            >
-                                                <IconSend size={14} />
-                                            </ActionIcon>
-                                        </Tooltip>
-                                    )}
-                                </Group>
-                            }
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    if (input.trim() && dbUsername && status !== 'submitted' && status !== 'streaming') {
-                                        handleSubmit(e as any);
-                                    }
                                 }
-                                // Shift+Enter falls through naturally and adds a newline
-                            }}
-                        />
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (input.trim() && dbUsername && status !== 'submitted' && status !== 'streaming') {
+                                            handleSubmit(e as any);
+                                        }
+                                    }
+                                }}
+                            />
+
+                            {/* The Buttons - Extracted and locked to the bottom */}
+                            <Group gap={4} wrap="nowrap" pb={2}>
+                                <Tooltip label={isListening ? 'Stop listening' : 'Voice input'} withArrow>
+                                    <ActionIcon
+                                        size="lg" // Bumped the size up slightly now that they are outside the box
+                                        variant={isListening ? 'filled' : 'light'}
+                                        color={isListening ? 'red' : 'gray'}
+                                        onClick={toggleVoice}
+                                        disabled={!dbUsername || status === 'submitted' || status === 'streaming'}
+                                    >
+                                        <IconMicrophone size={18} />
+                                    </ActionIcon>
+                                </Tooltip>
+
+                                {status === 'submitted' || status === 'streaming' ? (
+                                    <Tooltip label="Stop generating" withArrow>
+                                        <ActionIcon size="lg" color="red" variant="filled" onClick={stop}>
+                                            <IconSquare size={16} fill="currentColor" />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                ) : (
+                                    <Tooltip label="Send (Enter)" withArrow>
+                                        <ActionIcon
+                                            size="lg"
+                                            color="blue"
+                                            variant="filled"
+                                            disabled={!input.trim() || !dbUsername}
+                                            onClick={handleSubmit}
+                                        >
+                                            <IconSend size={16} />
+                                        </ActionIcon>
+                                    </Tooltip>
+                                )}
+                            </Group>
+                        </Group>
 
                         <Text size="xs" c="dimmed" ta="center" mt={6}>
                             Hanover Insurance — Internal Portal Assistant
