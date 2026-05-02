@@ -1,4 +1,5 @@
 import {Badge} from "@mantine/core";
+import {useTranslation} from "react-i18next";
 
 interface StatusBadgesProps {
     status: string;
@@ -18,6 +19,21 @@ const statusColors: Record<string, string> = {
 
 export function StatusBadge(props: StatusBadgesProps) {
     const color = statusColors[props.status] ?? 'gray';
+    const {t} = useTranslation();
+
+    function translateStatus(status: string) {
+        let statusTranslation = props.status
+        if (statusTranslation == "In Progress") {
+            statusTranslation = t('in_progress')
+        } else if (statusTranslation == "Internal Review") {
+            statusTranslation = t('internal_review')
+        } else if (statusTranslation == "Client Review") {
+            statusTranslation = t('client_review')
+        } else if (statusTranslation == "Approved") {
+            statusTranslation = t('approved')
+        }
+        return statusTranslation;
+    }
 
     if (props.filter) {
         return (
@@ -28,14 +44,14 @@ export function StatusBadge(props: StatusBadgesProps) {
                 style={{ cursor: 'pointer' }}
                 onClick={props.onRemove}
             >
-                Status: {props.status} ×
+                {t("status")}: {translateStatus(props.status)} ×
             </Badge>
         );
     }
 
     return (
         <Badge color={color} variant="light" size={props.size}>
-            {props.status}
+            {translateStatus(props.status)}
         </Badge>
     );
 }

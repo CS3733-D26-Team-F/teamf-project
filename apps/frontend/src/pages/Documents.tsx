@@ -2261,10 +2261,13 @@ export function Documents() {
             <Modal opened={filterOpen} onClose={() => setFilterOpen(false)} title={t('filter_documents')}>
                 <Stack>
                     <MultiSelect label={t('persona')} placeholder={t('all_persona')} value={filterPersona}
-                                 onChange={setFilterPersona} data={roles.map ( r => ({ value: r, label: t(personaMap[r] ?? r)}))} clearable/>
+                                 onChange={setFilterPersona} data={(roles.filter(role => role != "Admin")).map( r => ({ value: r, label: t(personaMap[r] ?? r)}))} clearable/>
                     <MultiSelect label={t('status')} placeholder={t('all_status')} value={filterStatus}
                                  onChange={setFilterStatus}
-                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}
+                                 data={[{value: "In Progress", label: t('in_progress')},
+                                        {value: "Internal Review", label: t('internal_review')},
+                                        {value: "Client Review", label: t('client_review')},
+                                        {value: "Approved", label: t('approved')} ]}
                                  clearable/>
                     <MultiSelect label={t('file_type')} placeholder={t('all_type')} value={filterType}
                                  onChange={setFilterType}
