@@ -6,8 +6,7 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
-    Tooltip, SegmentedControl, Pagination, Accordion,
-    useProps
+    Tooltip, SegmentedControl, Pagination, Accordion
 } from '@mantine/core';
 import {
     IconFolder, IconDotsVertical, IconChevronDown, 
@@ -1634,8 +1633,9 @@ export function Documents() {
                         <Button
                             variant="default"
                             onClick={() => setOpenHelpModal(true)}
+                            style={{ outline: 'none', border: 'none' }}
                         >
-                            <IconHelp />
+                            <IconHelp color="var(--color-yale-blue"/>
                         </Button>
                     </Group>
                     <HelpModal
@@ -1717,7 +1717,7 @@ export function Documents() {
 
                 {activeFilterCount > 0 && (
                     <Group mb="sm" gap="xs">
-                        {filterPersona.map(v => <Badge key={v} variant="filled" color="blue"
+                        {filterPersona.map(v => <Badge key={v} variant="filled" color="var(--color-yale-blue)"
                                                        style={{cursor: 'pointer'}}
                                                        onClick={() => setFilterPersona(p => p.filter(x => x !== v))}>{t('persona')}: {v} ×</Badge>)}
                         {filterStatus.map(v => <StatusBadge
@@ -1726,23 +1726,23 @@ export function Documents() {
                             filter
                             onRemove={() => setFilterStatus(p => p.filter(x => x !== v))}
                         />)}
-                        {filterType.map(v => <Badge key={v} variant="filled" color="violet"
+                        {filterType.map(v => <Badge key={v} variant="filled" color="var(--color-sapphire)"
                                                     style={{cursor: 'pointer'}}
                                                     onClick={() => setFilterType(p => p.filter(x => x !== v))}>{t('type')}: {v} ×</Badge>)}
-                        {filterOwner.map(v => <Badge key={v} variant="filled" color="teal"
+                        {filterOwner.map(v => <Badge key={v} variant="filled" color="var(--color-pacific-blue)"
                                                      style={{cursor: 'pointer'}}
                                                      onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('Owner')}: {v} ×</Badge>)}
-                        {filterTags.map(v => <Badge key={v} variant="filled" color="cyan"
+                        {filterTags.map(v => <Badge key={v} variant="filled" color="var(--color-star-command)"
                                                     style={{cursor: 'pointer'}}
                                                     onClick={() => setFilterTags(p => p.filter(x => x !== v))}>{t('Tag')}: {v} ×</Badge>)}
-                        {filterCheckout.map(v => <Badge key={v} variant="filled" color="indigo"
+                        {filterCheckout.map(v => <Badge key={v} variant="filled" color="var(--color-fresh-sky)"
                                                         style={{cursor: 'pointer'}}
                                                         onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>{t('checkout_status')}: {v === 'checked out' ? t('checked_out') : t('available')} ×
                         </Badge>)}
                         {selectedFolderId !== null && (
                             <Badge
                                 variant="filled"
-                                color="grape"
+                                color="var(--color-star-command)"
                                 style={{cursor: 'pointer'}}
                                 onClick={() => setSelectedFolderId(null)}
                             >

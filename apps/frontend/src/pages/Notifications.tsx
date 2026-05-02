@@ -250,9 +250,11 @@ export function Notifications() {
     return (
         <>
             <Header />
-            <PageTitle title={t('notifications')} />
             <Group justify="space-between">
-                <NotificationButton/>
+                <Group style={{marginLeft: '24px', gap: '8px'}}>
+                    <PageTitle title={t('notifications')} />
+                    <NotificationButton/>
+                </Group>
 
                 <Group style={{ marginInline: '24px'}}>
                     <Button variant="default" onClick={openMarkAllRead}>
