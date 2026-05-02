@@ -435,7 +435,7 @@ export function EmployeeListView() {
                             onChange={e => setEditData({...editData, newUsername: e.target.value})}
                         />
                         <Box>
-                            <Text size="sm" fw={500} mb={4}>{t('new_username_optional')}</Text>
+                            <Text size="sm" fw={700} mb={4}>{t('pfp_upload')}</Text>
                             <FileInput
                                 placeholder={t('pfp_upload')}
                                 accept="image/*"
@@ -490,7 +490,7 @@ export function EmployeeListView() {
                 centered
             >
                 <Text size="sm" mb="md">
-                    {t('changes_you_made')}<strong>{t('cannot_be_undone')}</strong>
+                    {t('changes_you_made')}<strong> {t('cannot_be_undone')}</strong>
                 </Text>
                 <Group justify="flex-end">
                     <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">Cancel</Button>
