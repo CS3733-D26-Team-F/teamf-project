@@ -92,7 +92,7 @@ export function About() {
                                     position={t('swe')}
                                     photoID="Chloe.jpg"
                                     linkedIn="https://www.linkedin.com/in/chloe-polit-5b680a293/"
-                                    quote='"Words"'/>
+                                    quote='Life moves pretty fast. If you dont stop and look around once in a while, you could miss it - Ferris Bueller'/>
                                 <PeopleCard
                                     firstName="Ryan"
                                     lastName="Veith"

@@ -74,6 +74,7 @@ model employee {
   created_at                                 DateTime?         @default(now()) @db.Timestamp(6)
   pfp_URL                                    String?           @unique @db.VarChar
   widgets                                    String[]
+  todo                                       String[]          @db.VarChar
   admin                                      admin?
   changes                                    changes[]
   contentform                                contentform[]
@@ -193,10 +194,10 @@ model workflow_form {
   name             String?   @db.VarChar
   carrier          String?   @db.VarChar
   policy_type      String?   @db.VarChar
-  limits_liability Float?
+  limits_liability Float?    @db.Real
   expiration_date  DateTime? @db.Date
   rating           String?   @db.VarChar
-  estimate         Float?
-  coverage         Float?
+  estimate         Float?    @db.Real
+  coverage         Float?    @db.Real
   workflow         workflow  @relation(fields: [workflow_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
