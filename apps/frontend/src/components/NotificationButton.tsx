@@ -9,8 +9,8 @@ import {useAuth0} from "@auth0/auth0-react";
 export function NotificationButton() {
     const [opened, {open, close}] = useDisclosure(false);
     const [employees, setEmployees] = useState<{ value: string; label: string }[]>([]);
-    const name = localStorage.getItem('username');
-    const { user, getAccessTokenSilently } = useAuth0();
+    // const name = localStorage.getItem('username');
+    const { getAccessTokenSilently } = useAuth0();
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -116,11 +116,10 @@ export function NotificationButton() {
             </Modal>
 
             <Button
-                className="invert-hover-sapphire"
+                className="invert-hover"
                 onClick={open}
                 style={{
                     marginLeft: '24px',
-                    backgroundColor: 'var(--yale-blue)',
                     width: '42px',
                     padding: 0
                 }}

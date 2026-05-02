@@ -50,10 +50,11 @@ export function ManageEmployeesForm() {
                 <Group>
                     <PageTitle title={t('employees')} />
                     <Button
-                        variant="default"
-                        onClick={() => setOpenHelpModal(true)}
-                    >
-                        <IconHelp />
+                            variant="default"
+                            onClick={() => setOpenHelpModal(true)}
+                            style={{ outline: 'none', border: 'none' }}
+                            >
+                        <IconHelp color="var(--color-yale-blue"/>
                     </Button>
                 </Group>
 

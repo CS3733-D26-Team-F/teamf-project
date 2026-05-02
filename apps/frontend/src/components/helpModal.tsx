@@ -1,5 +1,5 @@
-import { Modal, Group, Button, Text } from '@mantine/core';
-import { IconHelp, type ReactNode } from '@tabler/icons-react';
+import { Modal, Group, Text } from '@mantine/core';
+import { IconHelp } from '@tabler/icons-react';
 
 type HelpProps = {
     title: string;
