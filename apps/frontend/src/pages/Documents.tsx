@@ -91,7 +91,7 @@ export function Documents() {
         [folders]
     );
 
-    const folderIdsWithAccess = new Set<number>();
+   
 
     const selectedFolderPath = useMemo<Folder[]>(() => {
         if (selectedFolderId === null) return [];
@@ -218,7 +218,7 @@ export function Documents() {
     const [viewerLabel, setViewerLabel] = useState('');
     const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
     const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
-    const [HelpPopupSessionId,setHelpPopupSessionId] = useState<string | null>(null);
+    
 
     const personaMap: Record<string, string> = {
         'Underwriter': 'underwriter',
