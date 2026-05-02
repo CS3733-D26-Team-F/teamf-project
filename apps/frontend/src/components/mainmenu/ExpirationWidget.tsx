@@ -122,16 +122,21 @@ export function ExpirationWidget() {
                     position: 'relative'
                 }}
             >
-                <HelpModal title= {t('expiring_soon')}>
-                    <Text>{t('expiring_soon_tip')}</Text>
-                </HelpModal>
-                <Group gap={6} mb="xs">
-                    <IconClock size={14} color="gray" />
-                    <Text fw={700} size="sm" c="dimmed">{t('expire_widget')}</Text>
+
+
+
+                <Group mb = "md">
+                    <Group gap={6} >
+                        <IconClock size={14} color="gray" />
+                        <Text fw={700} size="sm" c="dimmed">{t('expire_widget')}</Text>
+                    </Group>
+                    <HelpModal title= {t('expiring_soon')} inline>
+                        <Text>{t('expiring_soon_tip')}</Text>
+                    </HelpModal>
                 </Group>
 
                 {currentPersona === 'Admin' ? (
-                    <Text fw={700} size="sm" c="dimmed">{t('view')}: All Personas</Text>
+                    <Text fw={700} size="sm" c="dimmed">{t('view')}: {t('all_personas')}</Text>
                 ) : (
                     <Group>
                         <Text fw={700} size="sm" c="dimmed">View: {value}</Text>
@@ -159,7 +164,7 @@ export function ExpirationWidget() {
                                 <Group justify="space-between">
                                     <Text fw={600} size="sm">{doc.name}</Text>
                                     <Text size="sm" c="dimmed">
-                                        {t('noExpire_widget')}: {dayjs(doc.expiration_date).format("MMM D, YYYY")}
+                                        {t('expiration_date')}: {dayjs(doc.expiration_date).format("MMM D, YYYY")}
                                     </Text>
                                 </Group>
 

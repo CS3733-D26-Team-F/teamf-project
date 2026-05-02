@@ -7,9 +7,10 @@ type Props = {
     title: string;
     children: ReactNode;
     position?: 'top' | 'bottom';
+    inline?: boolean;
 };
 
-export function HelpModal({ title, children, position = 'bottom' }: Props) {
+export function HelpModal({ title, children, position = 'top', inline = false }: Props) {
     const [opened, { open, close }] = useDisclosure(false);
 
     return (
@@ -17,7 +18,7 @@ export function HelpModal({ title, children, position = 'bottom' }: Props) {
             <Modal opened={opened} onClose={close} title={title}>
                 {children}
             </Modal>
-            <ActionIcon variant="subtle" color = "var(--light-gray)" onClick={open} style={{
+            <ActionIcon variant="subtle" color = "var(--light-gray)" onClick={open} style={inline ? {} : {
                 position: 'absolute',
                 [position === 'top' ? 'top' : 'bottom']: 8,
                 right: 8

@@ -32,61 +32,81 @@ export function About() {
                         {t('meet_team')}
                     </Text>
                     <Center>
-
                         <Stack gap={imageGap}>
                             <Group gap={imageGap}>
                                 <PeopleCard
                                     firstName="Molly"
                                     lastName="Olsen"
                                     position= {t("lead")}
-                                    photoID="Molly.jpg"/>
+                                    photoID="Molly.jpg"
+                                    linkedIn="https://www.linkedin.com/in/molly-olsen-53182b28a/"
+                                    quote='Life doesn’t have to be perfect to be wonderful - Annette Funicello'/>
                                 <PeopleCard
                                     firstName="Jeremia"
                                     lastName="Leo"
                                     position={t('pm')}
-                                    photoID="Jeremia.jpg"/>
+                                    photoID="Jeremia.jpg"
+                                    linkedIn="https://www.linkedin.com/in/jeremia-leo/"
+                                    quote='When people say impossible, they usually mean improbable - Nikolai Lantsov'/>
                                 <PeopleCard
                                     firstName="Milan"
                                     lastName="DeNicola"
                                     position={t('da')}
-                                    photoID="Milan.jpg"/>
+                                    photoID="Milan.jpg"
+                                    linkedIn="https://www.linkedin.com/in/milan-denicola-214a92267"
+                                    quote='When you eliminate the impossible, whatever remains, however improbable, must be the truth. - Spock'/>
                                 <PeopleCard
                                     firstName="Andrew"
                                     lastName="Phengthalasy"
                                     position={t('swe')}
-                                    photoID="Andrew.jpg"/>
+                                    photoID="Andrew.jpg"
+                                    linkedIn="https://www.linkedin.com/in/andrew-phengthalasy/"
+                                    quote='Interesting - Andrew'/>
                                 <PeopleCard
                                     firstName="John"
                                     lastName="Bernard"
                                     position={t('swe')}
-                                    photoID="John.jpg"/>
+                                    photoID="John.jpg"
+                                    linkedIn="https://www.linkedin.com/in/john-bernard-8b8216370/"
+                                    quote='ctrl+k for the navigation search bar 🙏 - John'/>
                             </Group>
+                            <div style={{ height: 30 }} />
                             <Group gap={imageGap}>
                                 <PeopleCard
                                     firstName="Adrian"
                                     lastName="Cervera"
                                     position={t('assist')}
-                                    photoID="Adrian.jpg"/>
+                                    photoID="Adrian.jpg"
+                                    linkedIn="https://github.com/Phantomforce260"
+                                    quote='It’s a leap of faith. That’s all it is, Miles. A leap of faith. - Peter B. Parker'/>
                                 <PeopleCard
                                     firstName="Berenis"
                                     lastName="Tekin"
                                     position={t('assist')}
-                                    photoID="Berenis.jpg"/>
+                                    photoID="Berenis.jpg"
+                                    linkedIn="https://www.linkedin.com/in/berenistekin/"
+                                    quote='Nothing is lost. . .Everything is transformed. - Michael Ende, Neverending Story'/>
                                 <PeopleCard
                                     firstName="Chloe"
                                     lastName="Polit"
                                     position={t('swe')}
-                                    photoID="Chloe.jpg"/>
+                                    photoID="Chloe.jpg"
+                                    linkedIn="https://www.linkedin.com/in/chloe-polit-5b680a293/"
+                                    quote='Life moves pretty fast. If you dont stop and look around once in a while, you could miss it - Ferris Bueller'/>
                                 <PeopleCard
                                     firstName="Ryan"
                                     lastName="Veith"
                                     position={t('sm')}
-                                    photoID="Ryan.jpg"/>
+                                    photoID="Ryan.jpg"
+                                    linkedIn="https://www.linkedin.com/in/ryan-veith-8389ba34a/"
+                                    quote='So many books, so little time. - Frank Zappa"'/>
                                 <PeopleCard
                                     firstName="Bowen"
                                     lastName="Cassel"
                                     position={t('po')}
-                                    photoID="Bowen.jpg"/>
+                                    photoID="Bowen.jpg"
+                                    linkedIn="https://www.linkedin.com/in/bowen-cassel/"
+                                    quote='Greatness is defined by how much you want to put into what you do - LeBron James'/>
                             </Group>
                         </Stack>
                     </Center>

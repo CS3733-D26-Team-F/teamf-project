@@ -2,7 +2,7 @@ import { Box, Button, Group, Stack, Text, TextInput } from "@mantine/core";
 import { Header } from "../components/Header";
 import { PageTitle } from '../components/Title.tsx';
 import { useState, useEffect, useRef } from "react";
-import { IconSearch } from "@tabler/icons-react";
+import { IconSearch, IconMailExclamation } from "@tabler/icons-react";
 import { Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { FilledButton } from "../components/Buttons/FilledButton.tsx";
@@ -30,7 +30,6 @@ function Notification({ title, message, send_date, importance: _importance, read
         <Box
             mb="lg"
             style={{
-                opacity: read ? 0.5 : 1 ,
                 border: '1px solid #dee2e6',
                 borderRadius: 8,
                 padding: 16,
@@ -60,6 +59,10 @@ function Notification({ title, message, send_date, importance: _importance, read
                     >
                         {send_date.toString()}
                     </Text>
+
+                    { !read &&
+                    <IconMailExclamation color="var(--color-neutral-red)"/>
+                    }
                 </Group>
 
                 <Group>
@@ -185,7 +188,7 @@ export function Notifications() {
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
             closeMarkAllRead();
         } catch (error) {
-            console.error('Failed to mark all as read:', error);
+            console.error(t('noti_fail_mark'), error);
         }
     };
 
@@ -200,7 +203,7 @@ export function Notifications() {
             setNotifications([]);
             closeClearAll();
         } catch (error) {
-            console.error('Failed to clear all notifications:', error);
+            console.error(t('noti_fail_clear'), error);
         }
     };
 
@@ -247,16 +250,16 @@ export function Notifications() {
     return (
         <>
             <Header />
-            <PageTitle title={t("notifications")} />
+            <PageTitle title={t('notifications')} />
             <Group justify="space-between">
                 <NotificationButton/>
 
                 <Group style={{ marginInline: '24px'}}>
                     <Button variant="default" onClick={openMarkAllRead}>
-                        Mark All as Read
+                        {t("mark_all_read")}
                     </Button>
                     <Button variant="default" className="invert-hover-red" onClick={openClearAll}>
-                        Clear All
+                        {t('clear_all')}
                     </Button>
                 </Group>
             </Group>
@@ -267,19 +270,19 @@ export function Notifications() {
                 size="xl"
                 title={
                     <Text fw={700} size="lg" c="var(--color-yale-blue)">
-                        Mark All as Read
+                        {t('mark_all_read')}
                     </Text>
                 }
                 centered
             >
                 <Stack>
-                    <Text>Are you sure you want to mark all notifications as read?</Text>
+                    <Text>{t('noti_sure')}</Text>
                     <Group justify="center" mt="md">
-                        <Button variant="default" onClick={closeMarkAllRead}>Cancel</Button>
-                        <Button onClick={() => {
+                        <Button className="invert-hover-outline"variant="default" onClick={closeMarkAllRead}>{t('cancel')}</Button>
+                        <Button className="invert-hover" onClick={() => {
                             closeMarkAllRead();
                             handleMarkAllRead();
-                        }}>Confirm</Button>
+                        }}>{t('confirm')}</Button>
                     </Group>
                 </Stack>
             </Modal>
@@ -290,19 +293,19 @@ export function Notifications() {
                 size="xl"
                 title={
                     <Text fw={700} size="lg" c="var(--color-yale-blue)">
-                        Clear All Notifications
+                        {t('clear_all_noti')}
                     </Text>
                 }
                 centered
             >
                 <Stack>
-                    <Text>Are you sure you want to delete all notifications? This action cannot be undone.</Text>
+                    <Text>{t('noti_confirm_delete')}</Text>
                     <Group justify="center" mt="md">
-                        <Button variant="default" onClick={closeClearAll}>Cancel</Button>
+                        <Button variant="default" onClick={closeClearAll}>{t('cancel')}</Button>
                         <Button className="invert-hover-red" onClick={() => {
                             closeClearAll();
                             handleClearAll();
-                        }}>Delete All</Button>
+                        }}>{t('delete_all')}</Button>
                     </Group>
                 </Stack>
             </Modal>

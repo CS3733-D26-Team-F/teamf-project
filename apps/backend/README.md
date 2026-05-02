@@ -69,7 +69,6 @@ Backend support code is stored in:
 
 - `setup/` — external service and infrastructure setup
 - `src/` — shared backend source files, if used by the app
-- `requireRole.ts` — role-based access helper (unused)
 - `migration.ts` — database-related migration for raw migrations
 - `prisma/` — Prisma schema and database files
 
@@ -92,6 +91,7 @@ A quick map of common backend responsibilities:
 - `routes/login.ts` — login/auth-related endpoints
 - `routes/employees.ts` — employee endpoints
 - `routes/contentforms.ts` — content form endpoints
+- `routes/notifications.ts` — notifications endpoints
 - `routes/chat.ts` — chat-related endpoints
 - `setup/prisma.ts` — Prisma client/database wiring
 - `setup/auth0.ts` — Auth0-related configuration

@@ -6,9 +6,14 @@ import {AccessDenied} from "../components/AccessDenied.tsx";
 import {
     TextInput, Button, Modal, Select, MultiSelect, Group, Text,
     Badge, Stack, Box, Table, Checkbox, ActionIcon, Menu,
-    Tooltip, SegmentedControl, Pagination, Accordion
+    Tooltip, SegmentedControl, Pagination, Accordion,
+    useProps
 } from '@mantine/core';
-import {IconFolder, IconDotsVertical, IconChevronDown, IconChevronRight, IconSearch, IconTrash, IconFilter, IconClock, IconWindowMaximize} from '@tabler/icons-react';
+import {
+    IconFolder, IconDotsVertical, IconChevronDown, 
+    IconChevronRight, IconSearch, IconTrash, IconHelp,
+    IconFilter, IconClock, IconWindowMaximize
+} from '@tabler/icons-react';
 import {IconLayoutBottombar} from "@tabler/icons-react"
 import DocViewer, {DocViewerRenderers} from "@iamjariwala/react-doc-viewer";
 import "@iamjariwala/react-doc-viewer/dist/index.css";
@@ -34,6 +39,7 @@ import {allPersonas} from "../components/ManageEmployees/personas.tsx";
 import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
 import {useTranslation} from "react-i18next";
+import { HelpModal } from '../components/helpModal.tsx';
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -84,6 +90,8 @@ export function Documents() {
         () => folders.reduce((acc, folder) => ({...acc, [folder.id]: folder}), {}),
         [folders]
     );
+
+   
 
     const selectedFolderPath = useMemo<Folder[]>(() => {
         if (selectedFolderId === null) return [];
@@ -204,10 +212,13 @@ export function Documents() {
 
     const [currentPage, setCurrentPage] = useState<PageMap>({"Underwriter": 1, "Business Analyst": 1, "Actuarial Analyst": 1, "EXL Operations": 1, "All": 1});
 
+    const [ openHelpModal, setOpenHelpModal ] = useState(false);
+
     const [viewerUrl, setViewerUrl] = useState<string | null>(null);
     const [viewerLabel, setViewerLabel] = useState('');
     const [inlineDropdownId, setInlineDropdownId] = useState<number | null>(null);
     const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
+    
 
     const personaMap: Record<string, string> = {
         'Underwriter': 'underwriter',
@@ -256,6 +267,32 @@ export function Documents() {
             });
         }
     };
+
+    // Listen for Command Palette Trash
+    useEffect(() => {
+        const handleOpenTrash = () => {
+            if (persona === 'Admin') {
+                loadTrash();
+                setTrashOpen(true);
+            }
+        };
+        window.addEventListener('openTrashPopup', handleOpenTrash);
+        return () => window.removeEventListener('openTrashPopup', handleOpenTrash);
+    }, [persona]);
+
+    // Listen for Command Palette Upload
+    useEffect(() => {
+        const handleAdd = () => openAddDocumentModal();
+        const handleBulk = () => openBulkUploadModal();
+
+        window.addEventListener('openAddDocumentPopup', handleAdd);
+        window.addEventListener('openBulkUploadPopup', handleBulk);
+
+        return () => {
+            window.removeEventListener('openAddDocumentPopup', handleAdd);
+            window.removeEventListener('openBulkUploadPopup', handleBulk);
+        };
+    }, [selectedFolderId]);
 
     // ── Recently viewed ──────────────────────────────────────────────────────
     const [recentIds, setRecentIds] = useState<number[]>(() => {
@@ -513,6 +550,7 @@ export function Documents() {
         setEditFolderOpen(true);
     }
 
+
     async function updateFolder(id: number, name: string, personaList: string[], allowedUsers: string[], parentFolderId: number | null) {
         const trimmedName = name.trim();
         if (!trimmedName) {
@@ -567,6 +605,20 @@ export function Documents() {
         }
 
         await Promise.all([loadDocuments(), loadFolders()]);
+    }
+
+    function checkFolderPersonaAccessForMove(personaList: string[], allowedUsers: string[], folderId: number | null): Folder[] {
+        return folders.filter(f => {
+            if (folderId !== null && f.id === folderId) return false;
+
+            if (persona === 'Admin' || f.owner === (username ?? '') ) return true;
+
+            const fPersonas = f.persona ?? [];
+            const fAllowedUsers = f.allowed_users ?? [];
+            const fHasPersonaAccess = fPersonas.length === 0 || personaList.some(p => fPersonas.includes(p));
+            const fHasUserAccess = fAllowedUsers.length === 0 || allowedUsers.some(u => fAllowedUsers.includes(u)) || fAllowedUsers.includes(username ?? '');
+            return fHasPersonaAccess && fHasUserAccess;
+        });
     }
 
     async function loadFolders() {
@@ -863,6 +915,12 @@ export function Documents() {
     const selectedHasNonFavorites = [...selectedIds, ...selectedFavIds].some(id => documents.find(d => d.id === id && !favoritedIds.has(d.id)));
 
     async function handleAdd() {
+        //double check it is not a duplicate document name before adding
+        if (documents.some(doc => addData.name === doc.name)) {
+            setAddError("Error: Duplicate document name")
+            return;
+        }
+
         const formPayload = new FormData();
         formPayload.append('name', addData.name);
         formPayload.append('ownerUsername', addData.owner);
@@ -943,6 +1001,18 @@ export function Documents() {
             setAddError('Please fill in all fields for every entry.');
             return;
         }
+
+        let duplicateFile = "";
+        if (stagedFiles.some(sf => (documents.some(doc => {
+            if (sf.name === doc.name) {
+                duplicateFile = doc.name
+            }
+            return sf.name === doc.name
+        })))) {
+            setAddError(`You cannot have a duplicate document name, please rename: ${duplicateFile}`);
+            return;
+        }
+
 
         for (const sf of stagedFiles) {
             try {
@@ -1321,6 +1391,74 @@ export function Documents() {
         setViewerLabel(label);
     }
 
+    function canCurrentUserMoveDocument(doc: ContentForm): boolean {
+        if (persona === 'Admin') return true;
+        if (doc.owner === (username ?? '')) return true;
+        const docPersonas = doc.persona ?? [];
+        return docPersonas.length === 0 || docPersonas.includes(persona ?? '');
+    }
+
+    function isFolderValidMoveTarget(folder: Folder, docsToMove: ContentForm[]): boolean {
+        const folderPersonas = folder.persona ?? [];
+        const folderAllowedUsers = folder.allowed_users ?? [];
+
+        return docsToMove.every(doc => {
+            const docPersonas = doc.persona ?? [];
+
+            // If the document has personas, the destination folder must explicitly include all of them.
+            // This blocks moving a mixed-persona document into a folder that only lists one of those personas.
+            const personaMatches =
+                docPersonas.length === 0 ||
+                docPersonas.every(p => folderPersonas.includes(p));
+
+            // Folder username restrictions must match the document owner.
+            const userMatches = folderAllowedUsers.length === 0 || folderAllowedUsers.includes(doc.owner);
+
+            return personaMatches && userMatches;
+        });
+    }
+
+    function getMoveTargetFolders(docsToMove: ContentForm[]): Folder[] {
+        const userAccessibleFolders = checkFolderPersonaAccessForMove(
+            [persona ?? ''].filter(Boolean),
+            [username ?? ''].filter(Boolean),
+            null
+        );
+
+        return userAccessibleFolders.filter(folder => isFolderValidMoveTarget(folder, docsToMove));
+    }
+
+    function openMoveModalForIds(ids: number[]) {
+        const docsToMove = ids
+            .map(id => documents.find(d => d.id === id))
+            .filter(Boolean) as ContentForm[];
+
+        if (docsToMove.length === 0) {
+            alert('No documents selected to move.');
+            return;
+        }
+
+        const blockedDoc = docsToMove.find(doc => !canCurrentUserMoveDocument(doc));
+        if (blockedDoc) {
+            alert('You can only move documents you own or documents that include your persona.');
+            return;
+        }
+
+        setMoveTargetFolderId(null);
+        setQuickFolderName('');
+        setMoveFolderOpen(true);
+    }
+
+    const selectedMoveIds = useMemo(
+        () => [...new Set([...selectedIds, ...selectedFavIds])],
+        [selectedIds, selectedFavIds]
+    );
+
+    const selectedMoveDocuments = useMemo(
+        () => selectedMoveIds.map(id => documents.find(d => d.id === id)).filter(Boolean) as ContentForm[],
+        [selectedMoveIds, documents]
+    );
+
     const rowCallbacks: RowCallbacks = {
         persona,
         onView: openViewer,
@@ -1336,11 +1474,14 @@ export function Documents() {
             setDeleteOpen(true);
         },
         onRequestMove: (id: number) => {
-            setSelectedIds([id]);
-            setSelectedFavIds([]);
-            setMoveTargetFolderId(null);
-            setQuickFolderName('');
-            setMoveFolderOpen(true);
+            if (favoritedIds.has(id)) {
+                setSelectedFavIds([id]);
+                setSelectedIds([]);
+            } else {
+                setSelectedIds([id]);
+                setSelectedFavIds([]);
+            }
+            openMoveModalForIds([id]);
         },
         onRemoveFromFolder: async (id: number) => {
             await assignDocumentsToFolder([id], null);
@@ -1428,7 +1569,7 @@ export function Documents() {
         return (
             <Accordion.Item value={givenPersona} key={givenPersona}>
                 <Accordion.Control aria-label={givenPersona}>
-                    <Text fw={700} size="sm" c="dimmed" mb="xs">{t(personaKey)} {t('documents')}</Text>
+                    <Text fw={700} size="sm" mb="xs">{t(personaKey)} {t('documents')}</Text>
                 </Accordion.Control>
                 <Accordion.Panel>
                     {contentTable(givenPersona as PageKey, existingDocuments)}
@@ -1487,8 +1628,23 @@ export function Documents() {
             <style>{`#header-bar, .rdv-header-bar { display: none !important; }`}</style>
 
             <Box p="md">
-                <Group justify="space-between" align="center" w="100%">
-                    <PageTitle title={titleProp}/>
+                <Group justify="space-between" align="left" w="100%">
+                    <Group>
+                        <PageTitle title={titleProp}/>
+                        <Button
+                            variant="default"
+                            onClick={() => setOpenHelpModal(true)}
+                        >
+                            <IconHelp />
+                        </Button>
+                    </Group>
+                    <HelpModal
+                        title={titleProp}
+                        opened={openHelpModal}
+                        onClose={() => setOpenHelpModal(false)}
+                        popupContent={t('doc_help_content')}
+                    />
+                    
                     <Group gap="s">
                         <ViewToggle viewMode={viewMode} setViewMode={setViewMode}/>
                         <SegmentedControl
@@ -1508,7 +1664,7 @@ export function Documents() {
                                     label: (
                                         <Group gap={4} wrap="nowrap" justify="center">
                                             <IconWindowMaximize size={16}/>
-                                            <span>{t('Viewer')}</span>
+                                            <span>{t('viewer')}</span>
                                         </Group>
                                     ),
                                     value: 'popup'
@@ -1784,16 +1940,16 @@ export function Documents() {
                                 allowDeselect={false}
                             />
                         </Group>
-                        {!search ?
+                        {(!search && selectedFolderId == null) ?
                             <Accordion multiple defaultValue={["favorites", persona]}>
                                 {favoriteAccordion}
                                 {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
                             </Accordion>
                             :
-                            <Accordion multiple defaultValue={["All"]}>
+                            <Accordion value="All">
                                 <Accordion.Item value="All" key="All">
-                                    <Accordion.Control aria-label="All documents">
-                                        <Text fw={700} size="sm" c="dimmed" mb="xs">{t("all_doc")}</Text>
+                                    <Accordion.Control aria-label={t("all_doc")}>
+                                        <Text fw={700} size="sm" mb="xs">{t("all_doc")}</Text>
                                     </Accordion.Control>
                                     <Accordion.Panel>
                                         {contentTable("All", filtered)}
@@ -1875,7 +2031,7 @@ export function Documents() {
                                         await new Promise(resolve => setTimeout(resolve, 500));
                                     }
                                 }
-                            }}>{t('download_all')}</Button>
+                            }}>{t('download_selected')}</Button>
                             <Button className="invert-hover" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
                                 for (const id of ids) {
@@ -1893,18 +2049,8 @@ export function Documents() {
                             {selectedHasFavorites &&
                                 <Button className="invert-hover" onClick={unfavoriteSelected}>{t('unfavorite_all')}</Button>}
                             <Button className="invert-hover" onClick={() => {
-                                setMoveTargetFolderId(null);
-                                setQuickFolderName('');
-                                setMoveFolderOpen(true);
+                                openMoveModalForIds([...new Set([...selectedIds, ...selectedFavIds])]);
                             }}>{t('move_to_folder')}</Button>
-                            <Button className="invert-hover-red" onClick={async () => {
-                                const ids = [...selectedIds, ...selectedFavIds];
-                                if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'})));
-                                setSelectedIds([]);
-                                setSelectedFavIds([]);
-                                loadDocuments();
-                            }}>{t('delete_selected')}</Button>
                         </Group>
                     </Box>
                 )}
@@ -1982,8 +2128,7 @@ export function Documents() {
                     {folderModalError && <ErrorMessage message={folderModalError} />}
                     <Group justify="flex-end">
                         <Button className="invert-hover" onClick={async () => {
-                            const personas = folderPersona.length > 0 ? folderPersona : [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(folderName, personas, folderUsers, selectedFolderId);
+                            const created = await createFolder(folderName, folderPersona, folderUsers, selectedFolderId);
                             if (created) {
                                 setAddFolderOpen(false);
                                 setFolderName('');
@@ -2060,7 +2205,13 @@ export function Documents() {
                         placeholder="Choose folder"
                         value={moveTargetFolderId}
                         onChange={setMoveTargetFolderId}
-                        data={folders.map(f => ({label: f.name, value: String(f.id)}))}
+                        data={
+                            [
+                                { value: 'root', label: 'Root' },
+                                ...getMoveTargetFolders(selectedMoveDocuments)
+                                    .map(f => ({ value: String(f.id), label: f.name }))
+                            ]
+                        }
                         searchable
                         clearable
                     />
@@ -2072,8 +2223,7 @@ export function Documents() {
                             onChange={e => setQuickFolderName(e.target.value)}
                         />
                         <Button mt={24} className="invert-hover-outline" onClick={async () => {
-                            const personas = [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(quickFolderName, personas, [], null);
+                            const created = await createFolder(quickFolderName, [], [], null);
                             if (created) {
                                 setMoveTargetFolderId(String(created.id));
                                 setQuickFolderName('');
@@ -2084,8 +2234,23 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => setMoveFolderOpen(false)}>Cancel</Button>
                         <Button className="invert-hover" onClick={async () => {
                             if (!moveTargetFolderId) return;
+                            const blockedDoc = selectedMoveDocuments.find(doc => !canCurrentUserMoveDocument(doc));
+                            if (blockedDoc) {
+                                alert('You can only move documents you own or documents that include your persona.');
+                                return;
+                            }
+
+                            const targetFolder = moveTargetFolderId === 'root'
+                                ? null
+                                : folders.find(f => f.id === Number(moveTargetFolderId));
+
+                            if (targetFolder && !isFolderValidMoveTarget(targetFolder, selectedMoveDocuments)) {
+                                alert('This folder is not a valid destination for one or more selected documents.');
+                                return;
+                            }
+
                             const ids = [...new Set([...selectedIds, ...selectedFavIds])];
-                            await assignDocumentsToFolder(ids, Number(moveTargetFolderId));
+                            await assignDocumentsToFolder(ids, moveTargetFolderId === 'root' ? null : Number(moveTargetFolderId));
                             setMoveFolderOpen(false);
                         }}>Move</Button>
                     </Group>
@@ -2336,37 +2501,36 @@ export function Documents() {
                                      }))
                                  }
                                  disabled={persona !== 'Admin'}/>
-                    <Text fw={600} mt="sm">{t('Lifecycle & Attributes')}</Text>
+                    <Text fw={600} mt="sm">{t('life_cycle')}</Text>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
                         <Text size="xs" c="dimmed">Upload destination</Text>
                         <Text fw={600} size="sm">{(addData.folder && addData.folder !== '') ? (folderMap[Number(addData.folder)]?.name ?? 'Selected folder') : (selectedFolderId !== null ? (folderMap[selectedFolderId]?.name ?? 'Current folder') : 'Root')}</Text>
                     </Box>
-                    <Group grow mt="sm">
+                    <Group align="flex-end" mt="sm">
                         <Select
                             label={t('folder')}
-                            placeholder="Top level"
+                            placeholder={t('top_level')}
                             value={addData.folder === '' ? 'root' : addData.folder}
                             onChange={val => setAddData({...addData, folder: (val === 'root' ? '' : (val ?? ''))})}
                             data={folderParentOptions}
                             clearable
+                            style = {{ flex: 3 }}
                         />
-                        <Group style={{alignItems: 'flex-end'}}>
                             <TextInput
-                                label="Or create folder"
+                                label="Or Create Folder"
                                 placeholder="New folder name"
                                 value={quickFolderName}
+                                style = {{ flex: 3 }}
                                 onChange={e => setQuickFolderName(e.target.value)}
                             />
-                            <Button mt={20} className="invert-hover-outline" onClick={async () => {
-                                const personas = [persona ?? ''].filter(Boolean);
-                                const created = await createFolder(quickFolderName, personas, [], null);
+                            <Button mt={20} className="invert-hover" style = {{ flex: 1 }} onClick={async () => {
+                                const created = await createFolder(quickFolderName, [], [], null);
                                 if (created) {
                                     setAddData(prev => ({...prev, folder: String(created.id)}));
                                     setQuickFolderName('');
                                 }
-                            }}>Create</Button>
+                            }}>{t('create')}</Button>
                         </Group>
-                    </Group>
                     <Group grow>
                         <Select label={t('content_type')} value={addData.content_type}
                                 onChange={val => setAddData({...addData, content_type: val ?? ''})}
@@ -2376,8 +2540,6 @@ export function Documents() {
                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label={t('last_modified')} type="date" value={addData.date_modified}
-                                   onChange={e => setAddData({...addData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={addData.expiration_date}
                                    onChange={e => setAddData({...addData, expiration_date: e.target.value})}/>
                     </Group>
@@ -2405,7 +2567,7 @@ export function Documents() {
             <Modal opened={editOpen} onClose={() => closeEdit()} title={t('edit_doc')} size="lg">
                 <Stack>
                     <Text fw={600}>{t('document_details')}</Text>
-                    <TextInput label="Name of Document" value={editData.name}
+                    <TextInput label={t("name_document")} value={editData.name}
                                onChange={e => setEditData({...editData, name: e.target.value})}/>
                     <Box>
                         <SegmentedControl
@@ -2456,7 +2618,7 @@ export function Documents() {
                         data={folderParentOptions}
                         clearable
                     />
-                    <Group preventGrowOverflow={false}>
+                    <Group preventGrowOverflow={false} align="flex-end">
                         <MultiSelect
                             w="75%"
                             label="Tags"
@@ -2469,7 +2631,7 @@ export function Documents() {
                             style={{width: '20%', padding: '0 0px'}}
                             onClick={() => setAdvancedTagsOpen(true)}
                         >
-                            Advanced Tags
+                            {t('advanced_tags')}
                         </Button>
                     </Group>
                     <Text fw={600} mt="sm">Lifecycle & Attributes</Text>
@@ -2482,8 +2644,6 @@ export function Documents() {
                                 data={[t('in_progress'), t('internal_review'), t('client_review'), t('expired'), t('archived'), t('approved')]}/>
                     </Group>
                     <Group grow>
-                        <TextInput label={t('last_modified')} type="date" value={editData.date_modified}
-                                   onChange={e => setEditData({...editData, date_modified: e.target.value})}/>
                         <TextInput label={t('expiration_date')} type="date" value={editData.expiration_date}
                                    onChange={e => setEditData({...editData, expiration_date: e.target.value})}/>
                     </Group>
@@ -2578,9 +2738,9 @@ export function Documents() {
                                 id="bulk-file-input"
                                 onChange={e => { handleBulkFileSelect(Array.from(e.target.files ?? [])); e.target.value = ''; }}
                             />
-                            <Button variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
-                            <Button variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
-                            <Button variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
+                            <Button className="invert-hover-outline" variant="outline" size="xs" onClick={() => document.getElementById('bulk-file-input')?.click()}>+ {t('bulk_add')}</Button>
+                            <Button className="invert-hover-outline" variant="outline" size="xs" onClick={addStagedUrl}>+ {t('bulk_url')}</Button>
+                            <Button className="invert-hover" variant="filled" size="xs" onClick={autoFillFromFirst}> {t('bulk_autofill')}</Button>
                         </Group>
                     </Box>
                     <Box p="xs" style={{border: '1px solid #d7dee8', borderRadius: 8, background: '#f8fafc'}}>
@@ -2659,9 +2819,6 @@ export function Documents() {
                                             </Table.Td>
                                             <Table.Td>
                                                 <Stack gap={4}>
-                                                    <TextInput type="date" label={t('modified')} size="xs"
-                                                               value={staged.date_modified}
-                                                               onChange={e => updateStagedFile(staged.id, 'date_modified', e.target.value)}/>
                                                     <TextInput type="date" label={t('expires')} size="xs"
                                                                value={staged.expiration_date}
                                                                onChange={e => updateStagedFile(staged.id, 'expiration_date', e.target.value)}/>

@@ -4,13 +4,24 @@ import { EmployeeListView } from "../components/ManageEmployees/ListView.tsx"
 import { PageTitle } from "../components/Title.tsx";
 import { usePersona } from "../hooks/usePersona";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Button, Group } from "@mantine/core";
+import { HelpModal } from "../components/helpModal.tsx";
+
+import {useTranslation} from "react-i18next";
+import { IconHelp } from "@tabler/icons-react";
+import { useState } from "react";
 
 export function ManageEmployeesForm() {
+    
+
+    const [ openHelpModal, setOpenHelpModal ] = useState(false);
+
     // Persona from the auth/session layer determines whether the user is an Admin.
     const persona = usePersona();
     // Auth0 loading state is used so we can show a brief access-check message
     // before deciding whether to render the page or deny access.
     const { isLoading } = useAuth0();
+    const {t} = useTranslation();
 
     // Allow access if the current persona is Admin; localStorage is used as a fallback
     // for cases where the session state is still being resolved.
@@ -22,7 +33,7 @@ export function ManageEmployeesForm() {
         return (
             <>
                 <Header />
-                <PageTitle title="Employees"/>
+                <PageTitle title={t('employees')} />
                 <p style={{ textAlign: 'center' }}>Checking access...</p>
             </>
         );
@@ -33,10 +44,26 @@ export function ManageEmployeesForm() {
         return (
             <>
                 <title>
-                    Employees - Hanover Insurance
+                    {t('employees')} - Hanover Insurance
                 </title>
                 <Header />
-                <PageTitle title="Employees"/>
+                <Group>
+                    <PageTitle title={t('employees')} />
+                    <Button
+                        variant="default"
+                        onClick={() => setOpenHelpModal(true)}
+                    >
+                        <IconHelp />
+                    </Button>
+                </Group>
+
+                <HelpModal
+                    title={t('employee_page')}
+                    opened={openHelpModal}
+                    onClose={() => setOpenHelpModal(false)}
+                    popupContent={t('emp_help_content')}
+                                  />
+                
                 <EmployeeListView />
             </>
         );

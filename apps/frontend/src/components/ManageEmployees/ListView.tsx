@@ -10,6 +10,7 @@ import { DOMAIN } from '../../const';
 import { useApi } from "../api.ts";
 import { FilledButton } from '../Buttons/FilledButton.tsx';
 import {allPersonas} from "./personas.tsx";
+import {useTranslation} from "react-i18next";
 
 type Employee = {
     empid: number;
@@ -48,6 +49,7 @@ export function EmployeeListView() {
     const api = useApi();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [search, setSearch] = useState('');
+    const {t} = useTranslation();
 
     // Add modal
     const [addOpen, setAddOpen] = useState(false);
@@ -128,7 +130,7 @@ export function EmployeeListView() {
                 });
 
                 if (!uploadResponse.ok) {
-                    setAddError('Account was created, but the profile picture upload failed.');
+                    setAddError(t('admin_cant_create'));
                     return;
                 }
             }
@@ -136,7 +138,7 @@ export function EmployeeListView() {
             setAddOpen(false);
             loadEmployees();
         } catch {
-            setAddError('Could not save account. Please check the fields and try again.');
+            setAddError(t('admin_couldnt_save'));
         } finally {
             setAddSaving(false);
         }
@@ -165,7 +167,7 @@ export function EmployeeListView() {
 
             // Avoid sending an update when the user hasn't changed anything.
             if (!hasAccountChanges && !hasPictureChange) {
-                setEditError('No changes to save.');
+                setEditError(t('admin_no_changes'));
                 return;
             }
 
@@ -182,7 +184,7 @@ export function EmployeeListView() {
                 });
 
                 if (!updateResponse.ok) {
-                    setEditError('Could not save account changes. Please try again.');
+                    setEditError(t('admin_cant_save'));
                     return;
                 }
             }
@@ -197,7 +199,7 @@ export function EmployeeListView() {
                 });
 
                 if (!uploadResponse.ok) {
-                    setEditError('Profile picture upload failed.');
+                    setEditError(t('admin_pfp_fail'));
                     return;
                 }
             }
@@ -205,7 +207,7 @@ export function EmployeeListView() {
             setEditOpen(false);
             loadEmployees();
         } catch {
-            setEditError('Could not save changes. Please try again.');
+            setEditError(t('admin_pfp_fail_two'));
         } finally {
             setEditSaving(false);
         }
@@ -245,7 +247,7 @@ export function EmployeeListView() {
         <Box p="md">
             {/* Search bar */}
             <TextInput
-                placeholder="Search for an employee..."
+                placeholder={t('admin_search')}
                 leftSection={<IconSearch size={16} />}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -274,13 +276,13 @@ export function EmployeeListView() {
                                 leftSection="plus"
                                 onClick={() => openAdd(persona)}
                             >
-                                Add Employee
+                                {t('admin_add_emp')}
                             </FilledButton>
                         </Group>
 
                         <Stack gap="xs">
                             {group.length === 0 && (
-                                <Text c="dimmed" size="sm">No employees found.</Text>
+                                <Text c="dimmed" size="sm">{t('admin_no_emp')}</Text>
                             )}
                             {group.map(emp => (
                                 <Group 
@@ -305,7 +307,7 @@ export function EmployeeListView() {
                                         </Badge>
                                         <Text>{emp.last_name}, {emp.first_name} ({emp.username})</Text>
                                         {emp.username === authorUsername && (
-                                            <Badge color="var(--color-yale-blue)" variant="light" size="sm">You</Badge>
+                                            <Badge color="var(--color-yale-blue)" variant="light" size="sm">{t('you')}</Badge>
                                         )}
                                     </Group>
                                     <Group gap="xs">
@@ -315,7 +317,7 @@ export function EmployeeListView() {
                                             leftSection={<IconEdit size={14} />}
                                             onClick={() => openEdit(emp)}
                                         >
-                                            Edit
+                                            {t('edit')}
                                         </FilledButton>
                                         <Button
                                             size="xs"
@@ -323,7 +325,7 @@ export function EmployeeListView() {
                                             leftSection={<IconTrash size={14} />}
                                             onClick={() => openDelete(emp)}
                                         >
-                                            Delete
+                                            {t('delete')}
                                         </Button>
                                     </Group>
                                 </Group>
@@ -340,25 +342,25 @@ export function EmployeeListView() {
                 title={
                     <Group>
                         <IconUser size={20} />
-                        <Text fw={600}>Create {addPersona} Account</Text>
+                        <Text fw={600}>{t('create')} {addPersona} {t('account')}</Text>
                     </Group>
                 }
             >
                 <Stack>
                     <TextInput
-                        label = "First Name"
+                        label = {t('admin_firstname')}
                         placeholder="e.g., John"
                         value={addData.first_name}
                         onChange={e => setAddData({...addData, first_name: e.target.value})}
                         />
                     <TextInput
-                        label = "Last Name"
+                        label = {t('admin_lastname')}
                         placeholder="e.g., Doe"
                         value={addData.last_name}
                         onChange={e => setAddData({...addData, last_name: e.target.value})}
                     />
                     <TextInput
-                        label="Username"
+                        label= {t('username')}
                         placeholder={`e.g., ${addPersona.toLowerCase().replace(' ', '_')}_jdoe`}
                         value={addData.username}
                         onChange={e => setAddData({...addData, username: e.target.value})}
@@ -367,7 +369,7 @@ export function EmployeeListView() {
                     <Box>
                         <Text size="sm" fw={500} mb={4}>Profile Picture (Optional)</Text>
                         <FileInput
-                            placeholder="Upload a profile picture"
+                            placeholder={t('admin_add_pfp')}
                             accept="image/*"
                             value={addData.pfp_URL}
                             onChange={file => setAddData({...addData, pfp_URL: validateProfilePicture(file)})}
@@ -375,7 +377,7 @@ export function EmployeeListView() {
                     </Box>
 
                     <PasswordInput
-                        label="Password"
+                        label= {t('password')}
                         autoComplete="new-password"
                         value={addData.password}
                         onChange={e => setAddData({...addData, password: e.target.value})}
@@ -384,12 +386,12 @@ export function EmployeeListView() {
                         <Text c="red" size="sm">{addError}</Text>
                     )}
                     <TextInput
-                        label="Employee Author"
+                        label={t('emp_author')}
                         value={authorUsername}
                         readOnly
                     />
                     <TextInput
-                        label="Creation Date"
+                        label={t('create_date')}
                         value={today}
                         readOnly
                     />
@@ -401,7 +403,7 @@ export function EmployeeListView() {
                             loading={addSaving}
                             disabled={addSaving}
                         >
-                            Save Account
+                            {t('save_account')}
                         </FilledButton>
                     </Group>
                 </Stack>
@@ -414,7 +416,7 @@ export function EmployeeListView() {
                 title={
                     <Group>
                         <IconUser size={20} />
-                        <Text fw={600}>Edit Employee Account</Text>
+                        <Text fw={600}>Edit {t('employee_acount')}</Text>
                     </Group>
                 }
             >
@@ -422,20 +424,20 @@ export function EmployeeListView() {
                     <Stack>
                         {/* Show current values so admins can compare before saving changes. */}
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
-                            <Text fw={600} mb={4}>Current Details</Text>
-                            <Text size="sm">Current Username: {editTarget.username}</Text>
-                            <Text size="sm">Current Persona: {editTarget.persona}</Text>
+                            <Text fw={600} mb={4}>{t('employee_details')}</Text>
+                            <Text size="sm">{t('current_username')} {editTarget.username}</Text>
+                            <Text size="sm">{t('current_persona')} {editTarget.persona}</Text>
                         </Box>
-                        <Text fw={600}>New Details</Text>
+                        <Text fw={600}>{t('new_details')}</Text>
                         <TextInput
-                            label="New Username (Optional)"
+                            label={t('new_username_optional')}
                             value={editData.newUsername}
                             onChange={e => setEditData({...editData, newUsername: e.target.value})}
                         />
                         <Box>
-                            <Text size="sm" fw={500} mb={4}>New Profile Picture (Optional)</Text>
+                            <Text size="sm" fw={500} mb={4}>{t('new_username_optional')}</Text>
                             <FileInput
-                                placeholder="Upload a new profile picture"
+                                placeholder={t('pfp_upload')}
                                 accept="image/*"
                                 value={editData.newPfp_URL}
                                 onChange={file => setEditData({...editData, newPfp_URL: validateProfilePicture(file)})}
@@ -443,13 +445,13 @@ export function EmployeeListView() {
 
                         </Box>
                         <PasswordInput
-                            label="New Password (Optional)"
+                            label={t('password_optional')}
                             autoComplete="new-password"
                             value={editData.password}
                             onChange={e => setEditData({...editData, password: e.target.value})}
                         />
                         <Select
-                            label="New Persona (Optional)"
+                            label={t('persona_optional')}
                             value={editData.persona}
                             onChange={val => setEditData({...editData, persona: val ?? ''})}
                             data={['Underwriter', 'Business Analyst', 'Admin']}
@@ -459,10 +461,10 @@ export function EmployeeListView() {
                         )}
                         {/* Show audit-style metadata for the selected employee. */}
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
-                            <Text fw={600} mb={4}>Account History</Text>
+                            <Text fw={600} mb={4}>{t('account_history')}</Text>
                             <Group>
                                 <Text size="sm">{editTarget.first_name} {editTarget.last_name}</Text>
-                                <Text size="sm" c="dimmed">Creation Date: {new Date(editTarget.created_at).toISOString().split('T')[0]}</Text>
+                                <Text size="sm" c="dimmed">{t('creation_date')} {new Date(editTarget.created_at).toISOString().split('T')[0]}</Text>
                             </Group>
                         </Box>
                         <Group justify="flex-end" mt="md">
@@ -473,7 +475,7 @@ export function EmployeeListView() {
                                 loading={editSaving}
                                 disabled={editSaving}
                             >
-                                Save Account
+                                {t('save_account')}
                             </FilledButton>
                         </Group>
                     </Stack>
@@ -488,7 +490,7 @@ export function EmployeeListView() {
                 centered
             >
                 <Text size="sm" mb="md">
-                    Changes you made <strong>cannot be undone.</strong>
+                    {t('changes_you_made')}<strong>{t('cannot_be_undone')}</strong>
                 </Text>
                 <Group justify="flex-end">
                     <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">Cancel</Button>
@@ -503,7 +505,7 @@ export function EmployeeListView() {
                 title={
                     <Group>
                         <IconUser size={20} />
-                        <Text fw={600}>Employee Account Details</Text>
+                        <Text fw={600}>{t('employee_details')}</Text>
                     </Group>
                 }
             >
@@ -543,9 +545,9 @@ export function EmployeeListView() {
                             {/* Read-only summary of the selected employee's account details. */}
                             <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                                 <Text fw={600} mb={4}>{employeeTarget.first_name} {employeeTarget.last_name}</Text>
-                                <Text>Username: {employeeTarget.username}</Text>
-                                <Text>Role: {employeeTarget.persona}</Text>
-                                <Text>Year Joined: {new Date(employeeTarget.created_at).getFullYear()}</Text>
+                                <Text>{t('username')}: {employeeTarget.username}</Text>
+                                <Text>{t('role')}: {employeeTarget.persona}</Text>
+                                <Text>{t('year_joined')}: {new Date(employeeTarget.created_at).getFullYear()}</Text>
                             </Box>
                             <Group justify="flex-end" mt="md">
                                 <Button variant="outline" onClick={() => setEmployeeOpen(false)} className="invert-hover-outline">Close</Button>

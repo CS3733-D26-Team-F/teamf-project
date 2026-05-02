@@ -10,7 +10,7 @@ export function PageTitle(props: TitleProps) {
             order={1}
             ta="left"
             fw={10000}
-            style={{ color: "var(--color-yale-blue)", fontFamily: "Roboto, sans-serif", padding: "28px"}}
+            style={{ color: "var(--color-yale-blue)", fontFamily: "Roboto, sans-serif", padding: '10px 0' }}
         >
             {props.title}
         </Title>

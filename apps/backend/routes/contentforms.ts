@@ -4,6 +4,8 @@ import {supabase} from '../setup/supabase.js';
 import {upload} from '../setup/upload.js';
 import {checkJWT} from '../setup/auth0.js';
 import { sendNotificationToUsers } from './notifications.js';
+import { indexDocument, removeDocumentFromIndex } from './indexer.js';
+import dayjs from "dayjs";
 
 const router = Router();
 
@@ -99,7 +101,7 @@ router.get('/contentforms', checkJWT, async (req, res) => {
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false},
         include: {
-            folder: {
+            folders: {
                 select: {name: true}
             }
         }
@@ -153,7 +155,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         expiration_date?: string;
         content_type?: string;
         status?: string;
-        review_date?: string;
+        folder_id?: number | null;
     } = {};
 
     if (newName) updateData.name = newName;
@@ -164,7 +166,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
     if (expiration_date) updateData.expiration_date = expiration_date;
     if (content_type) updateData.content_type = content_type;
     if (status) updateData.status = status;
-    if (review_date) updateData.review_date = review_date;
+
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send("No fields to update");
@@ -211,7 +213,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
                 id: contentForm.id,
                 empid: employee1.empid,
                 change: "Updated Document",
-                date: new Date().toISOString()
+                date: dayjs().subtract(4, "hour").toDate()
             }
         });
 
@@ -379,15 +381,18 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                review_date: new Date(),
-                ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
+               
+                ...(folderId !== null ? {folders: {connect: {id: folderId}}} : {})
             },
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
         });
+
+        // fire and forget
+        indexDocument(content.id).catch(err => console.error('[contentforms] Indexing failed:', err));
 
         const employee1 = username
             ? await prisma.employee.findUnique({
@@ -395,18 +400,27 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             })
             : null;
 
-        if (employee1) {
-            await prisma.changes.create({
-                data: {
-                    id: content.id,
-                    empid: employee1.empid,
-                    change: "Added Document",
-                    date: new Date(date_modified).toISOString()
-                }
-            })
-        } else {
-            console.warn('[contentforms] Skipping add-document audit log because username was not resolved');
-        }
+        // if (employee1) {
+        //     await prisma.changes.create({
+        //         data: {
+        //             id: content.id,
+        //             empid: employee1.empid,
+        //             change: "Added Document",
+        //             date: new Date(date_modified).toISOString()
+        //         }
+        //     })
+        // } else {
+        //     console.warn('[contentforms] Skipping add-document audit log because username was not resolved');
+        // }
+
+        const transaction = await prisma.changes.create({
+            data: {
+                id: content.id,
+                empid: employee.empid,
+                change: "Added Document",
+                date: dayjs().subtract(4, "hour").toDate()
+            }
+        })
 
         return res.status(200).json({
             message: 'Content form created successfully',
@@ -569,7 +583,7 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
                 contentform: {
                     where: {is_deleted: true},
                     include: {
-                        folder: {select: {name: true}}
+                        folders: {select: {name: true}}
                     },
                     orderBy: {deleted_at: 'desc'}
                 }
@@ -602,6 +616,7 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
         });
+        removeDocumentFromIndex(updated.id).catch(err => console.error('[contentforms] Remove index failed:', err));
 
         const sender = await prisma.employee.findUnique({ where: { auth0Id } });
         if (sender && updated.persona && updated.persona.length > 0) {
@@ -644,7 +659,7 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
                 id: updated.id,
                 empid: employee1.empid,
                 change: "Deleted Document",
-                date: new Date().toISOString()
+                date: dayjs().subtract(4, "hour").toDate()
             }
         });
         res.json(updated);
@@ -714,6 +729,7 @@ router.patch('/contentforms/autoexpire', checkJWT, async (req, res) => {
             },
             data: {status: 'Expired'}
         });
+        removeDocumentFromIndex(deleted.id).catch(err => console.error('[contentforms] Remove index failed:', err));
         res.json({message: `${updated.count} documents expired`});
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -728,7 +744,7 @@ router.get('/contentforms/archived', checkJWT, async (req, res) => {
         const archived = await prisma.contentform.findMany({
             where: {status: 'Archived', is_deleted: false},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -747,7 +763,7 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
         const expired = await prisma.contentform.findMany({
             where: {status: 'Expired', is_deleted: false},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -768,7 +784,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
             where: {id},
             data: {status, expiration_date: new Date()},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -1478,7 +1494,7 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
         const contentForm = await prisma.contentform.findUnique({
             where: {id},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -1546,7 +1562,7 @@ router.post('/contentforms/:id/checkout', checkJWT, async (req, res) => {
                         id: updated.id,
                         empid: employee1.empid,
                         change: "Checked Out Document",
-                        date: new Date().toISOString()
+                        date: dayjs().subtract(4, "hour").toDate()
                     }
                 });
 
@@ -1626,7 +1642,7 @@ router.post('/contentforms/:id/checkin', checkJWT, async (req, res) => {
                         id: updated.id,
                         empid: employee1.empid,
                         change: "Checked In Document",
-                        date: new Date().toISOString()
+                        date: dayjs().subtract(4, "hour").toDate()
                     }
                 });
 
@@ -1779,7 +1795,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             name: name,
             owner: resolvedOwner,
             persona,  // now correctly set
-            date_modified: new Date(date_modified),
+            date_modified: today,
             expiration_date: expiration_date ? new Date(expiration_date) : null,
             content_type,
             status,
@@ -1791,7 +1807,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         };
 
         if (folderId !== null || rawFolderId === '' || rawFolderId === null) {
-            updateData.folder = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
+            updateData.folders = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
         }
 
         if (req.file) {
@@ -1839,6 +1855,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             where: {id},
             data: updateData
         });
+        indexDocument(updated.id).catch(err => console.error('[contentforms] Re-indexing failed:', err));
 
         const sender = await prisma.employee.findUnique({ where: { auth0Id } });
         if (sender && updated.persona && updated.persona.length > 0) {
@@ -1881,7 +1898,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
                 id: updated.id,
                 empid: employee1.empid,
                 change: "Updated Document",
-                date: new Date().toISOString()
+                date: dayjs().subtract(4, "hour").toDate()
             }
         })
 
@@ -2184,11 +2201,21 @@ router.delete('/removeFavorite', checkJWT, async (req, res) => {
 
 router.post('/transactionDates', checkJWT, async(req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
-    const today = new Date();
+
+    const start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setUTCHours(23, 59, 59, 999);
 
     const transactions = await prisma.changes.findMany({
-        where: {date: today}
-    })
+        where: {
+            date: {
+                gte: start,
+                lt: end
+            }
+        }
+    });
 
     return(transactions);
 })

@@ -548,4 +548,88 @@ router.post('/removeWidgets', checkJWT, async (req, res) => {
 });
 
 
+router.get('/getToDo', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+    const username = req.query.username as string;
+
+    if (!username) {
+        return res.status(400).json({ error: 'Persona query parameter is required' });
+    }
+
+    try {
+        const empl = await prisma.employee.findUnique(
+            { where: {username : username}}
+        );
+
+        if (!empl) {
+            return res.status(404).json('Employee Not Found');
+        }
+
+        console.log('Employee Widgets:', empl.todo);
+        res.json(empl.todo);
+
+    } catch (error) {
+        res.status(500).json({error: 'Something went wrong'});
+    }
+});
+
+router.post('/addToDo', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body is missing" });
+    }
+
+    const { username, todo } = req.body || {};
+
+    const employee = await prisma.employee.findUnique(
+        {where: {username : username}}
+    );
+
+    if (!employee) {
+        return res.status(404).json({error: 'Employee not found'});
+    }
+    try {
+        const newtodos = [...employee.todo, ...todo];
+
+        const updated = await prisma.employee.update({
+            where: {username: username},
+            data: {todo: newtodos}
+        })
+        console.log('Employee ToDos Updated:', newtodos);
+        res.json(updated.todo);
+    } catch (error) {
+        res.status(500).json({error: 'Todos could not update'});
+    }
+});
+
+router.post('/removeToDo', checkJWT, async (req, res) => {
+    const auth0Id = req.auth!.payload.sub as string;
+
+    if (!req.body) {
+        return res.status(400).json({ error: "Request body is missing" });
+    }
+    const { username, todo } = req.body || {};
+
+    const employee = await prisma.employee.findUnique(
+        {where: {username : username}}
+    );
+
+    if (!employee) {
+        return res.status(404).json({error: 'Employee not found'});
+    }
+    try {
+        const newtodos = employee.todo.filter(todo => !todo.includes(todo));
+        const updated = await prisma.employee.update({
+            where: {username: username},
+            data: {todo: newtodos}
+        })
+        console.log('Employee Todos Removed:', newtodos);
+        res.json(updated.todo);
+    } catch (error) {
+        res.status(500).json({error: 'Todos already not in the list'});
+    }
+});
+
+
 export default router;
