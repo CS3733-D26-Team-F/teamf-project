@@ -39,6 +39,7 @@ import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
 import {useTranslation} from "react-i18next";
 import { HelpModal } from '../components/helpModal.tsx';
+import { useSearchParams } from 'react-router-dom'
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -125,7 +126,8 @@ export function Documents() {
 
 
     const [employees, setEmployees] = useState<Employee[]>([]);
-    const [search, setSearch] = useState('');
+    const [searchParams] = useSearchParams()
+    const [search, setSearch] = useState(searchParams.get('search') || '');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
     const [createdTags, setCreatedTags] = useState<Metatag[]>([]);
 
