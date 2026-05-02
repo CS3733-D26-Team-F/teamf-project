@@ -354,7 +354,7 @@ export function EmployeeListView() {
                         onChange={e => setAddData({...addData, first_name: e.target.value})}
                         />
                     <TextInput
-                        label = {t('admin_firstname')}
+                        label = {t('admin_lastname')}
                         placeholder="e.g., Doe"
                         value={addData.last_name}
                         onChange={e => setAddData({...addData, last_name: e.target.value})}

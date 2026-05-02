@@ -101,7 +101,7 @@ router.get('/contentforms', checkJWT, async (req, res) => {
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false},
         include: {
-            folder: {
+            folders: {
                 select: {name: true}
             }
         }
@@ -155,7 +155,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
         expiration_date?: string;
         content_type?: string;
         status?: string;
-        review_date?: string;
+        folder_id?: number | null;
     } = {};
 
     if (newName) updateData.name = newName;
@@ -166,7 +166,7 @@ router.post('/updateContentForm', checkJWT, async (req, res) => {
     if (expiration_date) updateData.expiration_date = expiration_date;
     if (content_type) updateData.content_type = content_type;
     if (status) updateData.status = status;
-    if (review_date) updateData.review_date = review_date;
+
 
     if (Object.keys(updateData).length === 0) {
         return res.status(400).send("No fields to update");
@@ -381,11 +381,11 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 employee: {
                     connect: {username: ownerUsername}
                 },
-                review_date: new Date(),
-                ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
+               
+                ...(folderId !== null ? {folders: {connect: {id: folderId}}} : {})
             },
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -583,7 +583,7 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
                 contentform: {
                     where: {is_deleted: true},
                     include: {
-                        folder: {select: {name: true}}
+                        folders: {select: {name: true}}
                     },
                     orderBy: {deleted_at: 'desc'}
                 }
@@ -744,7 +744,7 @@ router.get('/contentforms/archived', checkJWT, async (req, res) => {
         const archived = await prisma.contentform.findMany({
             where: {status: 'Archived', is_deleted: false},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -763,7 +763,7 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
         const expired = await prisma.contentform.findMany({
             where: {status: 'Expired', is_deleted: false},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -784,7 +784,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
             where: {id},
             data: {status, expiration_date: new Date()},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -1494,7 +1494,7 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
         const contentForm = await prisma.contentform.findUnique({
             where: {id},
             include: {
-                folder: {
+                folders: {
                     select: {name: true}
                 }
             }
@@ -1807,7 +1807,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         };
 
         if (folderId !== null || rawFolderId === '' || rawFolderId === null) {
-            updateData.folder = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
+            updateData.folders = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
         }
 
         if (req.file) {
