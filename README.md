@@ -19,8 +19,15 @@
   - Can send notifications to other users
   - Can find documents based on keywords
   - Can take in voice prompts
-  - Can display a portal summary of the website
-  - Can display a navigation menu for the website
+  - Can display a portal summary of the website 
+- Navigation Bar:
+  - Can navigate to any page
+  - Can change theme 
+  - Can open profile 
+  - Can search document titles 
+  - Can search document content 
+  - Semantic and Text search 
+  - Can redirect to add and bulk add popups
 - Full Translated Website in 9 Additional Languages
 - Folder Sorting System
   - Can create folders and subfolders to sort documents

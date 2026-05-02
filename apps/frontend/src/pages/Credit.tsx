@@ -128,9 +128,9 @@ export function Credit() {
                                 logo="https://www.ia-espana.es/wp-content/uploads/2024/11/mistral-ai-1.png">
                             </CreditCard>
                             <CreditCard
-                                tool="Tesserect.js"
+                                tool="Tesserect OCR"
                                 description="tesserect.js 7.0.0"
-                                url="https://tesseract.projectnaptha.com/"
+                                url="https://github.com/tesseract-ocr/tesseract"
                                 logo="https://a.fsdn.com/allura/mirror/tesseract-js/icon?1744024618?&w=120">
                             </CreditCard>
                             <CreditCard
