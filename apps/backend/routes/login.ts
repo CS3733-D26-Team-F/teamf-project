@@ -33,9 +33,9 @@ router.post('/api/auth/login', checkJWT, async (req, res) => {
         // Prefer common profile fields so the app can fall back gracefully
         // when a particular claim is not present in the token.
         const username =
-            (req.auth!.payload['nickname'] as string | undefined) ||
             (req.auth!.payload['preferred_username'] as string | undefined) ||
-            (req.auth!.payload['name'] as string | undefined);
+            (req.auth!.payload['name'] as string | undefined) ||
+            (req.auth!.payload['nickname'] as string | undefined) ;
 
         if (!username) {
             return res.status(400).json({ error: 'Missing username in token payload' });
@@ -48,7 +48,6 @@ router.post('/api/auth/login', checkJWT, async (req, res) => {
             employee = await prisma.employee.update({
                 where: { empid: employee.empid },
                 data: {
-                    username,
                     isLoggedIn: true,
                 },
             });

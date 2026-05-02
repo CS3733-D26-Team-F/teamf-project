@@ -57,6 +57,7 @@ model employee {
   created_at                                 DateTime?         @default(now()) @db.Timestamp(6)
   pfp_URL                                    String?           @unique @db.VarChar
   widgets                                    String[]
+  todo                                       String[]          @db.VarChar
   admin                                      admin?
   changes                                    changes[]
   contentform                                contentform[]

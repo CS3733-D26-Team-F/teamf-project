@@ -9,6 +9,7 @@ import contentRoutes from './routes/contentforms.js';
 import loginRoutes from './routes/login.js';
 import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/notifications.js';
+import searchRouter from './routes/search.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -36,6 +37,7 @@ app.use(morgan('dev'));
 
 // Mount the feature routers at the root path.
 // Each router handles its own route definitions internally.
+app.use(searchRouter);
 app.use('/', employeeRoutes);
 app.use('/', chatRoutes);
 app.use('/', notificationRoutes);

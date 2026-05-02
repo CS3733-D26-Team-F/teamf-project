@@ -268,6 +268,32 @@ export function Documents() {
         }
     };
 
+    // Listen for Command Palette Trash
+    useEffect(() => {
+        const handleOpenTrash = () => {
+            if (persona === 'Admin') {
+                loadTrash();
+                setTrashOpen(true);
+            }
+        };
+        window.addEventListener('openTrashPopup', handleOpenTrash);
+        return () => window.removeEventListener('openTrashPopup', handleOpenTrash);
+    }, [persona]);
+
+    // Listen for Command Palette Upload
+    useEffect(() => {
+        const handleAdd = () => openAddDocumentModal();
+        const handleBulk = () => openBulkUploadModal();
+
+        window.addEventListener('openAddDocumentPopup', handleAdd);
+        window.addEventListener('openBulkUploadPopup', handleBulk);
+
+        return () => {
+            window.removeEventListener('openAddDocumentPopup', handleAdd);
+            window.removeEventListener('openBulkUploadPopup', handleBulk);
+        };
+    }, [selectedFolderId]);
+
     // ── Recently viewed ──────────────────────────────────────────────────────
     const [recentIds, setRecentIds] = useState<number[]>(() => {
         try {
@@ -2025,14 +2051,6 @@ export function Documents() {
                             <Button className="invert-hover" onClick={() => {
                                 openMoveModalForIds([...new Set([...selectedIds, ...selectedFavIds])]);
                             }}>{t('move_to_folder')}</Button>
-                            <Button className="invert-hover-red" onClick={async () => {
-                                const ids = [...selectedIds, ...selectedFavIds];
-                                if (!window.confirm(`Delete ${ids.length} documents?`)) return;
-                                await Promise.all(ids.map(id => api(`${DOMAIN}/contentforms/${id}/${localStorage.getItem('username')}/softdelete`, {method: 'PATCH'})));
-                                setSelectedIds([]);
-                                setSelectedFavIds([]);
-                                loadDocuments();
-                            }}>{t('delete_selected')}</Button>
                         </Group>
                     </Box>
                 )}
