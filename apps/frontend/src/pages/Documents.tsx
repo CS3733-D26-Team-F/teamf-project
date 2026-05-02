@@ -91,6 +91,8 @@ export function Documents() {
         [folders]
     );
 
+    const folderIdsWithAccess = new Set<number>();
+
     const selectedFolderPath = useMemo<Folder[]>(() => {
         if (selectedFolderId === null) return [];
 
@@ -522,6 +524,7 @@ export function Documents() {
         setEditFolderOpen(true);
     }
 
+
     async function updateFolder(id: number, name: string, personaList: string[], allowedUsers: string[], parentFolderId: number | null) {
         const trimmedName = name.trim();
         if (!trimmedName) {
@@ -576,6 +579,20 @@ export function Documents() {
         }
 
         await Promise.all([loadDocuments(), loadFolders()]);
+    }
+
+    function checkFolderPersonaAccessForMove(personaList: string[], allowedUsers: string[], folderId: number | null): Folder[] {
+        return folders.filter(f => {
+            if (folderId !== null && f.id === folderId) return false;
+
+            if (persona === 'Admin' || f.owner === (username ?? '') ) return true;
+
+            const fPersonas = f.persona ?? [];
+            const fAllowedUsers = f.allowed_users ?? [];
+            const fHasPersonaAccess = fPersonas.length === 0 || personaList.some(p => fPersonas.includes(p));
+            const fHasUserAccess = fAllowedUsers.length === 0 || allowedUsers.some(u => fAllowedUsers.includes(u)) || fAllowedUsers.includes(username ?? '');
+            return fHasPersonaAccess && fHasUserAccess;
+        });
     }
 
     async function loadFolders() {
@@ -1348,6 +1365,74 @@ export function Documents() {
         setViewerLabel(label);
     }
 
+    function canCurrentUserMoveDocument(doc: ContentForm): boolean {
+        if (persona === 'Admin') return true;
+        if (doc.owner === (username ?? '')) return true;
+        const docPersonas = doc.persona ?? [];
+        return docPersonas.length === 0 || docPersonas.includes(persona ?? '');
+    }
+
+    function isFolderValidMoveTarget(folder: Folder, docsToMove: ContentForm[]): boolean {
+        const folderPersonas = folder.persona ?? [];
+        const folderAllowedUsers = folder.allowed_users ?? [];
+
+        return docsToMove.every(doc => {
+            const docPersonas = doc.persona ?? [];
+
+            // If the document has personas, the destination folder must explicitly include all of them.
+            // This blocks moving a mixed-persona document into a folder that only lists one of those personas.
+            const personaMatches =
+                docPersonas.length === 0 ||
+                docPersonas.every(p => folderPersonas.includes(p));
+
+            // Folder username restrictions must match the document owner.
+            const userMatches = folderAllowedUsers.length === 0 || folderAllowedUsers.includes(doc.owner);
+
+            return personaMatches && userMatches;
+        });
+    }
+
+    function getMoveTargetFolders(docsToMove: ContentForm[]): Folder[] {
+        const userAccessibleFolders = checkFolderPersonaAccessForMove(
+            [persona ?? ''].filter(Boolean),
+            [username ?? ''].filter(Boolean),
+            null
+        );
+
+        return userAccessibleFolders.filter(folder => isFolderValidMoveTarget(folder, docsToMove));
+    }
+
+    function openMoveModalForIds(ids: number[]) {
+        const docsToMove = ids
+            .map(id => documents.find(d => d.id === id))
+            .filter(Boolean) as ContentForm[];
+
+        if (docsToMove.length === 0) {
+            alert('No documents selected to move.');
+            return;
+        }
+
+        const blockedDoc = docsToMove.find(doc => !canCurrentUserMoveDocument(doc));
+        if (blockedDoc) {
+            alert('You can only move documents you own or documents that include your persona.');
+            return;
+        }
+
+        setMoveTargetFolderId(null);
+        setQuickFolderName('');
+        setMoveFolderOpen(true);
+    }
+
+    const selectedMoveIds = useMemo(
+        () => [...new Set([...selectedIds, ...selectedFavIds])],
+        [selectedIds, selectedFavIds]
+    );
+
+    const selectedMoveDocuments = useMemo(
+        () => selectedMoveIds.map(id => documents.find(d => d.id === id)).filter(Boolean) as ContentForm[],
+        [selectedMoveIds, documents]
+    );
+
     const rowCallbacks: RowCallbacks = {
         persona,
         onView: openViewer,
@@ -1363,11 +1448,14 @@ export function Documents() {
             setDeleteOpen(true);
         },
         onRequestMove: (id: number) => {
-            setSelectedIds([id]);
-            setSelectedFavIds([]);
-            setMoveTargetFolderId(null);
-            setQuickFolderName('');
-            setMoveFolderOpen(true);
+            if (favoritedIds.has(id)) {
+                setSelectedFavIds([id]);
+                setSelectedIds([]);
+            } else {
+                setSelectedIds([id]);
+                setSelectedFavIds([]);
+            }
+            openMoveModalForIds([id]);
         },
         onRemoveFromFolder: async (id: number) => {
             await assignDocumentsToFolder([id], null);
@@ -1935,9 +2023,7 @@ export function Documents() {
                             {selectedHasFavorites &&
                                 <Button className="invert-hover" onClick={unfavoriteSelected}>{t('unfavorite_all')}</Button>}
                             <Button className="invert-hover" onClick={() => {
-                                setMoveTargetFolderId(null);
-                                setQuickFolderName('');
-                                setMoveFolderOpen(true);
+                                openMoveModalForIds([...new Set([...selectedIds, ...selectedFavIds])]);
                             }}>{t('move_to_folder')}</Button>
                             <Button className="invert-hover-red" onClick={async () => {
                                 const ids = [...selectedIds, ...selectedFavIds];
@@ -2024,8 +2110,7 @@ export function Documents() {
                     {folderModalError && <ErrorMessage message={folderModalError} />}
                     <Group justify="flex-end">
                         <Button className="invert-hover" onClick={async () => {
-                            const personas = folderPersona.length > 0 ? folderPersona : [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(folderName, personas, folderUsers, selectedFolderId);
+                            const created = await createFolder(folderName, folderPersona, folderUsers, selectedFolderId);
                             if (created) {
                                 setAddFolderOpen(false);
                                 setFolderName('');
@@ -2102,7 +2187,13 @@ export function Documents() {
                         placeholder="Choose folder"
                         value={moveTargetFolderId}
                         onChange={setMoveTargetFolderId}
-                        data={folders.map(f => ({label: f.name, value: String(f.id)}))}
+                        data={
+                            [
+                                { value: 'root', label: 'Root' },
+                                ...getMoveTargetFolders(selectedMoveDocuments)
+                                    .map(f => ({ value: String(f.id), label: f.name }))
+                            ]
+                        }
                         searchable
                         clearable
                     />
@@ -2114,8 +2205,7 @@ export function Documents() {
                             onChange={e => setQuickFolderName(e.target.value)}
                         />
                         <Button mt={24} className="invert-hover-outline" onClick={async () => {
-                            const personas = [persona ?? ''].filter(Boolean);
-                            const created = await createFolder(quickFolderName, personas, [], null);
+                            const created = await createFolder(quickFolderName, [], [], null);
                             if (created) {
                                 setMoveTargetFolderId(String(created.id));
                                 setQuickFolderName('');
@@ -2126,8 +2216,23 @@ export function Documents() {
                         <Button className="invert-hover-outline" onClick={() => setMoveFolderOpen(false)}>Cancel</Button>
                         <Button className="invert-hover" onClick={async () => {
                             if (!moveTargetFolderId) return;
+                            const blockedDoc = selectedMoveDocuments.find(doc => !canCurrentUserMoveDocument(doc));
+                            if (blockedDoc) {
+                                alert('You can only move documents you own or documents that include your persona.');
+                                return;
+                            }
+
+                            const targetFolder = moveTargetFolderId === 'root'
+                                ? null
+                                : folders.find(f => f.id === Number(moveTargetFolderId));
+
+                            if (targetFolder && !isFolderValidMoveTarget(targetFolder, selectedMoveDocuments)) {
+                                alert('This folder is not a valid destination for one or more selected documents.');
+                                return;
+                            }
+
                             const ids = [...new Set([...selectedIds, ...selectedFavIds])];
-                            await assignDocumentsToFolder(ids, Number(moveTargetFolderId));
+                            await assignDocumentsToFolder(ids, moveTargetFolderId === 'root' ? null : Number(moveTargetFolderId));
                             setMoveFolderOpen(false);
                         }}>Move</Button>
                     </Group>
@@ -2401,8 +2506,7 @@ export function Documents() {
                                 onChange={e => setQuickFolderName(e.target.value)}
                             />
                             <Button mt={20} className="invert-hover" style = {{ flex: 1 }} onClick={async () => {
-                                const personas = [persona ?? ''].filter(Boolean);
-                                const created = await createFolder(quickFolderName, personas, [], null);
+                                const created = await createFolder(quickFolderName, [], [], null);
                                 if (created) {
                                     setAddData(prev => ({...prev, folder: String(created.id)}));
                                     setQuickFolderName('');
