@@ -9,6 +9,7 @@ import { FilledButton } from "../components/Buttons/FilledButton.tsx";
 import { DOMAIN } from "../const";
 import { useApi } from "../components/api.ts";
 import {useTranslation} from "react-i18next";
+import {NotificationButton} from "../components/NotificationButton.tsx";
 
 interface NotificationProps {
     title: string;
@@ -250,13 +251,17 @@ export function Notifications() {
         <>
             <Header />
             <PageTitle title={t('notifications')} />
-            <Group justify="flex-end" p="md">
-                <Button variant="default" onClick={openMarkAllRead}>
-                    {t("mark_all_read")}
-                </Button>
-                <Button variant="default" className="invert-hover-red" onClick={openClearAll}>
-                    {t('clear_all')}
-                </Button>
+            <Group justify="space-between">
+                <NotificationButton/>
+
+                <Group style={{ marginInline: '24px'}}>
+                    <Button variant="default" onClick={openMarkAllRead}>
+                        {t("mark_all_read")}
+                    </Button>
+                    <Button variant="default" className="invert-hover-red" onClick={openClearAll}>
+                        {t('clear_all')}
+                    </Button>
+                </Group>
             </Group>
 
             <Modal

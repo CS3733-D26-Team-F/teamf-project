@@ -1,6 +1,5 @@
 import { AreaChart } from '../components/mainmenu/AreaChart.tsx';
 import { HeatMap } from '../components/mainmenu/HeatMap.tsx';
-import { ToDoList } from '../components/mainmenu/ToDoList.tsx';
 import { StatsDashboard } from '../components/mainmenu/StatsDashboard.tsx';
 import { Calendar } from "../components/mainmenu/Calendar.tsx";
 import { ChartGrid } from '../components/mainmenu/ChartGrid';
@@ -17,9 +16,9 @@ import { DocStatusWidget } from "../components/statistics/DocStatusWidget.tsx";
 
 
 const DEFAULT_LAYOUTS = {
-    "Admin": ['docstats', 'stats', 'todo'],
-    "Underwriter": ['docstats', 'todo', 'calendar'],
-    "Business Analyst": ['stats', 'todo', 'docstats', 'calendar'],
+    "Admin": ['docstats', 'stats'],
+    "Underwriter": ['docstats', 'calendar'],
+    "Business Analyst": ['stats', 'docstats', 'calendar'],
     "Actuarial Analyst": ['charts', 'transactions', 'stats'],
     "EXL Operations": ['transactions', 'charts', 'calendar', 'stats']
 };
@@ -34,7 +33,6 @@ export function Dashboard() {
     const {t} = useTranslation();
 
     const ALL_WIDGETS = {
-        todo: { labelKey: t('todo_list'), component: <ToDoList /> },
         stats: { labelKey: t('stats_grid'), component: <StatsDashboard /> },
         areachart: { labelKey: t('area_chart'), component: <AreaChart /> },
         heatmap: { labelKey: t('heat_map'), component: <HeatMap /> },
