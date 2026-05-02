@@ -277,11 +277,27 @@ export function CommandPalette() {
             <Box>
                 <Group justify="space-between" wrap="nowrap">
                     <Text size="sm" fw={500} truncate>{r.docName}</Text>
-                    {r.similarity > 0 && (
-                        <Badge size="xs" color="blue" variant="light">
-                            {Math.round(r.similarity * 100)}% match
-                        </Badge>
-                    )}
+                    <Group gap="xs">
+                        {r.similarity > 0 && (
+                            <Badge size="xs" color="blue" variant="light">
+                                {Math.round(r.similarity * 100)}% match
+                            </Badge>
+                        )}
+
+                        <ActionIcon
+                            size="sm"
+                            variant="light"
+                            color="blue"
+                            title="Find in Documents Page"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/documents?search=${encodeURIComponent(r.docName)}`);
+                            }}
+                        >
+                            <IconSearch size={14} />
+                        </ActionIcon>
+                    </Group>
+
                 </Group>
                 <SnippetPreview snippet={r.snippet} query={query} />
             </Box>
