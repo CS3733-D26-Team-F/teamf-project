@@ -7,6 +7,7 @@ import { supabase } from '../setup/supabase.js';
 import { upload } from '../setup/upload.js';
 import { getManagementToken } from '../setup/auth0.js';
 import { sendNotificationToUsers } from './notifications.js';
+import { semanticSearch } from './indexer.js';
 
 const router = Router();
 
@@ -16,18 +17,19 @@ Your tone is professional, concise, and helpful. You do not use casual language,
 The user you are talking to is: ${displayName} (username: ${username}, role: ${userRole}).
 
 <App_Map>
-1. Home / Dashboard — Overview of portal statistics and activity.
+1. Home / Dashboard — Overview of portal statistics and activity. Users can pick and choose which widgets they wish to have on the dashboard using the 'Edit Layout' button.
 2. Documents Page (/documents) — Main document management interface.
-   - Features: Search, Add Document, Bulk Upload, Filter, Grid/List view toggle.
-   - Row Actions: Favorite (pin), Download, Edit, Delete (soft — goes to Trash).
-   - Clicking a document opens a preview popup viewer.
+   - Features: Search, Folders (with nested folders), Add Document, Add Folder, Bulk Upload, Filter By, Grid/List view toggle, Dropdown/Pop-up viewer, Multi-select.
+   - Row Actions: Favorite (pin), Download, Edit, Delete (soft — goes to Trash), Check-in/Check-out documents.
+   - Clicking a document opens a popup viewer or a dropdown viewer depending on which setting they toggle.
    - Admins see a red Trash button for reviewing soft-deleted documents.
 3. Archive Page (/archive) — Contains Expired and Archived documents.
    - Documents can be restored. Admins can permanently delete from here.
 4. Employees Page (/manageemployees) — Admin only. Lists all employees by role.
    - Features: Search bar, Add Employee button, Edit and Delete per row.
 5. Notifications Page (/notifications) — Shows employee notifications, read/unread state, and delete controls.
-6. Profile & Settings — Top-right dropdown. Includes profile, theme toggle, and logout.
+6. Profile & Settings — Top-right dropdown. Includes profile, theme toggle, and logout. Profile and theme toggle can be found in the navigation search bar.
+7. Navigation Search Bar - Open with CTRL+K or CTRL+P or /, allows navigating to various pages, searching through document titles, searching through document content. Certain features limited to Admins only.
 </App_Map>
 
 <Permissions>
@@ -36,7 +38,7 @@ The user you are talking to is: ${displayName} (username: ${username}, role: ${u
 - Business Analyst: Same as Underwriter but for Business Analyst documents.
 - Actuarial Analyst: Same as Underwriter but for Actuarial Analyst documents.
 - EXL Operations: Same as Underwriter but for EXL Operations documents.
-- Admin: Full access to all documents, employees, trash, and archive.
+- Admin: Full access to all documents, employees, trash, and archive, navigation search bar.
 </Permissions>
 
 <Security_Rules>
@@ -75,6 +77,10 @@ When adding employees:
 - Never omit any parameter when calling addEmployee. The confirmation card needs all fields to display correctly.
 - Only set confirmed: true when the user explicitly confirms via the confirmation card.
 
+When searching employees:
+- ALWAYS pass the search criteria (name, username, role) into the tool parameters. Do not call the tool with empty arguments and filter the results yourself.
+- NEVER list employee names or details in your text response. The frontend will render the cards automatically. Just provide a brief 1-line summary like "Here are the Underwriters you requested."
+
 When deleting employees:
 - ALWAYS call deleteEmployee with confirmed: false first, even if the user says "yes" or "confirm" in their message.
 - Never ask for confirmation via text. Always use the tool to generate the confirmation card.
@@ -86,8 +92,11 @@ When creating notifications:
 - Use recipientMode: "users" with recipientUsernames or recipientEmpids when the user names specific employees.
 - Ask for missing title, message, or recipients before calling the tool.
 
+When checking in or out documents:
+- If the user asks to check in or check out a document, only return that document. Do not show any other unrelated documents.
+
 When a tool returns success: false:
-- Do not retry the same tool call with the same arguments.
+- Do not retry the same tool call with the same arguments. Only call each tool once unless user specifically asks otherwise.
 - Tell the user the returned message and ask for corrected details only if needed.
 </Tool_Usage_Guide>
 `;
@@ -158,7 +167,7 @@ router.post('/api/chat', async (req, res) => {
 
             // Search Employees
             getEmployeeList: tool({
-                description: 'Search for employees by name, username, or role. Returns structured data for card rendering.',
+                description: 'Search for employees by name, username, or role. You MUST pass the search criteria into the arguments to filter on the database level. Do NOT call this empty to filter the list yourself.',
                 parameters: z.object({
                     name: z.string().optional().describe('First or last name to search for.'),
                     username: z.string().optional().describe('Exact or partial username.'),
@@ -166,6 +175,12 @@ router.post('/api/chat', async (req, res) => {
                 }),
                 execute: async (args) => {
                     if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
+                    if (!args.name && !args.username && !args.role) {
+                        return {
+                            success: false,
+                            message: 'SYSTEM ERROR: You called this tool with empty arguments. You MUST provide at least one search parameter (name, username, or role) so the database can filter the results. Try the tool call again with the correct parameters.'
+                        };
+                    }
 
                     const where: any = {};
                     if (args.name) {
@@ -1147,7 +1162,116 @@ router.post('/api/chat', async (req, res) => {
                             : 'Theme reset to Default.'
                     };
                 }
-            })
+            }),
+
+            // Search Document Contents
+            searchDocumentContents: tool({
+                description: 'Search inside the actual text content of documents. Use when the user asks what a document says, wants to find a specific passage, clause, or topic within documents, or asks about document contents rather than just names.',
+                parameters: z.object({
+                    query: z.string().describe('The text, topic, or phrase to search for inside documents.'),
+                    documentName: z.string().optional().describe('Optionally limit search to a specific document by name.')
+                }),
+                execute: async (args) => {
+                    if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
+
+                    const results = await semanticSearch(args.query, userRole, 50);
+
+                    if (results.length === 0) {
+                        return {
+                            success: false,
+                            message: `No document content found matching "${args.query}". The documents may not be indexed yet, or may be non-text files (audio, video, images).`
+                        };
+                    }
+
+                    const filtered = args.documentName
+                        ? results.filter(r => r.docName.toLowerCase().includes(args.documentName!.toLowerCase()))
+                        : results;
+
+                    if (filtered.length === 0) {
+                        return {
+                            success: false,
+                            message: `No content matching "${args.query}" found in "${args.documentName}".`
+                        };
+                    }
+
+                    const byDoc = new Map<number, typeof filtered>();
+                    filtered.forEach(r => {
+                        if (!byDoc.has(r.contentformId)) byDoc.set(r.contentformId, []);
+                        byDoc.get(r.contentformId)!.push(r);
+                    });
+
+                    const docSummaries = Array.from(byDoc.entries()).map(([id, chunks]) => ({
+                        docName: chunks[0].docName,
+                        docUrl: chunks[0].docUrl,
+                        relevantPassages: chunks.map(c => c.content.slice(0, 300) + (c.content.length > 300 ? '...' : '')),
+                        topSimilarity: Math.max(...chunks.map(c => c.similarity))
+                    })).sort((a,b) => b.topSimilarity - a.topSimilarity).slice(0,5);
+
+                    return {
+                        success: true,
+                        type: 'rag_results',
+                        query: args.query,
+                        results: docSummaries,
+                        message: `Found relevant content in ${docSummaries.length} document(s).`
+                    };
+                }
+            }),
+
+            // TOOL: Summarize Document
+            summarizeDocument: tool({
+                description: 'Read and summarize the contents of a specific document. Use when the user asks to summarize, explain, or read a document.',
+                parameters: z.object({
+                    name: z.string().describe('The name of the document to summarize.')
+                }),
+                execute: async (args) => {
+                    if (userRole === 'Guest') return { success: false, message: 'Authentication required.' };
+
+                    const doc = await prisma.contentform.findFirst({
+                        where: {
+                            name: { contains: args.name.trim(), mode: 'insensitive' },
+                            is_deleted: false
+                        },
+                        select: { id: true, name: true, url: true, persona: true }
+                    });
+
+                    if (!doc) return { success: false, message: `No document named "${args.name}" found.` };
+
+                    if (userRole !== 'Admin' && !doc.persona.includes(userRole)) {
+                        return { success: false, message: `You do not have permission to read "${args.name}".` };
+                    }
+
+                    const chunks: any[] = await prisma.$queryRawUnsafe(
+                        `SELECT content, chunk_index FROM document_chunks 
+             WHERE contentform_id = $1 
+             ORDER BY chunk_index ASC`,
+                        doc.id
+                    );
+
+                    if (chunks.length === 0) {
+                        return {
+                            success: false,
+                            message: `"${doc.name}" has not been indexed yet or contains no extractable text. It may be an audio, video, or scanned image file.`
+                        };
+                    }
+
+                    const fullText = chunks
+                        .map(c => c.content)
+                        .join('\n\n')
+                        .split(/\s+/)
+                        .slice(0, 3000)
+                        .join(' ');
+
+                    return {
+                        success: true,
+                        type: 'document_content',
+                        docName: doc.name,
+                        docUrl: doc.url,
+                        chunkCount: chunks.length,
+                        content: fullText,
+                        message: `Retrieved ${chunks.length} sections from "${doc.name}". Please summarize the content below for the user.`
+                    };
+                }
+            }),
         };
 
         const result = streamText({

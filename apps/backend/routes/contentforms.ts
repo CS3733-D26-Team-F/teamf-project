@@ -4,6 +4,7 @@ import {supabase} from '../setup/supabase.js';
 import {upload} from '../setup/upload.js';
 import {checkJWT} from '../setup/auth0.js';
 import { sendNotificationToUsers } from './notifications.js';
+import { indexDocument, removeDocumentFromIndex } from './indexer.js';
 import dayjs from "dayjs";
 
 const router = Router();
@@ -390,6 +391,9 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
             }
         });
 
+        // fire and forget
+        indexDocument(content.id).catch(err => console.error('[contentforms] Indexing failed:', err));
+
         const employee1 = username
             ? await prisma.employee.findUnique({
                 where: {username: username}
@@ -603,6 +607,7 @@ router.patch('/contentforms/:id/:username/softdelete', checkJWT, async (req, res
             where: {id},
             data: {is_deleted: true, deleted_at: new Date()}
         });
+        removeDocumentFromIndex(updated.id).catch(err => console.error('[contentforms] Remove index failed:', err));
 
         const sender = await prisma.employee.findUnique({ where: { auth0Id } });
         if (sender && updated.persona && updated.persona.length > 0) {
@@ -715,6 +720,7 @@ router.patch('/contentforms/autoexpire', checkJWT, async (req, res) => {
             },
             data: {status: 'Expired'}
         });
+        removeDocumentFromIndex(deleted.id).catch(err => console.error('[contentforms] Remove index failed:', err));
         res.json({message: `${updated.count} documents expired`});
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
@@ -1840,6 +1846,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
             where: {id},
             data: updateData
         });
+        indexDocument(updated.id).catch(err => console.error('[contentforms] Re-indexing failed:', err));
 
         const sender = await prisma.employee.findUnique({ where: { auth0Id } });
         if (sender && updated.persona && updated.persona.length > 0) {

@@ -24,6 +24,13 @@ export function Profile() {
     const {isAuthenticated, user, logout} = useAuth0();
     const [settingsOpened, {open: openSettings, close: closeSettings}] = useDisclosure(false);
     const [profileOpened, {open: openProfile, close: closeProfile}] = useDisclosure(false);
+
+    useEffect(() => {
+        const handleOpenProfile = () => openProfile();
+        window.addEventListener('openProfilePopup', handleOpenProfile);
+        return () => window.removeEventListener('openProfilePopup', handleOpenProfile);
+    }, [openProfile]);
+
     const {t} = useTranslation();
     const translate = (lang: string) => {
         i18n.changeLanguage(lang);
