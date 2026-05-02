@@ -339,6 +339,8 @@
   "edit_employee": "Modifier le compte employé",
   "pfp_optional": "Nouvelle photo de profil (optionnel)",
   "creation": "Création",
-  "edit_details": "Modifier les détails"
-
+  "edit_details": "Modifier les détails",
+  "all_personas": "Toutes les personnes",
+  "you": "Vous",
+  "relocate": "Déménager"
 }

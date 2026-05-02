@@ -113,16 +113,19 @@ export function ContentCurrencyWidget() {
                 position: 'relative'
             }}
         >
-            <HelpModal title= {t("recently_modified")}>
-                <Text>{t("recently_modified_tip")}</Text>
-            </HelpModal>
-            <Group gap={6} mb="xs">
-                <IconClock size={14} color="gray" />
-                <Text fw={700} size="sm" c="dimmed">{t('modify_widget')}</Text>
+
+            <Group mb = "md">
+                <Group gap={6} >
+                    <IconClock size={14} color="gray" />
+                    <Text fw={700} size="sm" c="dimmed">{t('modify_widget')}</Text>
+                </Group>
+                <HelpModal title= {t("recently_modified")} inline>
+                    <Text>{t("recently_modified_tip")}</Text>
+                </HelpModal>
             </Group>
 
             {currentPersona === 'Admin' ? (
-                <Text fw={700} size="sm" c="dimmed">{t('view')} All Personas</Text>
+                <Text fw={700} size="sm" c="dimmed">{t('view')}: {t('all_personas')}</Text>
             ) : (
                 <Group>
                     <Text fw={700} size="sm" c="dimmed">{t('view')}: {value}</Text>

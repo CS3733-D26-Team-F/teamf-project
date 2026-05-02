@@ -1914,7 +1914,7 @@ export function Documents() {
                                 allowDeselect={false}
                             />
                         </Group>
-                        {!search ?
+                        {(!search && selectedFolderId == null) ?
                             <Accordion multiple defaultValue={["favorites", persona]}>
                                 {favoriteAccordion}
                                 {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}

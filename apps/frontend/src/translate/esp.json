@@ -169,7 +169,7 @@
   "chart_update": "Actualizado en la última semana",
   "file_update": "Archivos actualizados",
   "todo_fail": "No se pudo cargar todas:",
-  "task": "tareas",
+  "task": "Tareas",
   "pending": "pendiente",
   "done": "hecho",
   "add_task": "Añadir una nueva tarea...",
@@ -342,7 +342,8 @@
   "edit_employee": "Editar Cuenta de Empleado",
   "pfp_optional": "Nueva Foto de Perfil (Opcional)",
   "creation": "Creación",
-  "edit_details": "Editar Detalles"
-
-
+  "edit_details": "Editar Detalles",
+  "all_personas": "Todas las Personas",
+  "you": "Tú",
+  "relocate": "Reubicarse"
 }

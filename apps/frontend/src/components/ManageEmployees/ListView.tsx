@@ -307,7 +307,7 @@ export function EmployeeListView() {
                                         </Badge>
                                         <Text>{emp.last_name}, {emp.first_name} ({emp.username})</Text>
                                         {emp.username === authorUsername && (
-                                            <Badge color="var(--color-yale-blue)" variant="light" size="sm">You</Badge>
+                                            <Badge color="var(--color-yale-blue)" variant="light" size="sm">{t('you')}</Badge>
                                         )}
                                     </Group>
                                     <Group gap="xs">
