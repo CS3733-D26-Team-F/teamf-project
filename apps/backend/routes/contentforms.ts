@@ -101,7 +101,7 @@ router.get('/contentforms', checkJWT, async (req, res) => {
     const contentForms = await prisma.contentform.findMany({
         where: {is_deleted: false},
         include: {
-            folders: {
+            folder: {
                 select: {name: true}
             }
         }
@@ -385,7 +385,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                 ...(folderId !== null ? {folders: {connect: {id: folderId}}} : {})
             },
             include: {
-                folders: {
+                folder: {
                     select: {name: true}
                 }
             }
@@ -721,7 +721,15 @@ router.delete('/contentforms/:id/permanent', checkJWT, async (req, res) => {
 router.patch('/contentforms/autoexpire', checkJWT, async (req, res) => {
     const auth0Id = req.auth!.payload.sub as string;
     try {
-        const updated = await prisma.contentform.updateMany({
+        const updated = await prisma.contentform.findMany({
+            where: {
+                expiration_date: {lt: new Date()},
+                status: {not: 'Expired'},
+                is_deleted: false
+            },
+        });
+
+        const newexpired = await prisma.contentform.updateMany({
             where: {
                 expiration_date: {lt: new Date()},
                 status: {not: 'Expired'},
@@ -729,8 +737,12 @@ router.patch('/contentforms/autoexpire', checkJWT, async (req, res) => {
             },
             data: {status: 'Expired'}
         });
-        removeDocumentFromIndex(deleted.id).catch(err => console.error('[contentforms] Remove index failed:', err));
-        res.json({message: `${updated.count} documents expired`});
+
+        for (const doc of updated) {
+            removeDocumentFromIndex(doc.id)
+                .catch(err => console.error('[contentforms] Remove index failed:', err));
+        }
+        res.json({message: `${newexpired.count} documents expired`});
     } catch (error) {
         res.status(500).json({error: 'Something went wrong'});
     }
@@ -744,7 +756,7 @@ router.get('/contentforms/archived', checkJWT, async (req, res) => {
         const archived = await prisma.contentform.findMany({
             where: {status: 'Archived', is_deleted: false},
             include: {
-                folders: {
+                folder: {
                     select: {name: true}
                 }
             }
@@ -763,7 +775,7 @@ router.get('/contentforms/expired', checkJWT, async (req, res) => {
         const expired = await prisma.contentform.findMany({
             where: {status: 'Expired', is_deleted: false},
             include: {
-                folders: {
+                folder: {
                     select: {name: true}
                 }
             }
@@ -784,7 +796,7 @@ router.patch('/contentforms/:id/status', async (req, res) => {
             where: {id},
             data: {status, expiration_date: new Date()},
             include: {
-                folders: {
+                folder: {
                     select: {name: true}
                 }
             }
@@ -1494,7 +1506,7 @@ router.get('/contentforms/:id', checkJWT, async (req, res) => {
         const contentForm = await prisma.contentform.findUnique({
             where: {id},
             include: {
-                folders: {
+                folder: {
                     select: {name: true}
                 }
             }
