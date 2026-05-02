@@ -411,6 +411,8 @@ function toolLoadingLabel(toolName: string): string {
         'summarizePortalActivity': 'Generating portal summary...',
         'createNotification': 'Creating notification...',
         'changeTheme': 'Applying theme...',
+        'searchDocumentContents': 'Searching document contents...',
+        'summarizeDocument': 'Reading document...',
     };
     return labels[toolName] || 'Processing...';
 }

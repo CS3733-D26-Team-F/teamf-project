@@ -257,6 +257,32 @@ export function Documents() {
         }
     };
 
+    // Listen for Command Palette Trash
+    useEffect(() => {
+        const handleOpenTrash = () => {
+            if (persona === 'Admin') {
+                loadTrash();
+                setTrashOpen(true);
+            }
+        };
+        window.addEventListener('openTrashPopup', handleOpenTrash);
+        return () => window.removeEventListener('openTrashPopup', handleOpenTrash);
+    }, [persona]);
+
+    // Listen for Command Palette Upload
+    useEffect(() => {
+        const handleAdd = () => openAddDocumentModal();
+        const handleBulk = () => openBulkUploadModal();
+
+        window.addEventListener('openAddDocumentPopup', handleAdd);
+        window.addEventListener('openBulkUploadPopup', handleBulk);
+
+        return () => {
+            window.removeEventListener('openAddDocumentPopup', handleAdd);
+            window.removeEventListener('openBulkUploadPopup', handleBulk);
+        };
+    }, [selectedFolderId]);
+
     // ── Recently viewed ──────────────────────────────────────────────────────
     const [recentIds, setRecentIds] = useState<number[]>(() => {
         try {
@@ -1802,7 +1828,7 @@ export function Documents() {
                                 allowDeselect={false}
                             />
                         </Group>
-                        {!search ?
+                        {(!search && selectedFolderId == null) ?
                             <Accordion multiple defaultValue={["favorites", persona]}>
                                 {favoriteAccordion}
                                 {[persona, ...allPersonas.filter(p => p != persona)].map(p => personaAccordion(p))}
