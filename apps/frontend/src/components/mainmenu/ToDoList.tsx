@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { useListState } from "@mantine/hooks";
+import {useState, useEffect, useRef} from "react";
 import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
 import { IconTrash, IconClipboardList } from "@tabler/icons-react";
 import {useTranslation} from "react-i18next";
 import {HelpModal} from "./StatsPopup.tsx";
+import {useApi} from "../api.ts";
+import { DOMAIN } from "../../const.ts";
 
 interface ToDoItem {
     id: string;
@@ -13,34 +14,110 @@ interface ToDoItem {
 
 export function ToDoList() {
     const [value, setValue] = useState('');
-    const [initialized, setInitialized] = useState(false);
-    const [items, handlers] = useListState<ToDoItem>([]);
+    const [items, setItems] = useState<ToDoItem[]>([]);
     const {t} = useTranslation();
+    const name = localStorage.getItem('username');
+    const api = useApi();
+    const itemsRef = useRef<ToDoItem[]>([]);
 
     useEffect(() => {
+        itemsRef.current = items;
+    }, [items]);
+
+    const syncToBackend = async (next: ToDoItem[]) => {
+        await api(`${DOMAIN}/updateToDo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: name,
+                todo: next.map(item => JSON.stringify(item))
+            })
+        });
+    };
+
+    const getTasks = async () => {
+        if (!name) return;
         try {
-            const saved = localStorage.getItem('todo-list');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.length > 0) handlers.setState(parsed);
+            const res = await api(`${DOMAIN}/getToDo?username=${name}`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                const parsed = data.map((item, index) => {
+                    if (typeof item === "object" && item !== null) return item;
+                    try {
+                        const obj = JSON.parse(item);
+                        if (obj && obj.label) return obj;
+                    } catch {
+                        return { id: `legacy-${index}`, label: item, checked: false };
+                    }
+                    return { id: `err-${index}`, label: "Invalid Task", checked: false };
+                });
+
+                const undupe = parsed.reduceRight((acc, item) => {
+                    if (!acc.find(i => i.id === item.id)) acc.push(item);
+                    return acc;
+                }, [] as ToDoItem[]).reverse();
+
+                setItems(undupe);
+
+                if (parsed.length > undupe.length) {
+                    await syncToBackend(undupe);
+                }
             }
-        } catch (e) {
-            console.error(t('todo_fail'), e);
+        } catch (err) {
+            console.error("Failed to fetch tasks:", err);
         }
-        setInitialized(true);
-    }, []);
+    };
 
     useEffect(() => {
-        if (initialized) {
-            localStorage.setItem('todo-list', JSON.stringify(items));
-        }
-    }, [items, initialized]);
+        getTasks();
+    }, [name]);
 
-    const addTask = () => {
-        if (value.trim()) {
-            handlers.append({ id: Date.now().toString(), label: value, checked: false });
-            setValue('');
+    const addTask = async () => {
+        if (!value.trim() || !name) return;
+        const prev = itemsRef.current;
+        const newTask: ToDoItem = { id: crypto.randomUUID(), label: value.trim(), checked: false };
+        const next = [newTask, ...prev];
+        setItems(next);
+        setValue('');
+        try {
+            await syncToBackend(next);
+        } catch (err) {
+            console.error("Failed to add task:", err);
+            getTasks();
         }
+    };
+
+    const removeTask = async (itemToRemove: ToDoItem) => {
+        if (!name) return;
+        const prev = itemsRef.current;
+        const next = prev.filter(i => i.id !== itemToRemove.id);
+        setItems(next);
+        try {
+            await syncToBackend(next);
+        } catch (err) {
+            console.error("Failed to remove task:", err);
+            getTasks();
+        }
+    };
+
+    const toggleTask = async (itemToToggle: ToDoItem) => {
+        if (!name) return;
+        const prev = itemsRef.current;
+        const updated = { ...itemToToggle, checked: !itemToToggle.checked };
+        const next = [updated, ...prev.filter(i => i.id !== itemToToggle.id)];
+        setItems(next);
+        try {
+            await syncToBackend(next);
+        } catch (err) {
+            console.error("Failed to toggle task:", err);
+            getTasks();
+        }
+    };
+
+    const renderItemText = (item: ToDoItem) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && item.label) return item.label;
+        return "Unknown Task";
     };
 
     const pending = items.filter(i => !i.checked).length;
@@ -75,7 +152,7 @@ export function ToDoList() {
                     placeholder={t('add_task')}
                     value={value}
                     onChange={(e) => setValue(e.currentTarget.value)}
-                    onKeyDown={(e) => e.key === t('enter') && addTask()}
+                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
                     style={{ flex: 1 }}
                     styles={{ input: { borderColor: 'var(--pacific-blue)' } }}
                 />
@@ -92,7 +169,7 @@ export function ToDoList() {
                         {t('no_task')}
                     </Text>
                 )}
-                {items.map((item, index) => (
+                {items.map((item) => (
                     <Paper
                         key={item.id}
                         withBorder
@@ -114,18 +191,17 @@ export function ToDoList() {
                                             color: item.checked ? 'var(--light-gray)' : 'inherit',
                                             transition: 'all 0.2s ease',
                                         }}>
-                                        {item.label}
+                                        {renderItemText(item)}
                                     </Text>
                                 }
-                                onChange={(e) =>
-                                    handlers.setItemProp(index, 'checked', e.currentTarget.checked)
-                                }
-                                color="var(--pacific-blue)"/>
+                                onChange={() => toggleTask(item)}
+                                color="var(--pacific-blue)"
+                            />
                             <ActionIcon
                                 variant="subtle"
                                 color="red"
                                 size="sm"
-                                onClick={() => handlers.remove(index)}>
+                                onClick={() => removeTask(item)}>
                                 <IconTrash size={14} />
                             </ActionIcon>
                         </Group>
