@@ -583,7 +583,7 @@ router.get('/contentforms/trash', checkJWT, async (req, res) => {
                 contentform: {
                     where: {is_deleted: true},
                     include: {
-                        folders: {select: {name: true}}
+                        folder: {select: {name: true}}
                     },
                     orderBy: {deleted_at: 'desc'}
                 }
