@@ -357,6 +357,8 @@
   "noti_message_filler": "Enter Message",
   "noti_reciever": "Reciever",
   "noti_reciever_filler": "Select Employees",
-  "send": "Send"
-
+  "send": "Send",
+  "deleted": "Deleted",
+  "edited": "Edited",
+  "doc_activity_past": "Document Activity (Past Week)"
 }

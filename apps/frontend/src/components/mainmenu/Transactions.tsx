@@ -268,7 +268,7 @@ export function Transactions() {
                         {/* checkout history */}
                         <div style={{ flex: 1, height: 700 }}>
                             <Text fw={600} size="sm" mb="xs" c="dimmed">
-                                Check In / Out History (Past Week)
+                                {t('check_history')}
                             </Text>
                             <ScrollArea h={430}>
                                 <Stack gap="xs">
@@ -300,7 +300,7 @@ export function Transactions() {
                         {/* document activity */}
                         <div style={{ flex: 1 }}>
                             <Text fw={600} size="sm" mb="xs" c="dimmed">
-                                Document Activity (Past Week)
+                                {t('doc_activity_past')}
                             </Text>
                             <ScrollArea h={430}>
                                 <Stack gap="xs">

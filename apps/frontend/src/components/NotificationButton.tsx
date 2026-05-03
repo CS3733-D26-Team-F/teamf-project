@@ -5,19 +5,21 @@ import { useForm } from '@mantine/form';
 import {useEffect, useState} from "react";
 import {useAuth0} from "@auth0/auth0-react";
 import {useTranslation} from "react-i18next";
+import {useApi} from "./api.ts";
+import {DOMAIN} from "../const.ts";
 
 
 export function NotificationButton() {
     const [opened, {open, close}] = useDisclosure(false);
     const [employees, setEmployees] = useState<{ value: string; label: string }[]>([]);
     const {t} = useTranslation();
-    // const name = localStorage.getItem('username');
     const { getAccessTokenSilently } = useAuth0();
+    const api = useApi();
 
     useEffect(() => {
         const loadEmployees = async () => {
             try {
-                const res = await fetch('/api/employees');
+                const res = await api(`${DOMAIN}/employees`);
                 const data = await res.json();
 
                 if (!data || !Array.isArray(data)) {
