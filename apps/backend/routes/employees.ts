@@ -631,5 +631,26 @@ router.post('/removeToDo', checkJWT, async (req, res) => {
     }
 });
 
+router.post('/updateToDo', checkJWT, async (req, res) => {
+    const { username, todo } = req.body || {};
+
+    const employee = await prisma.employee.findUnique({
+        where: { username }
+    });
+
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    try {
+        const updated = await prisma.employee.update({
+            where: { username },
+            data: { todo }
+        });
+        console.log('Employee Tasks Updated:', updated.todo);
+        res.json(updated.todo);
+    } catch (error) {
+        res.status(500).json({ error: 'Could not update taks' });
+    }
+});
+
 
 export default router;
