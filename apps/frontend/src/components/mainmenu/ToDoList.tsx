@@ -102,9 +102,11 @@ export function ToDoList() {
 
     const toggleTask = async (itemToToggle: ToDoItem) => {
         if (!name) return;
-        const prev = itemsRef.current;
-        const updated = { ...itemToToggle, checked: !itemToToggle.checked };
-        const next = [updated, ...prev.filter(i => i.id !== itemToToggle.id)];
+        const previous = itemsRef.current;
+        const current = previous.find(i => i.id === itemToToggle.id);
+        if (!current) return;
+        const updated = { ...current, checked: !current.checked };
+        const next = [updated, ...previous.filter(i => i.id !== itemToToggle.id)];
         setItems(next);
         try {
             await syncToBackend(next);
