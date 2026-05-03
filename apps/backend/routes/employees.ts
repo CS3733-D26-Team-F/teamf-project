@@ -619,7 +619,7 @@ router.post('/removeToDo', checkJWT, async (req, res) => {
         return res.status(404).json({error: 'Employee not found'});
     }
     try {
-        const newtodos = employee.todo.filter(todo => !todo.includes(todo));
+        const newtodos = employee.todo.filter(item => !todo.includes(item));
         const updated = await prisma.employee.update({
             where: {username: username},
             data: {todo: newtodos}

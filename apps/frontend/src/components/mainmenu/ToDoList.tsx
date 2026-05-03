@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { useListState } from "@mantine/hooks";
+import {useState, useEffect, useRef} from "react";
 import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Stack, Text, TextInput, Title } from "@mantine/core";
 import { IconTrash, IconClipboardList } from "@tabler/icons-react";
-import {useTranslation} from "react-i18next";
-import {HelpModal} from "./StatsPopup.tsx";
+import { useTranslation } from "react-i18next";
+import { HelpModal } from "./StatsPopup.tsx";
+import { DOMAIN } from "../../const.ts";
+import { useApi } from "../../components/api.ts";
 
 interface ToDoItem {
     id: string;
@@ -13,53 +14,88 @@ interface ToDoItem {
 
 export function ToDoList() {
     const [value, setValue] = useState('');
-    const [initialized, setInitialized] = useState(false);
-    const [items, handlers] = useListState<ToDoItem>([]);
-    const {t} = useTranslation();
+    const [items, setItems] = useState<any[]>([]);
+    const { t } = useTranslation();
+    const name = localStorage.getItem('username');
+    const api = useApi();
 
-    useEffect(() => {
+    const getTasks = async () => {
+        if (!name) return;
         try {
-            const saved = localStorage.getItem('todo-list');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed.length > 0) handlers.setState(parsed);
+            const res = await api(`${DOMAIN}/getToDo?username=${name}`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setItems(data);
             }
-        } catch (e) {
-            console.error(t('todo_fail'), e);
+        } catch (err) {
+            console.error("Failed to fetch tasks:", err);
         }
-        setInitialized(true);
-    }, []);
+    };
 
     useEffect(() => {
-        if (initialized) {
-            localStorage.setItem('todo-list', JSON.stringify(items));
-        }
-    }, [items, initialized]);
+        getTasks();
+    }, [name]);
 
-    const addTask = () => {
-        if (value.trim()) {
-            handlers.append({ id: Date.now().toString(), label: value, checked: false });
+    const addTask = async () => {
+        const trimmed = value.trim();
+        if (trimmed.length === 0 || !name) return;
+
+        if (value.trim().length === 0) return;
+
+        try {
+            await api(`${DOMAIN}/addToDo`, {
+                method: 'POST',
+                headers: {'content-type': 'application/json'},
+                body: JSON.stringify({
+                    username: name,
+                    todo: [trimmed]
+                })
+            });
+            setItems((current) => [...current, trimmed]);
             setValue('');
         }
+        catch (err) {
+            console.error("Failed to add task:", err);
+        }
+    };
+
+
+    const removeTask = async (itemToRemove) => {
+            if (!name) return;
+            try {
+                await api(`${DOMAIN}/removeToDo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: name,
+                        todo: [itemToRemove]
+                    })
+                });
+                setItems((current) => current.filter((item) => item !== itemToRemove));
+            }
+            catch (err) {
+                console.error("Failed to remove task:", err);
+            }
+        };
+
+    const renderItemText = (item: any) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && item.label) return item.label;
+        return "Unknown Task";
     };
 
     const pending = items.filter(i => !i.checked).length;
     const done = items.filter(i => i.checked).length;
 
     return (
-        <div>
-
-
         <Stack gap="md" h="100%" style={{ padding: '1.25rem' }}>
             <Group justify="space-between" align="center">
-
-
-                <Group mb = "md">
+                <Group mb="md">
                     <Group gap="xs">
                         <IconClipboardList size={20} color="var(--yale-blue)" />
                         <Title order={3} style={{ color: 'var(--yale-blue)', margin: 0 }}>{t('task')}</Title>
                     </Group>
-                    <HelpModal title= {t("todo_list")} inline>
+                    <HelpModal title={t("todo_list")} inline>
                         <Text>{t("todo_list_tip")}</Text>
                     </HelpModal>
                 </Group>
@@ -75,7 +111,7 @@ export function ToDoList() {
                     placeholder={t('add_task')}
                     value={value}
                     onChange={(e) => setValue(e.currentTarget.value)}
-                    onKeyDown={(e) => e.key === t('enter') && addTask()}
+                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
                     style={{ flex: 1 }}
                     styles={{ input: { borderColor: 'var(--pacific-blue)' } }}
                 />
@@ -92,7 +128,7 @@ export function ToDoList() {
                         {t('no_task')}
                     </Text>
                 )}
-                {items.map((item, index) => (
+                {items.map((item) => (
                     <Paper
                         key={item.id}
                         withBorder
@@ -112,20 +148,16 @@ export function ToDoList() {
                                         style={{
                                             textDecoration: item.checked ? 'line-through' : 'none',
                                             color: item.checked ? 'var(--light-gray)' : 'inherit',
-                                            transition: 'all 0.2s ease',
                                         }}>
-                                        {item.label}
+                                        {renderItemText(item)}
                                     </Text>
                                 }
-                                onChange={(e) =>
-                                    handlers.setItemProp(index, 'checked', e.currentTarget.checked)
-                                }
-                                color="var(--pacific-blue)"/>
+                                color="var(--pacific-blue)" />
                             <ActionIcon
                                 variant="subtle"
                                 color="red"
                                 size="sm"
-                                onClick={() => handlers.remove(index)}>
+                                onClick={() => removeTask(item)}>
                                 <IconTrash size={14} />
                             </ActionIcon>
                         </Group>
@@ -133,6 +165,5 @@ export function ToDoList() {
                 ))}
             </Stack>
         </Stack>
-        </div>
     );
 }
