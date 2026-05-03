@@ -66,11 +66,9 @@ export function NotificationButton() {
         };
 
         try {
-            const response = await fetch('/api/notifications', {
+            const response = await api(`${DOMAIN}/notifications`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-                },
+                headers: { 'Content-Type': 'application/json'},
                 body: JSON.stringify(payload),
             });
 
