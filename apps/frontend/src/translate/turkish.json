@@ -349,5 +349,13 @@
   "close": "Kapat",
   "folder": "Klasör",
   "delete_message_folder": "Bu klasörü silmek istediğinize emin misiniz? Klasör içindeki tüm belgeler çöp kutusuna taşınacaktır.",
-  "trash_delete_doc_folder": "Silinen belge veya klasör yok"
+  "trash_delete_doc_folder": "Silinen belge veya klasör yok",
+  "send_new_noti": "Yeni Bildirim Gönder",
+  "noti_title": "Bildirim Başlığı",
+  "noti_title_fill": "Başlık Girin",
+  "noti_message": "Mesaj",
+  "noti_message_filler": "Mesaj Girin",
+  "noti_reciever": "Alıcı",
+  "noti_reciever_filler": "Çalışanları Seçin",
+  "send": "Gönder"
 }

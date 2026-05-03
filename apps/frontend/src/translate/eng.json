@@ -349,5 +349,14 @@
   "doc_activity_today": "Document Activity (Today)",
   "trash_delete_doc_folder": "No deleted Documents or folders",
   "delete_emp": "Delete Employee?",
-  "close": "Close"
+  "close": "Close",
+  "send_new_noti": "Send New Notification",
+  "noti_title": "Notification Title",
+  "noti_title_fill": "Enter Title",
+  "noti_message": "Message",
+  "noti_message_filler": "Enter Message",
+  "noti_reciever": "Reciever",
+  "noti_reciever_filler": "Select Employees",
+  "send": "Send"
+
 }

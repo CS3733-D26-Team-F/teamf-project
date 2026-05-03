@@ -349,5 +349,13 @@
   "close": "बंद करें",
   "folder": "फ़ोल्डर",
   "delete_message_folder": "क्या आप वाकई इस फ़ोल्डर को हटाना चाहते हैं? फ़ोल्डर के अंदर के सभी दस्तावेज़ कूड़ेदान में ले जाए जाएंगे।",
-  "trash_delete_doc_folder": "कोई हटाया गया दस्तावेज़ या फ़ोल्डर नहीं"
+  "trash_delete_doc_folder": "कोई हटाया गया दस्तावेज़ या फ़ोल्डर नहीं",
+  "send_new_noti": "नई सूचना भेजें",
+  "noti_title": "सूचना का शीर्षक",
+  "noti_title_fill": "शीर्षक दर्ज करें",
+  "noti_message": "संदेश",
+  "noti_message_filler": "संदेश दर्ज करें",
+  "noti_reciever": "प्राप्तकर्ता",
+  "noti_reciever_filler": "कर्मचारी चुनें",
+  "send": "भेजें"
 }

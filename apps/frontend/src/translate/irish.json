@@ -349,5 +349,14 @@
   "close": "Dún",
   "folder": "Fillteán",
   "delete_message_folder": "An bhfuil tú cinnte gur mhaith leat an fillteán seo a scriosadh? Bogfar gach cáipéis laistigh den fhillteán go dtí an bosca bruscair.",
-  "trash_delete_doc_folder": "Níl aon cháipéis nó fillteán scriosta ann"
+  "trash_delete_doc_folder": "Níl aon cháipéis nó fillteán scriosta ann",
+  "send_new_noti": "Seol Fógra Nua",
+  "noti_title": "Teideal an Fhógra",
+  "noti_title_fill": "Iontráil Teideal",
+  "noti_message": "Teachtaireacht",
+  "noti_message_filler": "Iontráil Teachtaireacht",
+  "noti_reciever": "Faighteoir",
+  "noti_reciever_filler": "Roghnaigh Fostaithe",
+  "send": "Seol"
+
 }

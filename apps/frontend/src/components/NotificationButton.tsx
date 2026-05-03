@@ -4,11 +4,13 @@ import { FaPlus } from "react-icons/fa";
 import { useForm } from '@mantine/form';
 import {useEffect, useState} from "react";
 import {useAuth0} from "@auth0/auth0-react";
+import {useTranslation} from "react-i18next";
 
 
 export function NotificationButton() {
     const [opened, {open, close}] = useDisclosure(false);
     const [employees, setEmployees] = useState<{ value: string; label: string }[]>([]);
+    const {t} = useTranslation();
     // const name = localStorage.getItem('username');
     const { getAccessTokenSilently } = useAuth0();
 
@@ -81,22 +83,22 @@ export function NotificationButton() {
 
     return (
         <>
-            <Modal opened={opened} onClose={close} title={"Send New Notification"} centered>
+            <Modal opened={opened} onClose={close} title={t('send_new_noti')} centered>
                 <form onSubmit={form.onSubmit(handleSubmit)}>
                     <Stack>
                         <TextInput
-                            label="Notification Title"
-                            placeholder="Enter Title"
+                            label={t('noti_title')}
+                            placeholder={t('noti_title_filler')}
                             required {...form.getInputProps('title')}
                         />
                         <Textarea
-                            label="Message"
-                            placeholder="Enter Message"
+                            label={t('noti_message')}
+                            placeholder={t('noti_message_filler')}
                             required {...form.getInputProps('message')}
                         />
                         <MultiSelect
-                            label="Reciever"
-                            placeholder="Select Employees"
+                            label={t('noti_reciever')}
+                            placeholder={t('noti_reciever_filler')}
                             data={employees || []}
                             searchable
                             nothingFoundMessage="No employees found"
@@ -105,10 +107,10 @@ export function NotificationButton() {
 
                         <Group justify="flex-end" mt="md">
                             <Button variant="subtle" onClick={close} style={{color:'var(--yale-blue)'}} >
-                                Cancel
+                                {t('cancel')}
                             </Button>
                             <Button type="submit" style={{backgroundColor: 'var(--yale-blue)'}}>
-                                Send
+                                {t('send')}
                             </Button>
                         </Group>
                     </Stack>

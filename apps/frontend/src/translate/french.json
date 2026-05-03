@@ -349,6 +349,14 @@
   "close": "Fermer",
   "folder": "Dossier",
   "delete_message_folder": "Voulez-vous vraiment supprimer ce dossier ? Tous les documents dans le dossier seront déplacés vers la corbeille.",
-  "trash_delete_doc_folder": "Aucun document ou dossier supprimé"
+  "trash_delete_doc_folder": "Aucun document ou dossier supprimé",
+  "send_new_noti": "Envoyer une nouvelle notification",
+  "noti_title": "Titre de la notification",
+  "noti_title_fill": "Entrez le titre",
+  "noti_message": "Message",
+  "noti_message_filler": "Entrez le message",
+  "noti_reciever": "Destinataire",
+  "noti_reciever_filler": "Sélectionner les employés",
+  "send": "Envoyer"
 
 }

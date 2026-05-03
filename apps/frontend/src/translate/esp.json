@@ -350,6 +350,14 @@
   "delete_message_folder": "¿Está seguro de que desea eliminar esta carpeta? Todos los documentos dentro de la carpeta se moverán a la papelera.",
   "trash_delete_doc_folder": "No hay documentos o carpetas eliminadas",
   "delete_emp": "¿Eliminar Empleado?",
-  "close": "Cerrar"
+  "close": "Cerrar",
+  "send_new_noti": "Enviar Nueva Notificación",
+  "noti_title": "Título de la Notificación",
+  "noti_title_fill": "Ingrese el Título",
+  "noti_message": "Mensaje",
+  "noti_message_filler": "Ingrese el Mensaje",
+  "noti_reciever": "Destinatario",
+  "noti_reciever_filler": "Seleccionar Empleados",
+  "send": "Enviar"
 
 }

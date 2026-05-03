@@ -349,5 +349,13 @@
   "close": "关闭",
   "folder": "文件夹",
   "delete_message_folder": "您确定要删除此文件夹吗？文件夹内的所有文档将被移至回收站。",
-  "trash_delete_doc_folder": "没有已删除的文档或文件夹"
+  "trash_delete_doc_folder": "没有已删除的文档或文件夹",
+  "send_new_noti": "发送新通知",
+  "noti_title": "通知标题",
+  "noti_title_fill": "输入标题",
+  "noti_message": "消息",
+  "noti_message_filler": "输入消息",
+  "noti_reciever": "接收者",
+  "noti_reciever_filler": "选择员工",
+  "send": "发送"
 }
