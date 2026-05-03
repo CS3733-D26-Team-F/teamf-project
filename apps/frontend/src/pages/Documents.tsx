@@ -1729,10 +1729,10 @@ export function Documents() {
                                                     onClick={() => setFilterType(p => p.filter(x => x !== v))}>{t('type')}: {v} ×</Badge>)}
                         {filterOwner.map(v => <Badge key={v} variant="filled" color="var(--color-pacific-blue)"
                                                      style={{cursor: 'pointer'}}
-                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('Owner')}: {v} ×</Badge>)}
+                                                     onClick={() => setFilterOwner(p => p.filter(x => x !== v))}>{t('owner')}: {v} ×</Badge>)}
                         {filterTags.map(v => <Badge key={v} variant="filled" color="var(--color-star-command)"
                                                     style={{cursor: 'pointer'}}
-                                                    onClick={() => setFilterTags(p => p.filter(x => x !== v))}>{t('Tag')}: {v} ×</Badge>)}
+                                                    onClick={() => setFilterTags(p => p.filter(x => x !== v))}>{t('tags')}: {v} ×</Badge>)}
                         {filterCheckout.map(v => <Badge key={v} variant="filled" color="var(--color-fresh-sky)"
                                                         style={{cursor: 'pointer'}}
                                                         onClick={() => setFilterCheckout(p => p.filter(x => x !== v))}>{t('checkout_status')}: {v === 'checked out' ? t('checked_out') : t('available')} ×

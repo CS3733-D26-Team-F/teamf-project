@@ -1,10 +1,13 @@
 import {Group, Badge} from "@mantine/core";
+import {useTranslation} from "react-i18next";
+import {personaMap} from "../ManageEmployees/personas.tsx";
 
 interface PersonaBadgesProps {
     personas: string[];
 }
 
 export function PersonaBadges({ personas }: PersonaBadgesProps) {
+    const {t} = useTranslation();
     if (!Array.isArray(personas) || personas.length === 0) {
         return null;
     }
@@ -23,7 +26,7 @@ export function PersonaBadges({ personas }: PersonaBadgesProps) {
                         'var(color-neutral-red)'}
                     size="sm"
                 >
-                    {p}
+                    {t (personaMap[p] ?? p)}
                 </Badge>
             ))}
         </Group>

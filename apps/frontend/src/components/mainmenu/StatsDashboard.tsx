@@ -129,7 +129,7 @@ export function StatsDashboard() {
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--sapphire)', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--pale-sky)' ][index % 4],
-        tooltip: `${persona}: ${count} files`
+        tooltip: `${t(personaMap[persona]?? persona)}: ${count} ${t('files')}`
     }));
 
     //content ring types
@@ -137,8 +137,8 @@ export function StatsDashboard() {
         type: t(type.toLowerCase()),
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
-        color: ['var(--yale-blue)', 'var(--fresh-sky)'][index % 2],
-        tooltip: `${type}: ${count} files`
+        color: ['var(t(type.toLowerCase())}--yale-blue)', 'var(--fresh-sky)'][index % 2],
+        tooltip: `${t(type.toLowerCase())}: ${count} ${t('files')}`
     }));
 
     const statusRingSections = Object.entries(filesByStatus as Record<string, number>).map(([status, count], index) => ({
@@ -146,7 +146,7 @@ export function StatsDashboard() {
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--pale-sky', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--sapphire)', 'var(--neutral-red)', 'var(--light-gray)'][index % 6],
-        tooltip: `${status}: ${count} files`
+        tooltip: `${t(status.toLowerCase().replace(/ /g,'_'))}: ${count} ${t('files')}`
     }));
 
     const data = [
@@ -187,7 +187,7 @@ export function StatsDashboard() {
                         <Icon className={classes.icon} size={22} stroke={1.5} />
                     </Group>
                     <HelpModal title={stat.title }>
-                        <Text>{t('shows_num_files_first')} {stat.title.toLowerCase()} {t('shows_num_files_seocnd')}</Text>
+                        <Text>{t('shows_num_files_first')} {stat.title.toLowerCase()} {t('shows_num_files_second')}</Text>
                     </HelpModal>
                 </Group>
 
