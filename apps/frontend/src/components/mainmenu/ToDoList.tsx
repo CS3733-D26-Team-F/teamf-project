@@ -25,7 +25,23 @@ export function ToDoList() {
             const res = await api(`${DOMAIN}/getToDo?username=${name}`);
             const data = await res.json();
             if (Array.isArray(data)) {
-                setItems(data);
+                const parsed = data.map((item, index) => {
+                    if (typeof item === "object" && item !== null) return item;
+
+                    try{
+                        const obj = JSON.parse(item);
+                        if (obj && obj.label) return obj;
+                    }
+                    catch (err){
+                        return {
+                            id: `legacy-${index}`,
+                            label: item,
+                            checked: false
+                        };
+                    }
+                    return { id: `err-${index}`, label: "Invalid Task", checked: false };
+                })
+                setItems(parsed);
             }
         } catch (err) {
             console.error("Failed to fetch tasks:", err);
@@ -36,11 +52,9 @@ export function ToDoList() {
         getTasks();
     }, [name]);
 
-    const addTask = async () => {
-        const trimmed = value.trim();
-        if (trimmed.length === 0 || !name) return;
-
-        if (value.trim().length === 0) return;
+    const addTask = async (task?: ToDoItem) => {
+        const taskToSave = task || { id: crypto.randomUUID(), label: value.trim(), checked: false };
+        if (!taskToSave.label || !name) return;
 
         try {
             await api(`${DOMAIN}/addToDo`, {
@@ -48,10 +62,10 @@ export function ToDoList() {
                 headers: {'content-type': 'application/json'},
                 body: JSON.stringify({
                     username: name,
-                    todo: [trimmed]
+                    todo: [JSON.stringify(taskToSave)]
                 })
             });
-            setItems((current) => [...current, trimmed]);
+            setItems((current) => [taskToSave, ...current]);
             setValue('');
         }
         catch (err) {
@@ -63,15 +77,19 @@ export function ToDoList() {
     const removeTask = async (itemToRemove) => {
             if (!name) return;
             try {
+                const payload = itemToRemove.id.startsWith('legacy')
+                    ? itemToRemove.label
+                    : JSON.stringify(itemToRemove);
+
                 await api(`${DOMAIN}/removeToDo`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: name,
-                        todo: [itemToRemove]
+                        todo: [payload]
                     })
                 });
-                setItems((current) => current.filter((item) => item !== itemToRemove));
+                setItems((current) => current.filter((item) => item.id !== itemToRemove.id));
             }
             catch (err) {
                 console.error("Failed to remove task:", err);
@@ -82,6 +100,22 @@ export function ToDoList() {
         if (typeof item === 'string') return item;
         if (item && typeof item === 'object' && item.label) return item.label;
         return "Unknown Task";
+    };
+
+    const toggleTask = async (itemToToggle: ToDoItem) => {
+        if (!name) return;
+        const updated = {...itemToToggle, checked: !itemToToggle.checked};
+
+        setItems(prev => [updated, ...prev.filter(i => i.id !== itemToToggle.id)]);
+
+        try {
+            await removeTask(itemToToggle, true);
+            await addTask(updated);
+        }
+        catch (err) {
+            getTasks();
+        }
+
     };
 
     const pending = items.filter(i => !i.checked).length;
@@ -152,6 +186,7 @@ export function ToDoList() {
                                         {renderItemText(item)}
                                     </Text>
                                 }
+                                onChange={() => toggleTask(item)}
                                 color="var(--pacific-blue)" />
                             <ActionIcon
                                 variant="subtle"
