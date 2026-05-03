@@ -212,13 +212,12 @@
   "swe": "Ingeniero de Software de Tiempo Completo",
   "assist": "Asistente del Líder del Equipo",
   "sm": "Scrum Master",
-  "po": "Product Owner",
+  "po": "Propietario del producto",
   "footer_thanks": " Nos gustaría agradecer a Hanover Insurance la oportunidad de haber trabajado en este proyecto.\nCon un agradecimiento especial a sus representantes, Brandon Roche, CIO Adjunto, y Meaghan Jenket, Arquitecta de Negocio Principal, quienes ayudaron a hacer posible este proyecto.",
   "credentials": "Credenciales",
   "about": "Acerca de",
   "about_us": "Sobre Nosotros",
   "credits": "Créditos",
-  
   "folder_persona": "Persona de la carpeta",
   "doc_help_content": "Esta es la página de documentos. Esta página permite a los usuarios ver y administrar sus documentos. Para ver un documento, haga clic en su nombre. Para editar o eliminar un documento, haga clic en los tres puntos junto al documento y seleccione la opción apropiada. Asegúrese de guardar cualquier cambio que realice antes de navegar fuera de la página.",
   "download_all": "Descargar todo",
@@ -346,5 +345,11 @@
   "all_personas": "Todas las Personas",
   "you": "Tú",
   "relocate": "Reubicarse",
-  "employee_page": "Página del Empleado"
+  "employee_page": "Página del Empleado",
+  "doc_activity_today": "Actividad de documentos (Hoy)",
+  "delete_message_folder": "¿Está seguro de que desea eliminar esta carpeta? Todos los documentos dentro de la carpeta se moverán a la papelera.",
+  "trash_delete_doc_folder": "No hay documentos o carpetas eliminadas",
+  "delete_emp": "¿Eliminar Empleado?",
+  "close": "Cerrar"
+
 }

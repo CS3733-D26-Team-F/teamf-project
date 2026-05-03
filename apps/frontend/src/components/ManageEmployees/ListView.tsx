@@ -9,7 +9,7 @@ import { DOMAIN } from '../../const';
 //import {useAuth0} from "@auth0/auth0-react";
 import { useApi } from "../api.ts";
 import { FilledButton } from '../Buttons/FilledButton.tsx';
-import {allPersonas} from "./personas.tsx";
+import {allPersonas, personaMap} from "./personas.tsx";
 import {useTranslation} from "react-i18next";
 
 type Employee = {
@@ -270,7 +270,7 @@ export function EmployeeListView() {
                         }}
                     >
                         <Group mb="sm">
-                            <Text fw={700} size="xl" c="var(--color-yale-blue)">{persona}</Text>
+                            <Text fw={700} size="xl" c="var(--color-yale-blue)">{t(personaMap[persona] ?? persona)}</Text>
                             <FilledButton
                                 size="sm"
                                 leftSection="plus"
@@ -367,7 +367,7 @@ export function EmployeeListView() {
                     />
                     
                     <Box>
-                        <Text size="sm" fw={500} mb={4}>Profile Picture (Optional)</Text>
+                        <Text size="sm" fw={500} mb={4}> {t('pfp_optional')}</Text>
                         <FileInput
                             placeholder={t('admin_add_pfp')}
                             accept="image/*"
@@ -396,7 +396,7 @@ export function EmployeeListView() {
                         readOnly
                     />
                     <Group justify="flex-end" mt="md">
-                        <Button variant="default" onClick={() => setAddOpen(false)} className="invert-hover-outline">Cancel</Button>
+                        <Button variant="default" onClick={() => setAddOpen(false)} className="invert-hover-outline">{t('cancel')}</Button>
                         <FilledButton
                             onClick={handleAdd}
                             leftSection="plus"
@@ -416,7 +416,7 @@ export function EmployeeListView() {
                 title={
                     <Group>
                         <IconUser size={20} />
-                        <Text fw={600}>Edit {t('employee_acount')}</Text>
+                        <Text fw={600}>Edit {t('employee_account')}</Text>
                     </Group>
                 }
             >
@@ -426,7 +426,7 @@ export function EmployeeListView() {
                         <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                             <Text fw={600} mb={4}>{t('employee_details')}</Text>
                             <Text size="sm">{t('current_username')} {editTarget.username}</Text>
-                            <Text size="sm">{t('current_persona')} {editTarget.persona}</Text>
+                            <Text size="sm">{t('current_persona')} {t(personaMap[editTarget.persona] ?? editTarget.persona)}</Text>
                         </Box>
                         <Text fw={600}>{t('new_details')}</Text>
                         <TextInput
@@ -468,7 +468,7 @@ export function EmployeeListView() {
                             </Group>
                         </Box>
                         <Group justify="flex-end" mt="md">
-                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline" disabled={editSaving}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setEditOpen(false)} className="invert-hover-outline" disabled={editSaving}>{t('cancel')}</Button>
                             <FilledButton
                                 onClick={handleEdit}
                                 leftSection="plus"
@@ -486,15 +486,15 @@ export function EmployeeListView() {
             <Modal
                 opened={deleteOpen}
                 onClose={() => setDeleteOpen(false)}
-                title="Delete Employee?"
+                title= {t('delete_emp')}
                 centered
             >
                 <Text size="sm" mb="md">
                     {t('changes_you_made')}<strong> {t('cannot_be_undone')}</strong>
                 </Text>
                 <Group justify="flex-end">
-                    <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">Cancel</Button>
-                    <Button className="invert-hover" onClick={handleDelete}>Confirm</Button>
+                    <Button variant="outline" onClick={() => setDeleteOpen(false)} className="invert-hover-outline">{t('cancel')}</Button>
+                    <Button className="invert-hover" onClick={handleDelete}>{t('confirm')}</Button>
                 </Group>
             </Modal>
 
@@ -546,11 +546,11 @@ export function EmployeeListView() {
                             <Box style={{ background: '#f8f9fa', borderRadius: 6, padding: 12 }}>
                                 <Text fw={600} mb={4}>{employeeTarget.first_name} {employeeTarget.last_name}</Text>
                                 <Text>{t('username')}: {employeeTarget.username}</Text>
-                                <Text>{t('role')}: {employeeTarget.persona}</Text>
+                                <Text>{t('role')}: {t(personaMap[employeeTarget.persona] ?? employeeTarget.persona)}</Text>
                                 <Text>{t('year_joined')}: {new Date(employeeTarget.created_at).getFullYear()}</Text>
                             </Box>
                             <Group justify="flex-end" mt="md">
-                                <Button variant="outline" onClick={() => setEmployeeOpen(false)} className="invert-hover-outline">Close</Button>
+                                <Button variant="outline" onClick={() => setEmployeeOpen(false)} className="invert-hover-outline">{t('close')}</Button>
                             </Group>
                         </Stack>
                     </>

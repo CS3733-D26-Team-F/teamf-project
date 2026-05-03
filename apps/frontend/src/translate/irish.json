@@ -343,5 +343,11 @@
   "all_personas": "Gach Pearsantacht",
   "you": "Tú",
   "relocate": "Athlonnú",
-  "employee_page": "Leathanach Fostaí"
+  "employee_page": "Leathanach Fostaí",
+  "doc_activity_today": "Gníomhaíocht Cáipéisí (Inniu)",
+  "delete_emp": "Scrios Fostaí?",
+  "close": "Dún",
+  "folder": "Fillteán",
+  "delete_message_folder": "An bhfuil tú cinnte gur mhaith leat an fillteán seo a scriosadh? Bogfar gach cáipéis laistigh den fhillteán go dtí an bosca bruscair.",
+  "trash_delete_doc_folder": "Níl aon cháipéis nó fillteán scriosta ann"
 }

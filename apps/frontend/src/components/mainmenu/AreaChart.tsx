@@ -10,13 +10,29 @@ export function AreaChart() {
     const [chartData, setChartData] = useState<any[]>([]);
     const [numFiles, setNumFiles] = useState(0);
     const api = useApi();
-    const {t} = useTranslation();
+    const {t, i18n} = useTranslation();
 
     console.log(numFiles);
     useEffect(() => {
         const getStatsData = async () => {
             const myPersona = localStorage.getItem('persona');
             const myEmpid = Number(localStorage.getItem('empid'));
+
+            const localeTransMap: Record<string, string> = {
+                'eng': 'en-US',
+                'esp': 'es-ES',
+                'french': 'fr-FR',
+                'arabic': 'ar-SA',
+                'mandarin': 'zh-CN',
+                'bengali': 'bn-BD',
+                'russian': 'ru-RU',
+                'turkish': 'tr-TR',
+                'irish': 'ga-IE',
+                'hindi': 'hi-IN',
+            };
+
+            const locale = localeTransMap[i18n.language] ?? 'en-US';
+
             if (!myPersona || !myEmpid) return;
 
             const res = await api(`${DOMAIN}/contentforms`);
@@ -30,7 +46,7 @@ export function AreaChart() {
             for (let i = 6; i >= 0; i--) {
                 const d = new Date();
                 d.setDate(d.getDate() - i);
-                const dateString = d.toLocaleDateString('en-US', {
+                const dateString = d.toLocaleDateString(locale, {
                     weekday: 'short',
                     month: 'numeric',
                     day: 'numeric'
@@ -40,7 +56,7 @@ export function AreaChart() {
 
             myOwnedFilesList.forEach((file: any) => {
                 const fileDate = new Date(file.date_modified);
-                const dateKey = fileDate.toLocaleDateString('en-US', {
+                const dateKey = fileDate.toLocaleDateString(locale, {
                     weekday: 'short',
                     month: 'numeric',
                     day: 'numeric'
@@ -56,7 +72,7 @@ export function AreaChart() {
         };
 
         getStatsData();
-    }, []);
+    }, [i18n.language]);
 
     return (
         <Paper p="md" radius="md" style={{ height: '100%', width:'100%' }}>

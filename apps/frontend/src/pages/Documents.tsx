@@ -34,12 +34,13 @@ import { DocCard } from "../components/content/DocCard.tsx";
 import { TableHead } from "../components/content/TableHead.tsx";
 import { DocRow } from "../components/content/DocRow.tsx";
 import { FilledButton } from '../components/Buttons/FilledButton.tsx';
-import {allPersonas} from "../components/ManageEmployees/personas.tsx";
+import {allPersonas, personaMap} from "../components/ManageEmployees/personas.tsx";
 import {Error as ErrorMessage} from "../components/content/Error.tsx"
 import {ManageTags} from "../components/content/ManageTags.tsx";
 import {useTranslation} from "react-i18next";
 import { HelpModal } from '../components/helpModal.tsx';
 import { useSearchParams } from 'react-router-dom'
+
 
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -221,12 +222,7 @@ export function Documents() {
     const [dropdownViewMode, setDropdownViewMode] = useState<'dropdown' | 'popup'>('dropdown');
     
 
-    const personaMap: Record<string, string> = {
-        'Underwriter': 'underwriter',
-        'Business Analyst': 'bus_ana',
-        'Actuarial Analyst': 'act_ana',
-        'EXL Operations': 'exl_op',
-    };
+
 
     const toggleDropdown = (id: number) => {
         setInlineDropdownId(prev => prev === id ? null : id);
@@ -2375,7 +2371,7 @@ export function Documents() {
                                             {expanded && (
                                                 <Stack gap="xs" mt="sm">
                                                     {folderDocs.length === 0 ? (
-                                                        <Text c="dimmed" size="sm">No deleted documents in this folder.</Text>
+                                                        <Text c="dimmed" size="sm">{t("trash_delete_doc")}</Text>
                                                     ) : folderDocs.map(doc => (
                                                         <Box key={`folder-${folder.id}-doc-${doc.id}`} p="xs" style={{border: '1px solid #e9edf3', borderRadius: 6, background: 'white'}}>
                                                             <Group justify="space-between" align="flex-start">
@@ -2457,7 +2453,7 @@ export function Documents() {
                         </Box>
                     )}
                     {filteredTrash.length === 0 && filteredTrashFolders.length === 0 && (
-                        <Text c="dimmed" ta="center" py="xl">No deleted documents or folders.</Text>
+                        <Text c="dimmed" ta="center" py="xl">{t('trash_delete_doc_folder')}</Text>
                     )}
                 </Stack>
             </Modal>

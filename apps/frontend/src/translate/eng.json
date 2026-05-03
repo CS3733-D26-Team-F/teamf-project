@@ -158,7 +158,7 @@
   "trash_delete": "Trash - Deleted Documents",
   "trash_search": "Search by name or owner...",
   "trash_filter": "Filter by persona",
-  "trash_delete_doc": "No deleted Documents",
+  "trash_delete_doc": "No deleted Documents in this folder",
   "all_content": "All Content",
   "grid": "Grid",
   "list": "List",
@@ -345,6 +345,9 @@
   "all_personas": "All Personas",
   "you": "You",
   "relocate": "Relocate",
-  "employee_page": "Employee Page"
-
+  "employee_page": "Employee Page",
+  "doc_activity_today": "Document Activity (Today)",
+  "trash_delete_doc_folder": "No deleted Documents or folders",
+  "delete_emp": "Delete Employee?",
+  "close": "Close"
 }

@@ -343,5 +343,11 @@
   "all_personas": "Tüm Kişilikler",
   "you": "Sen",
   "relocate": "Taşınmak",
-  "employee_page": "Çalışan Sayfası"
+  "employee_page": "Çalışan Sayfası",
+  "doc_activity_today": "Belge Etkinliği (Bugün)",
+  "delete_emp": "Çalışan Silinsin mi?",
+  "close": "Kapat",
+  "folder": "Klasör",
+  "delete_message_folder": "Bu klasörü silmek istediğinize emin misiniz? Klasör içindeki tüm belgeler çöp kutusuna taşınacaktır.",
+  "trash_delete_doc_folder": "Silinen belge veya klasör yok"
 }

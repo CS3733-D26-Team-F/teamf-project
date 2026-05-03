@@ -210,7 +210,7 @@ export function Transactions() {
                         </div>
                         <div style={{ flex: 1 , height: 400}}>
                             <Text fw={600} size="sm" mb="xs" c="dimmed">
-                                Document Activity (Today)
+                                {t('doc_activity_today')}
                             </Text>
                             <ScrollArea h={250}>
                                 <Stack gap="xs">

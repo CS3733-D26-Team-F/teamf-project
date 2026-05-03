@@ -343,5 +343,12 @@
   "all_personas": "Toutes les personnes",
   "you": "Vous",
   "relocate": "Déménager",
-  "employee_page": "Page des Employés"
+  "employee_page": "Page des Employés",
+  "doc_activity_today": "Activité des documents (Aujourd'hui)",
+  "delete_emp": "Supprimer l'employé ?",
+  "close": "Fermer",
+  "folder": "Dossier",
+  "delete_message_folder": "Voulez-vous vraiment supprimer ce dossier ? Tous les documents dans le dossier seront déplacés vers la corbeille.",
+  "trash_delete_doc_folder": "Aucun document ou dossier supprimé"
+
 }

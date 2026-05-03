@@ -18,6 +18,7 @@ const icons = {
     up: IconArrowDownRight,
     down: IconArrowDownRight
 };
+import { personaMap} from '../ManageEmployees/personas.tsx';
 
 
 export function StatsDashboard() {
@@ -124,7 +125,7 @@ export function StatsDashboard() {
 
     //persona ring
     const personaRingSections = Object.entries(filesByPersona as Record<string, number>).map(([persona, count], index) => ({
-        persona,
+        persona: t(personaMap[persona] ?? persona),
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--sapphire)', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--pale-sky)' ][index % 4],
@@ -133,7 +134,7 @@ export function StatsDashboard() {
 
     //content ring types
     const ringSections = Object.entries(filesByContentType as Record<string, number>).map(([type, count], index) => ({
-        type,
+        type: t(type.toLowerCase()),
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--yale-blue)', 'var(--fresh-sky)'][index % 2],
@@ -141,7 +142,7 @@ export function StatsDashboard() {
     }));
 
     const statusRingSections = Object.entries(filesByStatus as Record<string, number>).map(([status, count], index) => ({
-        status,
+        status: t(status.toLowerCase().replace(/ /g,'_')),
         count,
         value: numFiles > 0 ? (count / numFiles) * 100 : 0,
         color: ['var(--pale-sky', 'var(--fresh-sky)', 'var(--yale-blue)', 'var(--sapphire)', 'var(--neutral-red)', 'var(--light-gray)'][index % 6],

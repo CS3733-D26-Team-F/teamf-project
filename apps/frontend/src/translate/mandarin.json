@@ -343,7 +343,11 @@
   "all_personas": "所有角色",
   "you": "你",
   "relocate": "搬迁",
-  "employee_page": "员工页面"
-
-
+  "employee_page": "员工页面",
+  "doc_activity_today": "文档活动（今日",
+  "delete_emp": "删除员工？",
+  "close": "关闭",
+  "folder": "文件夹",
+  "delete_message_folder": "您确定要删除此文件夹吗？文件夹内的所有文档将被移至回收站。",
+  "trash_delete_doc_folder": "没有已删除的文档或文件夹"
 }

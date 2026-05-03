@@ -205,7 +205,7 @@ export function ProfileComponent() {
                             className="invert-hover"
                             style={{ borderRadius: 8 }}
                         >
-                            Edit
+                            {t('edit')}
                         </Button>
                     </Group>
 

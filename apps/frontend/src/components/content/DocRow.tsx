@@ -128,8 +128,8 @@ export function DocRow({
                             variant="light"
                             color="grape"
                             style={{cursor: 'pointer'}}
-                            leftSection={<IconFolder size={12}/>}
-                            onClick={() => onFolderClick(doc.folder_id)}
+                            leftSection={<IconFolder size={12}folder/>}
+                            onClick={() => onFolderClick(doc._id)}
                         >
                             {doc.folder || 'Folder'}
                         </Badge>

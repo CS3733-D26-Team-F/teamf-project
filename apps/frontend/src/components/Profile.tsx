@@ -32,16 +32,17 @@ export function Profile() {
     }, [openProfile]);
 
     const {t} = useTranslation();
-    const [currentLanguage, setCurrentLanguage] = useState<string>(localStorage.getItem('language') ?? "eng");
-    useEffect(() => {
-        translate(currentLanguage);
-    }, []);
 
     const translate = (lang: string) => {
         setCurrentLanguage(lang);
         i18n.changeLanguage(lang);
         localStorage.setItem('language', lang);
     };
+
+    const [currentLanguage, setCurrentLanguage] = useState<string>(localStorage.getItem('language') ?? "eng");
+    useEffect(() => {
+        translate(currentLanguage);
+    }, []);
 
     // Prefer employee name, then username, then Auth0 nickname as the display label.
     const displayName =
@@ -189,7 +190,7 @@ export function Profile() {
                 <Modal
                     opened={profileOpened}
                     onClose={closeProfile}
-                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">Profile</Text>}
+                    title={<Text fw={700} size="xl" c="var(--color-yale-blue)">{t('profile')}</Text>}
                     size="lg"
                     radius="lg"
                 >

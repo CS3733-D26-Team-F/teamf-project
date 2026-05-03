@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Paper, Loader, Center, Text, Group} from '@mantine/core';
-import { Heatmap } from '@mantine/charts';
+import {Heatmap} from '@mantine/charts';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';      //spanish
 import 'dayjs/locale/fr';      //french
@@ -12,38 +12,54 @@ import 'dayjs/locale/ru';      //russian
 import 'dayjs/locale/tr';      //turkish
 import 'dayjs/locale/ga';      //irish
 dayjs.locale('en');
-import { useApi } from "../api.ts";
-import { DOMAIN } from '../../const';
+import {useApi} from "../api.ts";
+import {DOMAIN} from '../../const';
 import {useTranslation} from "react-i18next";
 import {HelpModal} from "./StatsPopup.tsx";
 
+// have to manually create month label array for dayjs ( easiest way I found )
+
+const monthLabels: Record<string, string[]> = {
+    'eng': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    'esp': ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    'french': ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+    'mandarin': ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+    'arabic': ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+    'hindi': ['जन', 'फर', 'मार', 'अप्र', 'मई', 'जून', 'जुल', 'अग', 'सित', 'अक्त', 'नव', 'दिस'],
+    'bengali': ['জান', 'ফেব', 'মার', 'এপ্র', 'মে', 'জুন', 'জুল', 'আগ', 'সেপ', 'অক্ট', 'নভ', 'ডিস'],
+    'russian': ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+    'turkish': ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+    'irish': ['Ean', 'Feabh', 'Már', 'Aib', 'Beal', 'Meith', 'Iúil', 'Lún', 'MFómh', 'DFómh', 'Samh', 'Noll'],
+};
+
+const localeTransMap: Record<string, any> = {
+    'eng': 'en',
+    'esp': 'es',
+    'french': 'fr',
+    'mandarin': 'zh-cn',
+    'arabic': 'ar',
+    'hindi': 'hi',
+    'bengali': 'bn',
+    'russian': 'ru',
+    'turkish': 'tr',
+    'irish': 'ga',
+}
+
 export function HeatMap() {
-    const {t, i18n } = useTranslation();
+    const {t, i18n} = useTranslation();
     const [HeatmapData, setHeatmapData] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const api = useApi();
 
     //6 month window
-    const { startDate, endDate } = useMemo(() => ({
+    const {startDate, endDate} = useMemo(() => ({
         startDate: dayjs().subtract(6, 'month').toDate(),
         endDate: dayjs().toDate()
     }), []);
 
-    const localeMap: Record <string, string> = {
-        'eng': 'en',
-        'esp': 'es',
-        'french': 'fr',
-        'mandarin': 'zh-cn',
-        'arabic': 'ar',
-        'hindi': 'hi',
-        'bengali': 'bn',
-        'russian': 'ru',
-        'turkish': 'tr',
-        'irish': 'ga',
-    };
 
     const currentLocale = useMemo(() => {
-        const locale = localeMap[i18n.language] ?? 'en';
+        const locale = localeTransMap[i18n.language] ?? 'en';
         dayjs.locale(locale);
         return locale;
     }, [i18n.language]);
@@ -76,14 +92,14 @@ export function HeatMap() {
     if (loading) {
         return (
             <Paper withBorder p="xl" radius="md">
-                <Center><Loader size="sm" /></Center>
+                <Center><Loader size="sm"/></Center>
             </Paper>
         );
     }
     return (
         <Paper p="md" radius="md" w="100%" h="100%">
-            <Group mb = "md">
-                <Text fw={900} size="xl" >
+            <Group mb="md">
+                <Text fw={900} size="xl">
                     {t('heat_activity')}
                 </Text>
                 <HelpModal title={t('activity_heatmap')} inline>
@@ -92,25 +108,26 @@ export function HeatMap() {
             </Group>
 
             <Heatmap
-                key = {currentLocale}
+                key={currentLocale}
                 data={HeatmapData}
                 startDate={startDate}
                 endDate={endDate}
+                monthLabels={monthLabels[i18n.language] ?? monthLabels['eng']}
                 colors={[
                     'var(--pale-sky)',
                     'var(--fresh-sky)',
                     'var(--sapphire)',
                     'var(--yale-blue)',
                 ]}
-                getRectProps={({ value }) =>
+                getRectProps={({value}) =>
                     value === null || value === 0
-                        ? { fill: '#D3D3D3' }
+                        ? {fill: '#D3D3D3'}
                         : {}
                 }
                 rectSize={18}
                 withTooltip
                 withMonthLabels
-                getTooltipLabel={({ date, value }) =>
+                getTooltipLabel={({date, value}) =>
                     `${dayjs(date).format('DD MMM, YYYY')} – ${value === null || value === 0 ? t('heat_noCont') : `${value} ${t('heat_cont')}${value > 1 ? 's' : ''}`}`
                 }/>
         </Paper>
