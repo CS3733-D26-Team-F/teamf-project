@@ -1819,7 +1819,7 @@ router.put('/contentforms/:id', upload.single('file'), checkJWT, async (req, res
         };
 
         if (folderId !== null || rawFolderId === '' || rawFolderId === null) {
-            updateData.folders = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
+            updateData.folder = folderId === null ? {disconnect: true} : {connect: {id: folderId}};
         }
 
         if (req.file) {
