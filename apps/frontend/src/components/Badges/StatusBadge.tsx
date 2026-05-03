@@ -21,7 +21,7 @@ export function StatusBadge(props: StatusBadgesProps) {
     const color = statusColors[props.status] ?? 'gray';
     const {t} = useTranslation();
 
-    function translateStatus(status: string) {
+    function translateStatus() {
         let statusTranslation = props.status
         if (statusTranslation == "In Progress") {
             statusTranslation = t('in_progress')
@@ -44,14 +44,14 @@ export function StatusBadge(props: StatusBadgesProps) {
                 style={{ cursor: 'pointer' }}
                 onClick={props.onRemove}
             >
-                {t("status")}: {translateStatus(props.status)} ×
+                {t("status")}: {translateStatus()} ×
             </Badge>
         );
     }
 
     return (
         <Badge color={color} variant="light" size={props.size}>
-            {translateStatus(props.status)}
+            {translateStatus()}
         </Badge>
     );
 }

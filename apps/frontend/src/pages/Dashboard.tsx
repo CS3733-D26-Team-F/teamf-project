@@ -9,10 +9,11 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header.tsx";
 import { DOMAIN } from "../const.ts";
 import { useApi } from "../components/api.ts";
-import {useAuth0} from "@auth0/auth0-react";
+
 import {useTranslation} from "react-i18next";
 import { Transactions } from "../components/mainmenu/Transactions.tsx"
 import { DocStatusWidget } from "../components/statistics/DocStatusWidget.tsx";
+import { useAuth0 } from '@auth0/auth0-react';
 
 
 const DEFAULT_LAYOUTS = {
@@ -29,7 +30,8 @@ export function Dashboard() {
     const api = useApi();
     const persona = localStorage.getItem('persona') as keyof typeof DEFAULT_LAYOUTS | null;
     const name = localStorage.getItem('username');
-    const { user } = useAuth0();
+    useAuth0();
+
     const {t} = useTranslation();
 
     const ALL_WIDGETS = {

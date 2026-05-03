@@ -53,7 +53,7 @@ export function ToDoList() {
                 });
 
                 const undupe = parsed.reduceRight((acc, item) => {
-                    if (!acc.find(i => i.id === item.id)) acc.push(item);
+                    if (!acc.find((i: ToDoItem) => i.id === item.id)) acc.push(item);
                     return acc;
                 }, [] as ToDoItem[]).reverse();
 

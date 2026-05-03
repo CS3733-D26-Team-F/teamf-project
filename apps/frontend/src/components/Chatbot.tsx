@@ -3,7 +3,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import type { UIMessage } from 'ai';
 import {
-    Affix, Drawer, Stack, Textarea, Paper, Text, ScrollArea,
+    Drawer, Stack, Textarea, Paper, Text, ScrollArea,
     Group, ActionIcon, Loader, Anchor, Button, Badge, Modal,
     Divider, Tooltip, ThemeIcon, Box, RingProgress, Avatar
 } from '@mantine/core';
