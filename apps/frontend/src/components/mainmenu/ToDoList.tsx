@@ -145,7 +145,7 @@ export function ToDoList() {
                     placeholder={t('add_task')}
                     value={value}
                     onChange={(e) => setValue(e.currentTarget.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                    onKeyDown={(e) => e.key === t('enter') && addTask()}
                     style={{ flex: 1 }}
                     styles={{ input: { borderColor: 'var(--pacific-blue)' } }}
                 />
