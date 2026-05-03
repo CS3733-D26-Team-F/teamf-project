@@ -56,7 +56,7 @@ export function NotificationButton() {
     })
 
     const handleSubmit = async (values: typeof form.values) => {
-        const token = await getAccessTokenSilently();
+        //const token = await getAccessTokenSilently();
 
         const payload = {
             title: values.title,
