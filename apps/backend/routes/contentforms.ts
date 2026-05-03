@@ -382,7 +382,7 @@ router.post('/contentforms', upload.single('file'), checkJWT, async (req, res) =
                     connect: {username: ownerUsername}
                 },
                
-                ...(folderId !== null ? {folders: {connect: {id: folderId}}} : {})
+                ...(folderId !== null ? {folder: {connect: {id: folderId}}} : {})
             },
             include: {
                 folder: {
