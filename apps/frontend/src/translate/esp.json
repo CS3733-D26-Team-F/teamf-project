@@ -358,6 +358,13 @@
   "noti_message_filler": "Ingrese el Mensaje",
   "noti_reciever": "Destinatario",
   "noti_reciever_filler": "Seleccionar Empleados",
-  "send": "Enviar"
+  "send": "Enviar",
+  "deleted": "Eliminado",
+  "edited": "Editado",
+  "doc_activity_past": "Actividad de documentos (última semana)",
+  "out": "Afuera",
+  "in": "En",
+  "added": "Agregado",
+  "admin_select_emp": "Seleccionar Empleado"
 
 }

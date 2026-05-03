@@ -155,7 +155,7 @@ export function Transactions() {
             <Group justify="space-between" mb="md" mt="xl">
                 <Group mb = "md">
                     <Text fw={700} size="lg">
-                        {adminView ? t('Employee Activity Today'): isAdmin ? t('two_activity_today'): t('activity_today')}
+                        {adminView ? t('admin_activity_today'): isAdmin ? t('two_activity_today'): t('activity_today')}
                     </Text>
                     <HelpModal title={t('transactions')} inline>
                         <Text>{t('transactions_tip')}</Text>
@@ -219,7 +219,7 @@ export function Transactions() {
                                         c.change === "Updated Document" ||
                                         c.change === "Deleted Document"
                                     ).length === 0 ? (
-                                        <Text c="dimmed" size="sm">No document activity today.</Text>
+                                        <Text c="dimmed" size="sm">{t('no_doc_activity')}</Text>
                                     ) : (
                                         todaysChanges
                                             .filter(c =>
@@ -238,8 +238,8 @@ export function Transactions() {
                                                             c.change === "Added Document" ? "var(--sapphire)" :
                                                                 c.change === "Updated Document" ? "var(--fresh-sky)" : "var(--neutral-red)"
                                                         } size="sm">
-                                                            {c.change === "Added Document" ? "Added" :
-                                                                c.change === "Updated Document" ? "Edited" : "Deleted"}
+                                                            {c.change === "Added Document" ? t('added') :
+                                                                c.change === "Updated Document" ? t('edited') : t('deleted')}
                                                         </Badge>
                                                     </Group>
                                                     <Text size="xs" c="dimmed">
@@ -257,7 +257,7 @@ export function Transactions() {
                 // admin view
                 <>
                     <Select
-                        label="Select Employee"
+                        label= {t('admin_select_emp')}
                         data={users}
                         value={selectedUser}
                         onChange={setSelectedUser}
@@ -283,7 +283,7 @@ export function Transactions() {
                                                         {docNames[c.id] ?? c.id}
                                                     </Text>
                                                     <Badge color={getBadgeColor(c.change)} size="sm">
-                                                        {c.change === "Checked Out Document" ? "Out" : "In"}
+                                                        {c.change === "Checked Out Document" ? t('out') : t('in')}
                                                     </Badge>
                                                 </Group>
 
@@ -328,8 +328,8 @@ export function Transactions() {
                                                             c.change === "Added Document" ? "var(--sapphire)" :
                                                                 c.change === "Updated Document" ? "var(--fresh-sky)" : "var(--neutral-red)"
                                                         } size="sm">
-                                                            {c.change === "Added Document" ? "Added" :
-                                                                c.change === "Updated Document" ? "Edited" : "Deleted"}
+                                                            {c.change === "Added Document" ? t('added') :
+                                                                c.change === "Updated Document" ? t('edited') : t('deleted')}
                                                         </Badge>
                                                     </Group>
                                                     <Text size="xs" c="dimmed">

@@ -357,5 +357,13 @@
   "noti_message_filler": "Mesaj Girin",
   "noti_reciever": "Alıcı",
   "noti_reciever_filler": "Çalışanları Seçin",
-  "send": "Gönder"
+  "send": "Gönder",
+  "deleted": "Silindi",
+  "edited": "Düzenlendi",
+  "doc_activity_past": "Belge Etkinliği (Geçen Hafta)",
+  "out": "Çıkış",
+  "in": "Giriş",
+  "added": "Eklendi",
+  "no_doc_activity": "Bugün belge etkinliği yok.",
+  "admin_select_emp": "Çalışan Seç"
 }

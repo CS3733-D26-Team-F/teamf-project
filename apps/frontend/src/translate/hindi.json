@@ -357,5 +357,14 @@
   "noti_message_filler": "संदेश दर्ज करें",
   "noti_reciever": "प्राप्तकर्ता",
   "noti_reciever_filler": "कर्मचारी चुनें",
-  "send": "भेजें"
+  "send": "भेजें",
+  "deleted": "हटाया गया",
+  "edited": "संपादित किया गया",
+  "doc_activity_past": "दस्तावेज़ गतिविधि (पिछले सप्ताह)",
+  "out": "बाहर",
+  "in": "अंदर",
+  "added": "जोड़ा गया",
+  "no_doc_activity": "आज कोई दस्तावेज़ गतिविधि नहीं।",
+  "admin_select_emp": "कर्मचारी चुनें"
+
 }

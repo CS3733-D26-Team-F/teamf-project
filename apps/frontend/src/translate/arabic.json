@@ -357,5 +357,13 @@
   "noti_message_filler": "أدخل الرسالة",
   "noti_reciever": "المستلم",
   "noti_reciever_filler": "اختر الموظفين",
-  "send": "إرسال"
+  "send": "إرسال",
+  "deleted": "تم الحذف",
+  "edited": "تم التحرير",
+  "doc_activity_past": "نشاط المستندات (الأسبوع الماضي)",
+  "out": "خروج",
+  "in": "دخول",
+  "added": "تمت الإضافة",
+  "no_doc_activity": "لا يوجد نشاط للمستندات اليوم.",
+  "admin_select_emp": "اختر موظفًا"
 }

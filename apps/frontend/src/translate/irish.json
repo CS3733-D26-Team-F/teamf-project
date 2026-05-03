@@ -357,6 +357,14 @@
   "noti_message_filler": "Iontráil Teachtaireacht",
   "noti_reciever": "Faighteoir",
   "noti_reciever_filler": "Roghnaigh Fostaithe",
-  "send": "Seol"
+  "send": "Seol",
+  "deleted": "Scriosta",
+  "edited": "Curtha in Eagar",
+  "doc_activity_past": "Gníomhaíocht Cáipéisí (An tSeachtain seo caite)",
+  "out": "Amach",
+  "in": "Isteach",
+  "added": "Curtha Leis",
+  "no_doc_activity": "Níl aon ghníomhaíocht cáipéisí inniu.",
+  "admin_select_emp": "Roghnaigh Fostaí"
 
 }

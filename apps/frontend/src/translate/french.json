@@ -357,6 +357,14 @@
   "noti_message_filler": "Entrez le message",
   "noti_reciever": "Destinataire",
   "noti_reciever_filler": "Sélectionner les employés",
-  "send": "Envoyer"
+  "send": "Envoyer",
+  "deleted": "Supprimé",
+  "edited": "Modifié",
+  "doc_activity_past": "Activité des documents (Semaine dernière)",
+  "out": "Sortie",
+  "in": "Entrée",
+  "added": "Ajouté",
+  "no_doc_activity": "Aucune activité documentaire aujourd'hui.",
+  "admin_select_emp": "Sélectionner un employé"
 
 }

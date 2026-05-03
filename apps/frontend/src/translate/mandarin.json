@@ -357,5 +357,13 @@
   "noti_message_filler": "输入消息",
   "noti_reciever": "接收者",
   "noti_reciever_filler": "选择员工",
-  "send": "发送"
+  "send": "发送",
+  "deleted": "已删除",
+  "edited": "已编辑",
+  "doc_activity_past": "文档活动（过去一周）",
+  "out": "检出",
+  "in": "检入",
+  "added": "已添加",
+  "no_doc_activity": "今日无文档活动。",
+  "admin_select_emp": "选择员工"
 }

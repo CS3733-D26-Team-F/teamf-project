@@ -360,5 +360,11 @@
   "send": "Send",
   "deleted": "Deleted",
   "edited": "Edited",
-  "doc_activity_past": "Document Activity (Past Week)"
+  "doc_activity_past": "Document Activity (Past Week)",
+  "out": "Out",
+  "in": "In",
+  "added": "Added",
+  "no_doc_activity": "No document activity today.",
+  "admin_select_emp": "Select Employee"
+
 }
