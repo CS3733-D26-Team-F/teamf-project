@@ -12,7 +12,7 @@ import notificationRoutes from './routes/notifications.js';
 import searchRouter from './routes/search.js';
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
 const distPath = path.resolve("../frontend/dist");
 const staticPath = path.join(distPath);
