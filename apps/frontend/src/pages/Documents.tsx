@@ -1578,7 +1578,7 @@ export function Documents() {
     const favoriteAccordion = sortedFavorites.length > 0 && !(filterCheckout.includes('checked out') && filterCheckout.includes('available')) ? (
         <Accordion.Item value={"favorites"} key={"favorites"}>
             <Accordion.Control aria-label={"favorites"}>
-                <Text fw={700} size="sm" c="yellow" mb="xs">{t('favorites')}</Text>
+                <Text fw={700} size="sm" c="#b45000" mb="xs">{t('favorites')}</Text>
             </Accordion.Control>
             <Accordion.Panel>
                 <Box>
