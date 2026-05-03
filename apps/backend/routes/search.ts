@@ -29,7 +29,6 @@ router.get('/search/semantic', checkJWT, async (req, res) => {
             where: {
                 name: { contains: query, mode: 'insensitive' },
                 is_deleted: false,
-                ...(userPersona !== 'Admin' ? { persona: { has: userPersona } } : {})
             },
             take: 3
         });

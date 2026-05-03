@@ -407,15 +407,7 @@ export async function semanticSearch(
     highlightRanges?: Array<{ start: number; end: number }>;
 }>> {
     try {
-        // EXACT KEYWORD SEARCH
-        const personaFilter = userPersona === 'Admin'
-            ? ''
-            : `AND cf.persona::text[] && ARRAY[$3]::text[]`;
-
-        const exactParams: any[] = userPersona === 'Admin'
-            ? [`%${query}%`, limit * 2]
-            : [`%${query}%`, limit * 2, userPersona];
-
+        // 1. EXACT KEYWORD SEARCH
         const exactResults: any[] = await prisma.$queryRawUnsafe(
             `SELECT
                 dc.contentform_id,
@@ -428,53 +420,34 @@ export async function semanticSearch(
              JOIN contentform cf ON cf.id = dc.contentform_id
              WHERE cf.is_deleted = false
              AND LOWER(dc.content) LIKE LOWER($1)
-             ${personaFilter}
              ORDER BY cf.name ASC, dc.chunk_index ASC
              LIMIT $2`,
-            ...exactParams
+            `%${query}%`,
+            limit * 2
         );
 
-        // SEMANTIC SEARCH
+        // 2. SEMANTIC SEARCH
         const response = await mistral.embeddings.create({
             model: 'mistral-embed',
             inputs: [query],
         });
         const queryEmbedding = response.data[0].embedding;
 
-        const semanticParams: any[] = userPersona === 'Admin'
-            ? [JSON.stringify(queryEmbedding), limit * 2]
-            : [JSON.stringify(queryEmbedding), userPersona, limit * 2];
-
-        const semanticQuery = userPersona === 'Admin'
-            ? `SELECT
-                dc.contentform_id,
-                dc.chunk_index,
-                dc.content,
-                cf.name AS doc_name,
-                cf.url AS doc_url,
-                1 - (dc.embedding <=> $1::vector) AS similarity
-               FROM document_chunks dc
-               JOIN contentform cf ON cf.id = dc.contentform_id
-               WHERE cf.is_deleted = false
-               ORDER BY dc.embedding <=> $1::vector
-               LIMIT $2`
-            : `SELECT
-                dc.contentform_id,
-                dc.chunk_index,
-                dc.content,
-                cf.name AS doc_name,
-                cf.url AS doc_url,
-                1 - (dc.embedding <=> $1::vector) AS similarity
-               FROM document_chunks dc
-               JOIN contentform cf ON cf.id = dc.contentform_id
-               WHERE cf.is_deleted = false
-               AND cf.persona::text[] && ARRAY[$2]::text[]
-               ORDER BY dc.embedding <=> $1::vector
-               LIMIT $3`;
-
         const semanticResults: any[] = await prisma.$queryRawUnsafe(
-            semanticQuery,
-            ...semanticParams
+            `SELECT
+                dc.contentform_id,
+                dc.chunk_index,
+                dc.content,
+                cf.name AS doc_name,
+                cf.url AS doc_url,
+                1 - (dc.embedding <=> $1::vector) AS similarity
+               FROM document_chunks dc
+               JOIN contentform cf ON cf.id = dc.contentform_id
+               WHERE cf.is_deleted = false
+               ORDER BY dc.embedding <=> $1::vector
+               LIMIT $2`,
+            JSON.stringify(queryEmbedding),
+            limit * 2
         );
 
         // HIGHLIGHT HELPER
