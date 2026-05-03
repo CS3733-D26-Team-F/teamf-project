@@ -394,7 +394,7 @@ export async function reindexAll(): Promise<{ total: number; indexed: number; sk
 // Exact matches are ranked first, then semantic results fill in the rest.
 export async function semanticSearch(
     query: string,
-    userPersona: string, // Kept so TypeScript doesn't break, but we ignore it below!
+    userPersona: string,
     limit = 5
 ): Promise<Array<{
     contentformId: number;
@@ -407,7 +407,7 @@ export async function semanticSearch(
     highlightRanges?: Array<{ start: number; end: number }>;
 }>> {
     try {
-        // 1. EXACT KEYWORD SEARCH (Unrestricted)
+        // 1. EXACT KEYWORD SEARCH
         const exactResults: any[] = await prisma.$queryRawUnsafe(
             `SELECT
                 dc.contentform_id,
@@ -426,7 +426,7 @@ export async function semanticSearch(
             limit * 2
         );
 
-        // 2. SEMANTIC SEARCH (Unrestricted)
+        // 2. SEMANTIC SEARCH
         const response = await mistral.embeddings.create({
             model: 'mistral-embed',
             inputs: [query],
