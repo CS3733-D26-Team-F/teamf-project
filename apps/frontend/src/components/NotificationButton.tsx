@@ -88,7 +88,7 @@ export function NotificationButton() {
                     <Stack>
                         <TextInput
                             label={t('noti_title')}
-                            placeholder={t('noti_title_filler')}
+                            placeholder={t('noti_title_fill')}
                             required {...form.getInputProps('title')}
                         />
                         <Textarea
